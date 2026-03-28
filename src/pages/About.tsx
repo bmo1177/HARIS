@@ -84,10 +84,10 @@ const About = () => {
           <Award className="w-8 h-8 text-primary mx-auto mb-2" />
           <p className="text-sm font-medium text-foreground">
             HARIS was built for the{" "}
-            <strong>Qatar AI Security Competition 2026</strong>
+            <strong>----- AI Security 2026</strong>
           </p>
           <p className="text-xs text-muted-foreground">
-            By Youcef Meridja & Abderrahmen Hidoussi — University of Jijel, Algeria
+            By Prof. Ouared Abdelkader & Belalia Mohamed Oussama - University of Ibn Khaldoun, Tiaret, Algeria
           </p>
         </div>
       </main>
