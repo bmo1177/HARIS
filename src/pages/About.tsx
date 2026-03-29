@@ -86,7 +86,7 @@ const About = () => {
         <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-5 text-center space-y-2">
           <Award className="w-8 h-8 text-primary mx-auto mb-2" />
           <p className="text-sm font-medium text-foreground">
-            HARIS was built for the <strong>Qatar AI Security Competition 2026</strong>
+            HARIS was built for the <strong>----- AI Security Comp 2026</strong>
           </p>
           <p className="text-xs text-muted-foreground">
             By Prof. Ouared Abdelkader & Belalia Mohamed Oussama - University of Ibn Khaldoun, Tiaret, Algeria
