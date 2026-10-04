@@ -3,9 +3,9 @@ import { toast } from "sonner";
 import Header from "@/components/Header";
 import MessageAnalyzer from "@/components/MessageAnalyzer";
 import AnalysisResults from "@/components/AnalysisResults";
-import { supabase } from "@/integrations/supabase/client";
+import { errorMessage, invokeHarisFunction } from "@/integrations/supabase/functions";
 import { useXP } from "@/lib/xpContext";
-import type { AnalysisResult } from "@/types/analysis";
+import { analysisResultSchema, type AnalysisResult } from "@/types/analysis";
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,18 +17,16 @@ const Index = () => {
     setResult(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("analyze-message", {
-        body: { message },
-      });
+      const analysis = await invokeHarisFunction(
+        "analyze-message",
+        { message },
+        analysisResultSchema,
+      );
 
-      if (error) throw new Error(error.message || "Analysis failed");
-      if (data?.error) throw new Error(data.error);
-
-      setResult(data as AnalysisResult);
+      setResult(analysis);
       awardXP(10); // +10 XP for completing analysis
-    } catch (err: any) {
-      console.error("Analysis error:", err);
-      toast.error(err.message || "Something went wrong. Please try again.");
+    } catch (error) {
+      toast.error(errorMessage(error));
     } finally {
       setIsLoading(false);
     }

@@ -12,6 +12,20 @@ dist
 dist-ssr
 *.local
 
+# Secrets. `.env` was previously committed; see .env.example for the template.
+.env
+.env.*
+!.env.example
+
+# Supabase edge function secrets
+supabase/functions/.env.local
+
+# Test and build artefacts
+coverage
+playwright-report
+test-results
+*.tsbuildinfo
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

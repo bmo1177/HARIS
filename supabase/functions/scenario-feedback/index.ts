@@ -1,78 +1,97 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "npm:zod@3.25.76";
+import { UpstreamError } from "../_shared/env.ts";
+import { generateStructured } from "../_shared/llm.ts";
+import { createHandler, jsonResponse } from "../_shared/http.ts";
+import { UNTRUSTED_CONTENT_RULES, clampText, wrapUntrusted } from "../_shared/prompt.ts";
+import { enforceRateLimit } from "../_shared/rateLimit.ts";
+import { parseRequest, scenarioFeedbackRequest } from "../_shared/schemas.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const FEEDBACK_SCHEMA = {
+  type: "object",
+  properties: {
+    safe: {
+      type: "boolean",
+      description: "True only if the student's reply was genuinely the safer option",
+    },
+    feedback: {
+      type: "string",
+      description: "1-2 sentences, direct and encouraging, addressed to the student",
+    },
+    feedback_ar: { type: "string", description: "Arabic translation of the feedback" },
+    red_flag: {
+      type: "string",
+      description:
+        "The red flag present in the attacker's message that the student should watch for. Empty string if there is none.",
+    },
+  },
+  required: ["safe", "feedback", "feedback_ar", "red_flag"],
+  additionalProperties: false,
+} as const;
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+const MODEL_OUTPUT = z.object({
+  safe: z.boolean(),
+  feedback: z.string(),
+  feedback_ar: z.string(),
+  red_flag: z.string(),
+});
 
-  try {
-    const { scenarioTitle, stepNumber, attackerMessage, userChoice, choiceType } = await req.json();
+const SYSTEM_PROMPT = `You are HARIS, a friendly cybersecurity coach for high school students aged 16-18.
+A student is role-playing a social engineering scenario and has just replied to an attacker.
+Judge their reply on its own merits and coach them on what to do instead.
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+How to respond:
+- Be direct and encouraging. Never patronising, never harsh.
+- Explain the reasoning behind the verdict in one or two sentences a 16-year-old can follow.
+- If the reply was unsafe, name the specific risk it created (money sent, credentials shared,
+  a channel handed over) rather than saying "be careful" in general terms.
+- If the reply was safe, say specifically what made it a good instinct, so the student can
+  repeat that reasoning next time.
+- red_flag describes what was wrong with the *attacker's* message, not the student's reply.
+  Leave it empty only when the attacker genuinely showed no warning sign.
 
-    const systemPrompt = `You are HARIS, a friendly cybersecurity coach for high school students aged 16-18. A student made a choice in a social engineering scenario. Give feedback in a direct, encouraging teen-friendly tone. Use the suggest_feedback tool to respond.`;
+${UNTRUSTED_CONTENT_RULES}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Scenario: "${scenarioTitle}", Step ${stepNumber}.\nAttacker said: "${attackerMessage}"\nStudent chose: "${userChoice}" (this is a ${choiceType} choice)\nGive feedback.` },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "suggest_feedback",
-              description: "Return scenario feedback",
-              parameters: {
-                type: "object",
-                properties: {
-                  safe: { type: "boolean", description: "Whether the choice was safe" },
-                  feedback: { type: "string", description: "Feedback in English, 1-2 sentences, teen-friendly" },
-                  feedback_ar: { type: "string", description: "Arabic translation of feedback" },
-                  red_flag: { type: "string", description: "The red flag to watch for (empty if choice was safe)" },
-                },
-                required: ["safe", "feedback", "feedback_ar", "red_flag"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "suggest_feedback" } },
-      }),
+Deno.serve(
+  createHandler(async ({ req, requestId, body }) => {
+    await enforceRateLimit(req, "scenario-feedback");
+
+    const { scenarioTitle, stepNumber, attackerMessage, userChoice } = parseRequest(
+      scenarioFeedbackRequest,
+      body,
+    );
+
+    const raw = await generateStructured({
+      system: SYSTEM_PROMPT,
+      user: [
+        `Scenario: ${scenarioTitle}`,
+        `Step: ${stepNumber}`,
+        "",
+        "What the attacker sent:",
+        wrapUntrusted("ATTACKER_MESSAGE", attackerMessage),
+        "",
+        "What the student replied:",
+        wrapUntrusted("STUDENT_REPLY", userChoice),
+      ].join("\n"),
+      schemaName: "suggest_feedback",
+      schema: FEEDBACK_SCHEMA as unknown as Record<string, unknown>,
+      maxTokens: 700,
     });
 
-    if (!response.ok) {
-      if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (response.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error("AI gateway error");
+    const parsed = MODEL_OUTPUT.safeParse(raw);
+    if (!parsed.success) {
+      console.error(`[${requestId}] model output failed validation:`, parsed.error.issues);
+      throw new UpstreamError("model output did not match the expected schema", 502, false);
     }
 
-    const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall?.function?.arguments) throw new Error("No tool call");
+    const { safe, feedback, feedback_ar, red_flag } = parsed.data;
 
-    return new Response(toolCall.function.arguments, {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return jsonResponse(req, 200, {
+      safe,
+      feedback: clampText(feedback.trim(), 600, "Take another look at who was asking for what."),
+      // The Arabic string is optional: an empty value renders as omitted rather
+      // than as an empty bordered box.
+      feedback_ar: clampText(feedback_ar.trim(), 600, ""),
+      red_flag: clampText(red_flag.trim(), 300, ""),
     });
-  } catch (e) {
-    console.error("scenario-feedback error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-});
+  }),
+);

@@ -1,12 +1,14 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Phone, PhoneOff, Flag, CheckCircle2, XCircle, ChevronRight, RotateCcw } from "lucide-react";
-import { voiceCalls, type VoiceCall, type CallLine } from "@/data/voiceCalls";
-import { supabase } from "@/integrations/supabase/client";
+import { voiceCalls, type VoiceCall } from "@/data/voiceCalls";
+import { errorMessage, invokeHarisFunction } from "@/integrations/supabase/functions";
 import { useXP } from "@/lib/xpContext";
+import { voiceDebriefSchema, type VoiceDebrief } from "@/types/analysis";
 
 const difficultyColor = {
   Beginner: "text-green-600 bg-green-50 border-green-200",
@@ -21,23 +23,79 @@ const VoiceLab = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [userFlags, setUserFlags] = useState<Set<number>>(new Set());
   const [isComplete, setIsComplete] = useState(false);
-  const [debrief, setDebrief] = useState<{ debrief: string; debrief_ar: string; top_tip: string; top_tip_ar: string } | null>(null);
+  const [debrief, setDebrief] = useState<VoiceDebrief | null>(null);
   const [speechSupported] = useState(() => typeof window !== "undefined" && "speechSynthesis" in window);
   const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
+  /**
+   * Flags live in a ref as well as state.
+   *
+   * `speakLine` schedules itself through `setTimeout` inside `utter.onend`, which
+   * captures the `speakLine` closure from the render in which the utterance was
+   * created. With flags in state, pressing FLAG mid-call produced a new
+   * `speakLine`, but the already-scheduled timer still called the old one — so
+   * every flag clicked after the first line was silently discarded from the
+   * final score, the XP bonus, and the AI debrief.
+   */
+  const userFlagsRef = useRef<Set<number>>(new Set());
+  const advanceTimerRef = useRef<number | null>(null);
+  const [isLoadingDebrief, setIsLoadingDebrief] = useState(false);
   const { awardXP } = useXP();
   const navigate = useNavigate();
+
+  const clearAdvanceTimer = useCallback(() => {
+    if (advanceTimerRef.current !== null) {
+      window.clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+  }, []);
+
+  const fetchDebrief = useCallback(async (call: VoiceCall) => {
+    setIsLoadingDebrief(true);
+    try {
+      const flags = userFlagsRef.current;
+      const redFlagLines = call.lines
+        .map((line, index) => ({ line, index }))
+        .filter(({ line }) => line.isRedFlag);
+      const totalFlags = redFlagLines.length;
+      const caught = redFlagLines.filter(({ index }) => flags.has(index)).length;
+
+      const result = await invokeHarisFunction(
+        "voice-debrief",
+        {
+          callTitle: call.title,
+          totalFlags,
+          caughtFlags: caught,
+          missedFlags: totalFlags - caught,
+          flagDetails: redFlagLines.map(({ line, index }) => ({
+            lineNumber: index + 1,
+            text: line.text,
+            isRedFlag: line.isRedFlag,
+            flagReason: line.flagReason,
+            userFlagged: flags.has(index),
+          })),
+        },
+        voiceDebriefSchema,
+      );
+
+      setDebrief(result);
+    } catch (error) {
+      // Previously swallowed entirely, so a failed debrief was invisible.
+      toast.error(errorMessage(error));
+    } finally {
+      setIsLoadingDebrief(false);
+    }
+  }, []);
 
   const speakLine = useCallback((call: VoiceCall, lineIndex: number) => {
     if (lineIndex >= call.lines.length) {
       setIsPlaying(false);
       setIsComplete(true);
-      // Award XP
-      const totalFlags = call.lines.filter((l) => l.isRedFlag).length;
-      const caught = call.lines.filter((l, i) => l.isRedFlag && userFlags.has(i)).length;
-      let xp = 40;
-      if (totalFlags > 0 && caught / totalFlags >= 0.75) xp += 20;
-      awardXP(xp);
-      fetchDebrief(call);
+
+      const flags = userFlagsRef.current;
+      const totalFlags = call.lines.filter((line) => line.isRedFlag).length;
+      const caught = call.lines.filter((line, i) => line.isRedFlag && flags.has(i)).length;
+      awardXP(caught > 0 && caught / totalFlags >= 0.75 ? 60 : 40);
+      void fetchDebrief(call);
       return;
     }
 
@@ -50,50 +108,37 @@ const VoiceLab = () => {
     utter.rate = 0.9;
     utter.onend = () => {
       setIsSpeaking(false);
-      setTimeout(() => speakLine(call, lineIndex + 1), 1200);
+      clearAdvanceTimer();
+      advanceTimerRef.current = window.setTimeout(() => speakLine(call, lineIndex + 1), 1200);
     };
     utter.onerror = () => {
       setIsSpeaking(false);
-      setTimeout(() => speakLine(call, lineIndex + 1), 500);
+      clearAdvanceTimer();
+      advanceTimerRef.current = window.setTimeout(() => speakLine(call, lineIndex + 1), 500);
     };
     utterRef.current = utter;
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utter);
-  }, [userFlags, awardXP]);
+  }, [awardXP, clearAdvanceTimer, fetchDebrief]);
 
-  const fetchDebrief = async (call: VoiceCall) => {
-    try {
-      const totalFlags = call.lines.filter((l) => l.isRedFlag).length;
-      const caught = call.lines.filter((l, i) => l.isRedFlag && userFlags.has(i)).length;
-      const missed = totalFlags - caught;
-
-      const { data } = await supabase.functions.invoke("voice-debrief", {
-        body: {
-          callTitle: call.title,
-          totalFlags,
-          caughtFlags: caught,
-          missedFlags: missed,
-          flagDetails: call.lines.map((l, i) => ({
-            text: l.text,
-            isRedFlag: l.isRedFlag,
-            flagReason: l.flagReason,
-            userFlagged: userFlags.has(i),
-          })),
-        },
-      });
-
-      if (data) setDebrief(data);
-    } catch {
-      // fallback
-    }
-  };
+  // Leaving the page mid-call used to leave the phone talking, because
+  // speechSynthesis was only cancelled by the Back button.
+  useEffect(() => {
+    return () => {
+      if (advanceTimerRef.current !== null) window.clearTimeout(advanceTimerRef.current);
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
 
   const handleStart = (call: VoiceCall) => {
+    clearAdvanceTimer();
+    window.speechSynthesis?.cancel();
     setSelected(call);
     setCurrentLine(0);
     setIsPlaying(false);
     setIsSpeaking(false);
     setUserFlags(new Set());
+    userFlagsRef.current = new Set();
     setIsComplete(false);
     setDebrief(null);
   };
@@ -105,17 +150,28 @@ const VoiceLab = () => {
   };
 
   const handleEndCall = () => {
-    window.speechSynthesis.cancel();
+    clearAdvanceTimer();
+    window.speechSynthesis?.cancel();
     setIsPlaying(false);
+    setIsSpeaking(false);
     setIsComplete(true);
     if (selected) {
-      awardXP(40);
-      fetchDebrief(selected);
+      // Was a flat 40 XP regardless of performance, which made hanging up
+      // immediately strictly better than playing well.
+      const flags = userFlagsRef.current;
+      const totalFlags = selected.lines.filter((line) => line.isRedFlag).length;
+      const caught = selected.lines.filter((line, i) => line.isRedFlag && flags.has(i)).length;
+      awardXP(caught > 0 && caught / totalFlags >= 0.75 ? 60 : 40);
+      void fetchDebrief(selected);
     }
   };
 
   const handleFlag = () => {
-    setUserFlags((prev) => new Set(prev).add(currentLine));
+    setUserFlags((prev) => {
+      const next = new Set(prev).add(currentLine);
+      userFlagsRef.current = next;
+      return next;
+    });
   };
 
   if (selected && isComplete) {
@@ -166,12 +222,17 @@ const VoiceLab = () => {
             })}
           </div>
 
-          {debrief && (
+          {isLoadingDebrief ? (
+            <div className="rounded-lg border border-border bg-card p-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              HARIS is writing your debrief...
+            </div>
+          ) : debrief ? (
             <div className="rounded-lg border border-border bg-card p-4 space-y-2">
               <p className="text-sm text-foreground">{debrief.debrief}</p>
               <p className="text-sm font-semibold text-primary">{debrief.top_tip}</p>
             </div>
-          )}
+          ) : null}
 
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => setSelected(null)} className="flex-1 gap-2">

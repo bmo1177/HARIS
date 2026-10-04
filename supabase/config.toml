@@ -1,1 +1,29 @@
 project_id = "fnucljasscadjhlzootl"
+
+# Edge function security posture.
+#
+# `verify_jwt = false` is a deliberate, documented decision rather than an
+# oversight. HARIS has no accounts and is meant to be usable by secondary-school
+# students with no sign-up step, so there is no JWT for the client to present.
+#
+# The functions are therefore protected by cost controls instead of identity:
+#
+#   * per-client fixed-window rate limiting, backed by the
+#     `rate_limit_buckets` table (see migrations/0001_rate_limit_buckets.sql)
+#   * request body caps and per-field length caps in _shared/schemas.ts
+#   * `LLM_MAX_TOKENS` and `LLM_TIMEOUT_MS` bounding cost and wall-clock time
+#   * server-side validation of every model response before it reaches a user
+#   * a CORS origin allowlist, which stops drive-by browser abuse
+#
+# Rate limiting is scoped to `x-forwarded-for`, so a determined attacker
+# rotating source addresses can still exceed it. If HARIS is ever used in a
+# setting where the AI budget matters more than frictionless access, set
+# `verify_jwt = true` below and put an auth flow in front of the app.
+[functions.analyze-message]
+verify_jwt = false
+
+[functions.scenario-feedback]
+verify_jwt = false
+
+[functions.voice-debrief]
+verify_jwt = false
