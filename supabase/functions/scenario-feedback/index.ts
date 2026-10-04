@@ -17,7 +17,10 @@ const FEEDBACK_SCHEMA = {
       type: "string",
       description: "1-2 sentences, direct and encouraging, addressed to the student",
     },
-    feedback_ar: { type: "string", description: "Arabic translation of the feedback" },
+    feedback_ar: {
+      type: "string",
+      description: "Arabic translation of the feedback",
+    },
     red_flag: {
       type: "string",
       description:
@@ -80,15 +83,26 @@ Deno.serve(
 
     const parsed = MODEL_OUTPUT.safeParse(raw);
     if (!parsed.success) {
-      console.error(`[${requestId}] model output failed validation:`, parsed.error.issues);
-      throw new UpstreamError("model output did not match the expected schema", 502, false);
+      console.error(
+        `[${requestId}] model output failed validation:`,
+        parsed.error.issues,
+      );
+      throw new UpstreamError(
+        "model output did not match the expected schema",
+        502,
+        false,
+      );
     }
 
     const { safe, feedback, feedback_ar, red_flag } = parsed.data;
 
     return jsonResponse(req, 200, {
       safe,
-      feedback: clampText(feedback.trim(), 600, "Take another look at who was asking for what."),
+      feedback: clampText(
+        feedback.trim(),
+        600,
+        "Take another look at who was asking for what.",
+      ),
       // The Arabic string is optional: an empty value renders as omitted rather
       // than as an empty bordered box.
       feedback_ar: clampText(feedback_ar.trim(), 600, ""),

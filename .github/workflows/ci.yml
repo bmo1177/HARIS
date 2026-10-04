@@ -71,3 +71,26 @@ jobs:
       # Allow-env is required because config.ts reads Deno.env at request time.
       - name: Test
         run: deno test --allow-env supabase/functions
+
+      # Harness self-test: verifies the dataset parses, the metrics compute, and
+      # the prompt-injection gate fires. Uses deterministic fixtures, so it needs
+      # no API key and makes no network calls.
+      - name: Evaluation harness (mock provider)
+        run: deno run --allow-env --allow-net eval/run.ts
+
+      # Real accuracy numbers. Skipped unless a key is configured, so a fork does
+      # not fail for lack of a secret.
+      - name: Evaluation harness (live)
+        if: ${{ secrets.LLM_API_KEY != '' }}
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+        run: deno run --allow-env --allow-net eval/run.ts --provider=live --json > eval-results.json
+
+      - uses: actions/upload-artifact@v4
+        if: always() && secrets.LLM_API_KEY != ''
+        with:
+          name: eval-results
+          path: eval-results.json
+          retention-days: 30

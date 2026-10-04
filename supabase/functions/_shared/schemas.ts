@@ -15,7 +15,10 @@ import { z } from "npm:zod@3.25.76";
 import { RequestError } from "./http.ts";
 
 /** Parses with `zod`, converting any failure into a safe 400. */
-export function parseRequest<T extends z.ZodTypeAny>(schema: T, body: unknown): z.infer<T> {
+export function parseRequest<T extends z.ZodTypeAny>(
+  schema: T,
+  body: unknown,
+): z.infer<T> {
   const result = schema.safeParse(body);
   if (result.success) return result.data;
 
@@ -78,9 +81,12 @@ export const voiceDebriefRequest = z
   .refine((value) => value.caughtFlags <= value.totalFlags, {
     message: "caughtFlags cannot exceed totalFlags",
   })
-  .refine((value) => value.caughtFlags + value.missedFlags === value.totalFlags, {
-    message: "caughtFlags and missedFlags must sum to totalFlags",
-  })
+  .refine(
+    (value) => value.caughtFlags + value.missedFlags === value.totalFlags,
+    {
+      message: "caughtFlags and missedFlags must sum to totalFlags",
+    },
+  )
   .refine(
     (value) =>
       value.flagDetails.filter((detail) => detail.isRedFlag && detail.userFlagged).length ===

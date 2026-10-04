@@ -14,7 +14,9 @@
     "test:deno": "deno test --allow-env --config supabase/functions/deno.json supabase/functions",
     "check:deno": "deno check supabase/functions/analyze-message/index.ts supabase/functions/scenario-feedback/index.ts supabase/functions/voice-debrief/index.ts && deno lint supabase/functions",
     "e2e": "playwright test",
-    "verify": "npm run typecheck && npm run lint && npm run test && npm run build"
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "eval": "deno run --allow-env --allow-net eval/run.ts",
+    "eval:live": "deno run --allow-env --allow-net eval/run.ts --provider=live"
   },
   "dependencies": {
     "@radix-ui/react-progress": "^1.1.16",

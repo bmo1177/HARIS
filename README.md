@@ -80,6 +80,8 @@ how to point at a different model provider.
 | `npm run check:deno` | Typecheck + lint the Deno edge functions |
 | `npm run test:deno` | Run the edge function tests |
 | `npm run verify` | typecheck → lint → test → build |
+| `npm run eval` | Evaluation harness, mock provider (no API key needed) |
+| `npm run eval:live` | Real accuracy numbers. Needs `LLM_API_KEY`. See [`eval/README.md`](eval/README.md). |
 
 ---
 
@@ -109,6 +111,7 @@ Shared edge-function code lives in `supabase/functions/_shared/`:
 | `prompt.ts` | Nonce fencing for untrusted content. |
 | `rateLimit.ts` | Per-client fixed-window quotas, minute and daily. |
 | `schemas.ts` | Request schemas with length caps and cross-field validation. |
+| `analysis.ts` | The message analysis itself — prompt, output schema, verification. Imported by both the HTTP handler and the eval harness, so what gets measured is what gets served. |
 
 ---
 
@@ -132,6 +135,10 @@ is in [`supabase/README.md`](supabase/README.md). In short:
   in front of the lesson is the wrong trade. That means rate limiting is a cost
   control, not an identity system — stated plainly rather than glossed over.
 - **Nothing is persisted.** Pasted messages are not stored or logged.
+- **Measured, not asserted.** [`eval/`](eval/) holds a labelled set and a harness
+  reporting false-positive rate on benign messages, recall on hostile ones, and
+  robustness to prompt injection. The false-positive number is the one that
+  matters: a tool that flags ordinary messages teaches students to ignore it.
 
 ---
 

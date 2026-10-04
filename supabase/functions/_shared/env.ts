@@ -78,13 +78,15 @@ export function getConfig(): AppConfig {
   if (cached) return cached;
 
   const origins = optional("ALLOWED_ORIGINS")
-    ? (optional("ALLOWED_ORIGINS") as string).split(",").map((o) => o.trim()).filter(Boolean)
+    ? (optional("ALLOWED_ORIGINS") as string).split(",").map((o) => o.trim())
+      .filter(Boolean)
     : DEFAULT_ORIGINS;
 
   cached = {
     llm: {
       apiKey: required("LLM_API_KEY"),
-      baseUrl: (optional("LLM_BASE_URL") ?? "https://openrouter.ai/api/v1").replace(/\/+$/, ""),
+      baseUrl: (optional("LLM_BASE_URL") ?? "https://openrouter.ai/api/v1")
+        .replace(/\/+$/, ""),
       model: optional("LLM_MODEL") ?? "google/gemini-3.5-flash",
       timeoutMs: positiveInt("LLM_TIMEOUT_MS", 20_000),
       maxTokens: positiveInt("LLM_MAX_TOKENS", 1_200),
