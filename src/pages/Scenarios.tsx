@@ -12,9 +12,9 @@ import { scenarioMaxReward, scenarioReward } from "@/lib/xp";
 import { scenarioFeedbackSchema, type ScenarioFeedback } from "@/types/analysis";
 
 const difficultyColor = {
-  Beginner: "text-green-600 bg-green-50 border-green-200",
-  Intermediate: "text-amber-600 bg-amber-50 border-amber-200",
-  Advanced: "text-red-600 bg-red-50 border-red-200",
+  Beginner: "text-success bg-success/10 border-success/30",
+  Intermediate: "text-warning bg-warning/10 border-warning/30",
+  Advanced: "text-destructive bg-destructive/10 border-destructive/30",
 };
 
 const Scenarios = () => {
@@ -191,7 +191,7 @@ const Scenarios = () => {
                         <p className="text-sm">{msg.text}</p>
                       </div>
                       {msg.feedbackData && (
-                        <div className={`rounded-lg p-3 border text-sm ${msg.feedbackData.safe ? "border-green-200 bg-green-50 text-green-800" : "border-destructive/20 bg-destructive/5 text-destructive"}`}>
+                        <div className={`rounded-lg p-3 border text-sm ${msg.feedbackData.safe ? "border-success/30 bg-success/10 text-success" : "border-destructive/20 bg-destructive/5 text-destructive"}`}>
                           {msg.feedbackData.feedback}
                         </div>
                       )}
@@ -283,23 +283,31 @@ const Scenarios = () => {
                 }
               }}
             >
-              <CardContent className="p-4 flex items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
+              {/* Stacks on narrow screens. Previously the XP badge and chevron
+                  were vertically centred against a description that wrapped to
+                  three lines, which tore a hole in the middle of the card. */}
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-semibold text-foreground">{s.title}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${difficultyColor[s.difficulty]}`}>
+                    <span
+                      className={`rounded-full border px-2 py-0.5 text-xs ${difficultyColor[s.difficulty]}`}
+                    >
                       {s.difficulty}
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">{s.description}</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-end">
                   {/* Derived from the same function that pays out, so the card
                       cannot advertise a number the game does not award. */}
                   <span className="text-xs font-semibold text-primary">
                     up to {scenarioMaxReward(s.steps.length)} XP
                   </span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                  <ChevronRight
+                    className="h-4 w-4 text-muted-foreground"
+                    aria-hidden="true"
+                  />
                 </div>
               </CardContent>
             </Card>

@@ -29,8 +29,21 @@ All colors MUST be HSL.
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 48.5%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Semantic status colours.
+       The app reports three outcomes everywhere — caught it, over-flagged it,
+       missed it — and they were hardcoded as light-mode palette classes
+       (bg-green-50, text-amber-600, ...). Those have no dark-mode counterpart,
+       so once the dark theme became reachable the result panels and the call
+       debrief rendered as bright slabs on a near-black background. Tokens mean
+       a state is defined once and works in both themes. */
+    --success: 142 72% 30.5%;
+    --success-foreground: 142 72% 96%;
+
+    --warning: 32 94% 35.5%;
+    --warning-foreground: 38 92% 96%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
@@ -77,8 +90,16 @@ All colors MUST be HSL.
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 57.5%;
+    --destructive-foreground: 0 0% 8.5%;
+
+    /* Lifted for a dark background; the light-theme values sit at roughly 3:1
+       against near-black and would be hard to read. */
+    --success: 142 70% 34.5%;
+    --success-foreground: 142 70% 96%;
+
+    --warning: 38 92% 37%;
+    --warning-foreground: 38 92% 96%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
@@ -101,5 +122,78 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    /* The app is bilingual; Arabic runs through the same elements. */
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Browser surfaces.
+     These ship with defaults that belong to no design system. They were left
+     unstyled, which is the clearest tell that a page was assembled rather than
+     designed. */
+
+  ::selection {
+    background-color: hsl(var(--primary) / 0.22);
+    color: hsl(var(--foreground));
+  }
+
+  :where(input, textarea, select, [contenteditable]):focus-visible {
+    caret-color: hsl(var(--primary));
+  }
+
+  html {
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  * {
+    scrollbar-width: thin;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 9999px;
+    border: 3px solid hsl(var(--background));
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* One consistent focus ring for anything not covered by a component. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Long pasted phone numbers, URLs and Arabic text must not blow out the
+     layout on a phone. */
+  p,
+  li,
+  dd {
+    overflow-wrap: break-word;
   }
 }
+
+/* Respect the OS setting. The count-up on the risk badge and every
+   `animate-fade-in` / `animate-scale-in` are decorative. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

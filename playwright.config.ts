@@ -3,10 +3,11 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Self-contained Playwright config.
  *
- * This previously imported `createLovableConfig` from
- * `lovable-agent-playwright-config`, a package that is in neither
- * `package.json` nor any lockfile, so `npx playwright test` failed immediately
- * with a module resolution error. There were also zero spec files.
+ * This previously delegated to a config factory from a UI-scaffolding package
+ * that was in neither `package.json` nor any lockfile, so `npx playwright test`
+ * failed immediately with a module resolution error. There were also zero spec
+ * files. Depending on an unrelated vendor's test config also meant the suite
+ * silently inherited settings nobody on this project chose.
  */
 export default defineConfig({
   testDir: "./e2e",

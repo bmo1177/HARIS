@@ -59,8 +59,8 @@ const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
               }
             />
           ) : (
-            <div className="rounded-xl border border-green-200 bg-green-50 p-5 animate-fade-in">
-              <p className="text-sm text-green-800">
+            <div className="rounded-xl border border-success/30 bg-success/10 p-5 animate-fade-in">
+              <p className="text-sm text-success">
                 <span className="font-semibold">Nothing to guess here.</span> This message showed
                 no attack indicators — noticing that is the skill. Try a message you suspect is
                 hostile and see what HARIS spots.

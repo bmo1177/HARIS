@@ -1,5 +1,7 @@
 import { Shield } from "lucide-react";
+import { Link } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import XPBar from "@/components/XPBar";
 import { useXP } from "@/lib/xpContext";
 
@@ -14,36 +16,58 @@ const Header = () => {
   const { state } = useXP();
 
   return (
-    <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-            <Shield className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div className="hidden sm:block">
-            <h1 className="text-lg font-bold text-foreground tracking-tight leading-none">
-              HARIS <span className="text-muted-foreground font-normal text-sm">هاريس</span>
-            </h1>
-          </div>
-        </div>
+    <header className="sticky top-0 z-50 border-b border-border bg-card/85 backdrop-blur-sm">
+      {/*
+        The nav moves to its own full-width row below `sm`.
 
-        <nav className="flex gap-0.5">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              className="px-3 py-1.5 text-sm rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              activeClassName="text-foreground bg-accent"
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+        Previously brand, four nav links and the XP bar sat on one flex row at
+        every width. At 390px that produced a 533px-wide header inside a 390px
+        viewport, so the entire page scrolled sideways, "0 XP" was clipped off
+        the right edge and "Voice Lab" wrapped onto two lines.
+      */}
+      <div className="container mx-auto flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+        <Link
+          to="/"
+          className="flex shrink-0 items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <span className="flex w-9 h-9 items-center justify-center rounded-xl bg-primary">
+            <Shield className="w-5 h-5 text-primary-foreground" aria-hidden="true" />
+          </span>
+          {/* Visible at every width now that the nav has its own row. Previously
+              `hidden sm:block`, which left mobile with no wordmark and no
+              <h1> on any page. */}
+          <h1 className="text-lg font-bold leading-none tracking-tight text-foreground">
+            HARIS{" "}
+            <span dir="rtl" lang="ar" className="text-sm font-normal text-muted-foreground">
+              هاريس
+            </span>
+          </h1>
+        </Link>
 
-        <div className="shrink-0">
+        <div className="ml-auto flex shrink-0 items-center gap-2 sm:ml-0">
+          <ThemeToggle />
           <XPBar state={state} />
         </div>
+
+        <nav
+          aria-label="Main"
+          className="order-last w-full border-t border-border/60 pt-2 sm:order-none sm:w-auto sm:border-0 sm:pt-0"
+        >
+          <ul className="flex items-center justify-between sm:justify-start sm:gap-0.5">
+            {NAV_ITEMS.map((item) => (
+              <li key={item.to} className="flex-1 sm:flex-none">
+                <NavLink
+                  to={item.to}
+                  end={item.to === "/"}
+                  className="block w-full whitespace-nowrap rounded-lg px-2 py-2 text-center text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3 sm:py-1.5 sm:text-sm"
+                  activeClassName="bg-accent font-medium text-foreground"
+                >
+                  {item.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
     </header>
   );

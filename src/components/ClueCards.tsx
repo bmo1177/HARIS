@@ -8,9 +8,9 @@ interface ClueCardsProps {
 }
 
 const CLUE_CONFIG = [
-  { label: "Clue 1", border: "border-l-blue-500", bg: "bg-blue-50/50 dark:bg-blue-950/20" },
-  { label: "Clue 2", border: "border-l-amber-500", bg: "bg-amber-50/50 dark:bg-amber-950/20" },
-  { label: "Clue 3", border: "border-l-red-500", bg: "bg-red-50/50 dark:bg-red-950/20" },
+  { label: "Clue 1", dot: "bg-blue-500", tint: "bg-blue-50/60 dark:bg-blue-950/25" },
+  { label: "Clue 2", dot: "bg-amber-500", tint: "bg-amber-50/60 dark:bg-amber-950/25" },
+  { label: "Clue 3", dot: "bg-red-500", tint: "bg-red-50/60 dark:bg-red-950/25" },
 ];
 
 const ALL_REVEALED = CLUE_CONFIG.length;
@@ -48,13 +48,21 @@ const ClueCards = ({ clues, onAllRevealed }: ClueCardsProps) => {
           return (
             <div
               key={i}
-              className={`border-l-4 ${cfg.border} ${cfg.bg} rounded-r-lg p-4 animate-fade-in`}
+              className={`flex gap-3 rounded-lg border border-border/70 ${cfg.tint} p-4 animate-fade-in`}
               style={{ animationDuration: "0.5s", animationFillMode: "both" }}
             >
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {cfg.label}
-              </span>
-              <p className="text-sm text-foreground mt-1">{clue}</p>
+              {/* A dot rather than a thick coloured side border, which reads as a
+                  generic AI-generated callout. */}
+              <span
+                className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${cfg.dot}`}
+                aria-hidden="true"
+              />
+              <div className="min-w-0">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {cfg.label}
+                </span>
+                <p className="mt-1 text-sm text-foreground">{clue}</p>
+              </div>
             </div>
           );
         })}

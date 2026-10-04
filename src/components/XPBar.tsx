@@ -18,17 +18,21 @@ const XPBar = ({ state }: XPBarProps) => {
     : Math.min(100, Math.max(0, ((state.xp - state.currentLevelXP) / range) * 100));
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5 sm:gap-2">
       <Shield className="w-4 h-4 text-primary" aria-hidden="true" />
       <span className="text-xs font-semibold text-foreground whitespace-nowrap">
         Lv {state.level}
       </span>
       <Progress
         value={progress}
-        className="w-20 h-2"
-        aria-label={atMax ? `Level ${state.level}, maximum level reached` : `Level ${state.level} progress`}
+        className="w-12 h-2 sm:w-20"
+        aria-label={
+          atMax
+            ? `Level ${state.level}, maximum level reached`
+            : `Level ${state.level} progress`
+        }
       />
-      <span className="text-xs text-muted-foreground whitespace-nowrap">
+      <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
         {state.xp} XP
       </span>
     </div>

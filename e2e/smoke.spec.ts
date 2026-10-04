@@ -41,7 +41,80 @@ test.describe("navigation", () => {
 
   test("an unknown route renders the not-found page", async ({ page }) => {
     await page.goto("/definitely-not-a-route");
-    await expect(page.getByText(/not found/i)).toBeVisible();
+
+    // Previously the 404 was a bare flex box with no header and no <main>, and
+    // its only link was a raw <a href="/"> that discarded client-side routing.
+    await expect(page.getByRole("heading", { name: "This page does not exist" })).toBeVisible();
+    await expect(page.getByText("404")).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
+    await expect(page.getByRole("main")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Analyse a message" })).toHaveAttribute(
+      "href",
+      "/",
+    );
+  });
+
+  test("no route scrolls horizontally on a narrow phone", async ({ page }) => {
+    // The header put brand + four nav links + the XP bar on one flex row at
+    // every width, producing a 533px header inside a 390px viewport: the whole
+    // page scrolled sideways and "0 XP" was clipped off the right edge.
+    for (const width of [320, 360, 390, 414]) {
+      await page.setViewportSize({ width, height: 800 });
+      for (const path of ["/", "/scenarios", "/voice-lab", "/about", "/nope"]) {
+        await page.goto(path);
+        const { scrollWidth, innerWidth } = await page.evaluate(() => ({
+          scrollWidth: document.documentElement.scrollWidth,
+          innerWidth: window.innerWidth,
+        }));
+        expect(scrollWidth, `${path} overflows at ${width}px`).toBeLessThanOrEqual(
+          innerWidth + 1,
+        );
+      }
+    }
+  });
+
+  test("the brand wordmark is visible on mobile", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.goto("/");
+    // Was `hidden sm:block`, so mobile had no wordmark and no <h1> anywhere.
+    await expect(page.getByRole("heading", { level: 1, name: /HARIS/ })).toBeVisible();
+  });
+});
+
+test.describe("theming", () => {
+  test("the toggle switches between light and dark", async ({ page }) => {
+    await page.goto("/");
+
+    const html = page.locator("html");
+    const initial = await html.getAttribute("class");
+
+    await page.getByRole("button", { name: /Switch to (light|dark) theme/ }).click();
+    await expect(html).not.toHaveClass(initial ?? "");
+
+    await page.getByRole("button", { name: /Switch to (light|dark) theme/ }).click();
+    await expect(html).toHaveClass(initial ?? "");
+  });
+
+  test("the dark theme actually repaints the page", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /Switch to dark theme/ }).click();
+
+    // `next-themes` was installed and the whole `.dark` palette was written, but
+    // no ThemeProvider was ever rendered, so the class was never applied.
+    const background = await page.evaluate(
+      () => getComputedStyle(document.body).backgroundColor,
+    );
+    const [r, g, b] = (background.match(/\d+/g) ?? []).map(Number);
+    expect(r + g + b).toBeLessThan(200);
+  });
+
+  test("the theme-color meta tag follows the theme", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /Switch to dark theme/ }).click();
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
+      "content",
+      "#0b1220",
+    );
   });
 });
 

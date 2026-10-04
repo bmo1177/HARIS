@@ -83,12 +83,12 @@ const GuessAttack = ({ attackType, onCorrectGuess }: GuessAttackProps) => {
 
   if (status === "correct") {
     return (
-      <div className={`rounded-xl border-2 border-green-200 bg-green-50 p-5 animate-fade-in transition-colors duration-300 ${flashCorrect ? "ring-4 ring-green-400/50" : ""}`}>
+      <div className={`rounded-xl border-2 border-success/30 bg-success/10 p-5 animate-fade-in transition-colors duration-300 ${flashCorrect ? "ring-4 ring-green-400/50" : ""}`}>
         <div className="flex items-start gap-3">
-          <CheckCircle2 className="w-6 h-6 text-green-600 mt-0.5 shrink-0 animate-scale-in" aria-hidden="true" />
+          <CheckCircle2 className="w-6 h-6 text-success mt-0.5 shrink-0 animate-scale-in" aria-hidden="true" />
           {/* The full explanation is not repeated here: it is rendered in the
               English/Arabic tabs directly below, and it used to appear twice. */}
-          <p className="font-semibold text-green-800">
+          <p className="font-semibold text-success">
             Correct! It's <span className="underline">{attackType}</span>
           </p>
         </div>
@@ -98,14 +98,14 @@ const GuessAttack = ({ attackType, onCorrectGuess }: GuessAttackProps) => {
 
   if (status === "revealed") {
     return (
-      <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-5 animate-fade-in">
+      <div className="rounded-xl border-2 border-warning/30 bg-warning/10 p-5 animate-fade-in">
         <div className="flex items-start gap-3">
-          <HelpCircle className="w-6 h-6 text-amber-600 mt-0.5 shrink-0" aria-hidden="true" />
+          <HelpCircle className="w-6 h-6 text-warning mt-0.5 shrink-0" aria-hidden="true" />
           <div>
-            <p className="font-semibold text-amber-800">
+            <p className="font-semibold text-warning">
               It's <span className="underline">{attackType}</span>! No worries — now you know it.
             </p>
-            <p className="text-sm text-amber-700 mt-1">
+            <p className="text-sm text-warning mt-1">
               The full explanation is below.
             </p>
           </div>
@@ -118,7 +118,7 @@ const GuessAttack = ({ attackType, onCorrectGuess }: GuessAttackProps) => {
     <div className="space-y-3 animate-fade-in">
       <h3 className="text-lg font-semibold text-foreground">What type of attack is this? Take a guess!</h3>
       {attempts > 0 && status === "guessing" && (
-        <div className="flex items-center gap-2 text-sm text-amber-600" role="status">
+        <div className="flex items-center gap-2 text-sm text-warning" role="status">
           <XCircle className="w-4 h-4" aria-hidden="true" />
           Not quite — try again ({MAX_ATTEMPTS - attempts}{" "}
           {MAX_ATTEMPTS - attempts === 1 ? "attempt" : "attempts"} left)

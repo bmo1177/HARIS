@@ -108,20 +108,27 @@ const MessageAnalyzer = ({ onAnalyze, isLoading }: MessageAnalyzerProps) => {
         )}
       </Button>
 
-      <div className="grid grid-cols-3 gap-3 text-center">
+      {/* The steps carry real sequence information, so the numbering stays. A
+          connector line between them was tried and removed: it is geometrically
+          fragile across a responsive grid and read as a strikethrough across
+          the number badges. */}
+      <ol className="grid grid-cols-3 gap-3 text-center">
         {[
           { step: "1", text: "Paste the message" },
           { step: "2", text: "HARIS scores the threat" },
-          { step: "3", text: "Discover what it is through clues" },
+          { step: "3", text: "Discover it through clues" },
         ].map((s) => (
-          <div key={s.step} className="p-3 rounded-lg border border-border bg-card">
-            <div className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center mx-auto mb-1">
+          <li
+            key={s.step}
+            className="flex min-h-[4.5rem] flex-col items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-3"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
               {s.step}
-            </div>
-            <p className="text-xs text-muted-foreground">{s.text}</p>
-          </div>
+            </span>
+            <span className="text-xs leading-snug text-muted-foreground">{s.text}</span>
+          </li>
         ))}
-      </div>
+      </ol>
     </div>
   );
 };

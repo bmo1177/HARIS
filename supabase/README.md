@@ -67,10 +67,10 @@ LLM_MODEL=llama-3.3-70b-versatile
    - Structured output is requested via provider-enforced JSON Schema rather
      than a forced tool call, so the model is not obliged to emit anything.
 3. **Information disclosure.** The functions used to return `e.message` verbatim,
-   leaking `LOVABLE_API_KEY is not configured` and raw upstream `fetch` errors to
-   anonymous callers. *Mitigation:* a fixed client-safe message per error code;
-   real causes are logged server-side alongside a request id returned to the
-   client for correlation.
+   leaking the names of unconfigured environment variables and raw upstream
+   `fetch` errors to anonymous callers. *Mitigation:* a fixed client-safe message
+   per error code; real causes are logged server-side alongside a request id
+   returned to the client for correlation.
 4. **Data fabrication.** `voice-debrief` interpolated an arbitrary untyped JSON
    blob from the caller into the prompt and trusted the reported scores, so a
    crafted request could get the model to narrate "caught 12 of 12, flawless

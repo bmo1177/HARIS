@@ -1,10 +1,10 @@
 /**
  * Provider-agnostic structured-output client.
  *
- * Replaces the hardcoded `https://ai.gateway.lovable.dev` + `LOVABLE_API_KEY`
- * pair, which made the backend impossible to run or deploy without a Lovable
- * account. The new configuration is plain OpenAI-compatible HTTP, so any of
- * OpenRouter, OpenAI, Together, Groq, a self-hosted vLLM, or Ollama works by
+ * The backend used to be pinned to a single proprietary AI gateway and its
+ * bespoke API key, which made it impossible to run or deploy without an account
+ * on that one service. Configuration is now plain OpenAI-compatible HTTP, so any
+ * of OpenRouter, OpenAI, Together, Groq, a self-hosted vLLM, or Ollama works by
  * changing three environment variables.
  *
  * Deliberate change: the old code used `tool_choice` forced to a single
