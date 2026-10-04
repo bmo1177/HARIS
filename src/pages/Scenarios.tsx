@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle, Target, ChevronRight, RotateCcw, ArrowRight } from "lucide-react";
 import { scenarios, type Scenario } from "@/data/scenarios";
-import { errorMessage, invokeHarisFunction } from "@/integrations/supabase/functions";
+import { errorMessage } from "@/lib/api";
+import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/xpContext";
 import { scenarioMaxReward, scenarioReward } from "@/lib/xp";
 import { scenarioFeedbackSchema, type ScenarioFeedback } from "@/types/analysis";
@@ -23,11 +23,11 @@ const Scenarios = () => {
   const [safeCount, setSafeCount] = useState(0);
   const [redFlags, setRedFlags] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<ScenarioFeedback | null>(null);
-  const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
   const [chatHistory, setChatHistory] = useState<{ role: "attacker" | "user"; text: string; feedbackData?: ScenarioFeedback }[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const { awardXP } = useXP();
   const navigate = useNavigate();
+  const feedbackRequest = useHarisMutation("scenario-feedback", scenarioFeedbackSchema);
 
   const handleStart = (scenario: Scenario) => {
     setSelected(scenario);
@@ -37,6 +37,7 @@ const Scenarios = () => {
     setFeedback(null);
     setChatHistory([]);
     setIsComplete(false);
+    feedbackRequest.reset();
   };
 
   const handleChoice = async (choiceIndex: number) => {
@@ -50,23 +51,18 @@ const Scenarios = () => {
       { role: "user", text: choice.label },
     ]);
 
-    setIsLoadingFeedback(true);
     setFeedback(null);
 
     try {
       // `choiceType` is deliberately not sent. It used to be passed straight to
       // the model as "this is a safe choice", so the AI was narrating an answer
       // the client already held rather than judging the reply.
-      const fb = await invokeHarisFunction(
-        "scenario-feedback",
-        {
-          scenarioTitle: selected.title,
-          stepNumber: stepIndex + 1,
-          attackerMessage: step.attacker,
-          userChoice: choice.label,
-        },
-        scenarioFeedbackSchema,
-      );
+      const fb = await feedbackRequest.mutateAsync({
+        scenarioTitle: selected.title,
+        stepNumber: stepIndex + 1,
+        attackerMessage: step.attacker,
+        userChoice: choice.label,
+      });
 
       setFeedback(fb);
 
@@ -85,15 +81,18 @@ const Scenarios = () => {
 
       const fallbackFb: ScenarioFeedback = {
         safe: choice.type === "safe",
-        feedback: choice.type === "safe" ? "Smart move! You spotted the red flag." : choice.type === "unsafe" ? "Be careful — this could put your personal information at risk." : "Not the worst choice, but there's a safer option.",
+        feedback:
+          choice.type === "safe"
+            ? "Smart move! You spotted the red flag."
+            : choice.type === "unsafe"
+              ? "Be careful — this could put your personal information at risk."
+              : "Not the worst choice, but there's a safer option.",
         feedback_ar: "",
         red_flag: choice.type !== "safe" ? "Watch for this pattern in real life." : "",
       };
       setFeedback(fallbackFb);
       if (choice.type === "safe") setSafeCount((c) => c + 1);
       if (fallbackFb.red_flag) setRedFlags((prev) => [...prev, fallbackFb.red_flag]);
-    } finally {
-      setIsLoadingFeedback(false);
     }
   };
 
@@ -161,9 +160,7 @@ const Scenarios = () => {
   if (selected && !isComplete) {
     const step = selected.steps[stepIndex];
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-6 max-w-2xl space-y-4">
+      <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>Back</Button>
             <span className="text-sm text-muted-foreground font-medium">Step {stepIndex + 1} of {selected.steps.length}</span>
@@ -214,7 +211,7 @@ const Scenarios = () => {
             )}
           </div>
 
-          {isLoadingFeedback ? (
+          {feedbackRequest.isPending ? (
             <div className="text-center py-4">
               <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -242,26 +239,18 @@ const Scenarios = () => {
               ))}
             </div>
           )}
-        </main>
       </div>
     );
   }
 
   if (isComplete) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-8 max-w-2xl">
-          {renderScoreScreen()}
-        </main>
-      </div>
+      <div className="py-2">{renderScoreScreen()}</div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
+    <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Scenario Simulator</h2>
           <p className="text-muted-foreground mt-1">Live through a real attack. Make smart choices. Earn XP.</p>
@@ -313,7 +302,6 @@ const Scenarios = () => {
             </Card>
           ))}
         </div>
-      </main>
     </div>
   );
 };

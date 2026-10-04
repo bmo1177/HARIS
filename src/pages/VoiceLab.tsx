@@ -1,12 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Phone, PhoneOff, Flag, CheckCircle2, XCircle, ChevronRight, RotateCcw } from "lucide-react";
 import { voiceCalls, type VoiceCall } from "@/data/voiceCalls";
-import { errorMessage, invokeHarisFunction } from "@/integrations/supabase/functions";
+import { errorMessage } from "@/lib/api";
+import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/xpContext";
 import { voiceCallReward } from "@/lib/xp";
 import { voiceDebriefSchema, type VoiceDebrief } from "@/types/analysis";
@@ -39,9 +39,9 @@ const VoiceLab = () => {
    */
   const userFlagsRef = useRef<Set<number>>(new Set());
   const advanceTimerRef = useRef<number | null>(null);
-  const [isLoadingDebrief, setIsLoadingDebrief] = useState(false);
   const { awardXP } = useXP();
   const navigate = useNavigate();
+  const debriefRequest = useHarisMutation("voice-debrief", voiceDebriefSchema);
 
   const clearAdvanceTimer = useCallback(() => {
     if (advanceTimerRef.current !== null) {
@@ -50,9 +50,8 @@ const VoiceLab = () => {
     }
   }, []);
 
-  const fetchDebrief = useCallback(async (call: VoiceCall) => {
-    setIsLoadingDebrief(true);
-    try {
+  const fetchDebrief = useCallback(
+    async (call: VoiceCall) => {
       const flags = userFlagsRef.current;
       const redFlagLines = call.lines
         .map((line, index) => ({ line, index }))
@@ -60,9 +59,8 @@ const VoiceLab = () => {
       const totalFlags = redFlagLines.length;
       const caught = redFlagLines.filter(({ index }) => flags.has(index)).length;
 
-      const result = await invokeHarisFunction(
-        "voice-debrief",
-        {
+      try {
+        const result = await debriefRequest.mutateAsync({
           callTitle: call.title,
           totalFlags,
           caughtFlags: caught,
@@ -74,18 +72,16 @@ const VoiceLab = () => {
             flagReason: line.flagReason,
             userFlagged: flags.has(index),
           })),
-        },
-        voiceDebriefSchema,
-      );
+        });
 
-      setDebrief(result);
-    } catch (error) {
-      // Previously swallowed entirely, so a failed debrief was invisible.
-      toast.error(errorMessage(error));
-    } finally {
-      setIsLoadingDebrief(false);
-    }
-  }, []);
+        setDebrief(result);
+      } catch (error) {
+        // Previously swallowed entirely, so a failed debrief was invisible.
+        toast.error(errorMessage(error));
+      }
+    },
+    [debriefRequest],
+  );
 
   const speakLine = useCallback((call: VoiceCall, lineIndex: number) => {
     if (lineIndex >= call.lines.length) {
@@ -142,6 +138,7 @@ const VoiceLab = () => {
     userFlagsRef.current = new Set();
     setIsComplete(false);
     setDebrief(null);
+    debriefRequest.reset();
   };
 
   const handlePlay = () => {
@@ -180,9 +177,7 @@ const VoiceLab = () => {
     const caught = selected.lines.filter((l, i) => l.isRedFlag && userFlags.has(i)).length;
 
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
+      <div className="space-y-6">
           <h2 className="text-xl font-bold text-foreground">Call Debrief</h2>
           <p className="text-muted-foreground">You caught {caught} of {totalFlags} red flags.</p>
 
@@ -223,7 +218,7 @@ const VoiceLab = () => {
             })}
           </div>
 
-          {isLoadingDebrief ? (
+          {debriefRequest.isPending ? (
             <div className="rounded-lg border border-border bg-card p-4 flex items-center gap-2 text-sm text-muted-foreground">
               <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               HARIS is writing your debrief...
@@ -243,7 +238,6 @@ const VoiceLab = () => {
               Go to Scenarios <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
-        </main>
       </div>
     );
   }
@@ -251,9 +245,7 @@ const VoiceLab = () => {
   if (selected) {
     const line = selected.lines[currentLine];
     return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Header />
-        <main className="container mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-6">
+      <div className="flex h-full flex-col">
           <div className="my-auto space-y-6">
             <div className="flex items-center justify-between">
               <Button
@@ -360,15 +352,12 @@ const VoiceLab = () => {
               )}
             </div>
           </div>
-        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
+    <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Voice Lab</h2>
           <p className="text-muted-foreground mt-1">Hear a real scam call. Flag the red flags in real time. Train your ear.</p>
@@ -415,7 +404,6 @@ const VoiceLab = () => {
             </Card>
           ))}
         </div>
-      </main>
     </div>
   );
 };

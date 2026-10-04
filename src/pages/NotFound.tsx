@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { Compass } from "lucide-react";
-import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 
 const NotFound = () => {
@@ -8,9 +7,7 @@ const NotFound = () => {
   // the app, and a raw `<a href="/">` that threw away client-side routing with a
   // full page reload.
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto flex min-h-[70vh] flex-col items-center justify-center gap-4 px-4 py-16 text-center">
+    <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 py-8 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
           <Compass className="h-7 w-7 text-primary" aria-hidden="true" />
         </div>
@@ -34,7 +31,6 @@ const NotFound = () => {
             <Link to="/scenarios">Browse scenarios</Link>
           </Button>
         </div>
-      </main>
     </div>
   );
 };

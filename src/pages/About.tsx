@@ -1,4 +1,3 @@
-import Header from "@/components/Header";
 import {
   BookOpen,
   Eye,
@@ -46,9 +45,7 @@ const PILLARS = [
 
 const About = () => {
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-4 py-8 max-w-2xl space-y-8">
+    <div className="space-y-8">
         <h2 className="text-2xl font-bold text-foreground">About HARIS</h2>
 
         <div className="rounded-lg border border-border bg-card p-5">
@@ -134,7 +131,6 @@ const About = () => {
                 <p>By {supervisors} — {institution}</p>
               </div>
         */}
-      </main>
     </div>
   );
 };

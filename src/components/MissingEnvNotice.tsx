@@ -1,4 +1,4 @@
-import { missingSupabaseEnv } from "@/integrations/supabase/client";
+import { missingEnv } from "@/lib/env";
 
 /**
  * Shown instead of the app when the Supabase environment variables are absent.
@@ -19,7 +19,7 @@ const MissingEnvNotice = () => (
       </div>
 
       <ul className="space-y-1 font-mono text-sm text-destructive">
-        {missingSupabaseEnv.map((name) => (
+        {missingEnv.map((name) => (
           <li key={name}>{name}</li>
         ))}
       </ul>
