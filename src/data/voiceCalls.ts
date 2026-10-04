@@ -10,6 +10,12 @@ export interface VoiceCall {
   title: string;
   titleAr: string;
   description: string;
+  descriptionAr: string;
+  /**
+   * Why this line is a red flag, in both languages. `flagReason` was English-only
+   * and shown to Arabic readers verbatim in the debrief.
+   */
+  flagReasonAr?: string;
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   callerName: string;
   callerNumber: string;
@@ -22,6 +28,7 @@ export const voiceCalls: VoiceCall[] = [
     title: "You Won a Free Phone",
     titleAr: "ربحت هاتفاً مجانياً",
     description: "A caller says you won a prize from a competition.",
+    descriptionAr: "مكالمة من شخص يقول إنك ربحت جائزة في مسابقة.",
     difficulty: "Beginner",
     callerName: "Samsung Qatar Promo",
     callerNumber: "+974 5544-XXXX",
@@ -41,6 +48,7 @@ export const voiceCalls: VoiceCall[] = [
     title: "School IT Department",
     titleAr: "قسم تقنية المعلومات بالمدرسة",
     description: "Someone claiming to be your school IT support calls about your account.",
+    descriptionAr: "شخص يدّعي أنه الدعم الفني في مدرستك يتصل معك بخصوص حسابك.",
     difficulty: "Intermediate",
     callerName: "School IT Support",
     callerNumber: "+974 4444-XXXX",
@@ -60,6 +68,7 @@ export const voiceCalls: VoiceCall[] = [
     title: "Your Friend Needs Help",
     titleAr: "صديقك يحتاج مساعدة",
     description: "Someone using a friend's name asks you for urgent help.",
+    descriptionAr: "شخص يستخدم اسم صديق ويطلب مساعدتك العاجلة.",
     difficulty: "Advanced",
     callerName: "محمد (Mohammed)",
     callerNumber: "Unknown Number",

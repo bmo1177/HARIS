@@ -8,6 +8,7 @@ import { voiceCalls, type VoiceCall } from "@/data/voiceCalls";
 import { errorMessage } from "@/lib/api";
 import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/xpContext";
+import { useI18n } from "@/lib/i18n";
 import { voiceCallReward } from "@/lib/xp";
 import { voiceDebriefSchema, type VoiceDebrief } from "@/types/analysis";
 
@@ -41,6 +42,7 @@ const VoiceLab = () => {
   const advanceTimerRef = useRef<number | null>(null);
   const { awardXP } = useXP();
   const navigate = useNavigate();
+  const { t, locale, formatNumber } = useI18n();
   const debriefRequest = useHarisMutation("voice-debrief", voiceDebriefSchema);
 
   const clearAdvanceTimer = useCallback(() => {
@@ -178,8 +180,13 @@ const VoiceLab = () => {
 
     return (
       <div className="space-y-6">
-          <h2 className="text-xl font-bold text-foreground">Call Debrief</h2>
-          <p className="text-muted-foreground">You caught {caught} of {totalFlags} red flags.</p>
+          <h2 className="text-xl font-bold text-foreground">{t("voice.debrief")}</h2>
+          <p className="text-muted-foreground">
+            {t("voice.caught", {
+              caught: formatNumber(caught),
+              total: formatNumber(totalFlags),
+            })}
+          </p>
 
           <div className="space-y-2">
             {selected.lines.map((line, i) => {
@@ -205,11 +212,15 @@ const VoiceLab = () => {
                       <p className="text-foreground">{line.text}</p>
                       {line.isRedFlag && (
                         <p className={`text-xs mt-1 ${flagged ? "text-success" : "text-destructive"}`}>
-                          {flagged ? "You caught this!" : `Missed: ${line.flagReason}`}
+                          {flagged
+                            ? t("scenarios.caught")
+                            : t("scenarios.missed", { reason: line.flagReason ?? "" })}
                         </p>
                       )}
                       {!line.isRedFlag && flagged && (
-                        <p className="text-xs mt-1 text-warning">Good instinct, but this one was safe.</p>
+                        <p className="mt-1 text-xs text-warning">
+                          {t("scenarios.overFlagged")}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -221,21 +232,30 @@ const VoiceLab = () => {
           {debriefRequest.isPending ? (
             <div className="rounded-lg border border-border bg-card p-4 flex items-center gap-2 text-sm text-muted-foreground">
               <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              HARIS is writing your debrief...
+              {t("voice.writingDebrief")}
             </div>
           ) : debrief ? (
-            <div className="rounded-lg border border-border bg-card p-4 space-y-2">
-              <p className="text-sm text-foreground">{debrief.debrief}</p>
-              <p className="text-sm font-semibold text-primary">{debrief.top_tip}</p>
+            /* `debrief_ar` and `top_tip_ar` were generated on every completed
+               call and never rendered. */
+            <div
+              dir={locale === "ar" ? "rtl" : "ltr"}
+              className="space-y-2 rounded-lg border border-border bg-card p-4"
+            >
+              <p className="text-sm text-foreground">
+                {locale === "ar" && debrief.debrief_ar ? debrief.debrief_ar : debrief.debrief}
+              </p>
+              <p className="text-sm font-semibold text-primary">
+                {locale === "ar" && debrief.top_tip_ar ? debrief.top_tip_ar : debrief.top_tip}
+              </p>
             </div>
           ) : null}
 
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => setSelected(null)} className="flex-1 gap-2">
-              <RotateCcw className="w-4 h-4" /> Try another call
+              <RotateCcw className="w-4 h-4" aria-hidden="true" /> {t("voice.tryAnother")}
             </Button>
             <Button onClick={() => navigate("/scenarios")} className="flex-1 gap-2">
-              Go to Scenarios <ChevronRight className="w-4 h-4" />
+              {t("voice.goToScenarios")} <ChevronRight className="w-4 h-4" aria-hidden="true" />
             </Button>
           </div>
       </div>
@@ -260,7 +280,10 @@ const VoiceLab = () => {
               </Button>
               {isPlaying && (
                 <span className="text-sm font-medium text-muted-foreground">
-                  Line {currentLine + 1} of {selected.lines.length}
+                  {t("voice.line", {
+                    current: formatNumber(currentLine + 1),
+                    total: formatNumber(selected.lines.length),
+                  })}
                 </span>
               )}
             </div>
@@ -278,7 +301,7 @@ const VoiceLab = () => {
                 !speechSupported ? (
                   <div className="space-y-2">
                     <p className="text-sm text-destructive">
-                      This browser cannot read the call aloud. Chrome, Edge or Safari support it.
+                      {t("voice.unsupported")}
                     </p>
                     {/* The lesson still works: the transcript is the exercise, the
                         audio is only a convenience. */}
@@ -294,7 +317,7 @@ const VoiceLab = () => {
                       until the debrief.
                     </p>
                     <Button onClick={handlePlay} className="gap-2">
-                      <Phone className="h-4 w-4" aria-hidden="true" /> Answer Call
+                      <Phone className="h-4 w-4" aria-hidden="true" /> {t("voice.answer")}
                     </Button>
                   </div>
                 )
@@ -313,6 +336,8 @@ const VoiceLab = () => {
                       className={`text-foreground text-center ${isSpeaking ? "animate-pulse" : ""}`}
                       dir={line?.lang.startsWith("ar") ? "rtl" : "ltr"}
                       lang={line?.lang}
+                      /* The transcript is the lesson; audio is a convenience, so
+                         an Arabic line stays readable whatever the speech voice. */
                     >
                       {line?.text}
                     </p>
@@ -321,7 +346,7 @@ const VoiceLab = () => {
                   <div
                     className="mx-auto h-1 w-40 overflow-hidden rounded-full bg-muted"
                     role="progressbar"
-                    aria-label="Call progress"
+                    aria-label={t("voice.callProgress")}
                     aria-valuemin={1}
                     aria-valuemax={selected.lines.length}
                     aria-valuenow={currentLine + 1}
@@ -342,10 +367,10 @@ const VoiceLab = () => {
                       className="gap-2"
                     >
                       <Flag className="h-4 w-4" aria-hidden="true" />
-                      {userFlags.has(currentLine) ? "Flagged" : "FLAG — Suspicious!"}
+                      {userFlags.has(currentLine) ? t("voice.flagged") : t("voice.flag")}
                     </Button>
                     <Button variant="outline" onClick={handleEndCall} className="gap-2">
-                      <PhoneOff className="h-4 w-4" aria-hidden="true" /> End Call
+                      <PhoneOff className="h-4 w-4" aria-hidden="true" /> {t("voice.endCall")}
                     </Button>
                   </div>
                 </>
@@ -359,8 +384,8 @@ const VoiceLab = () => {
   return (
     <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Voice Lab</h2>
-          <p className="text-muted-foreground mt-1">Hear a real scam call. Flag the red flags in real time. Train your ear.</p>
+          <h2 className="text-2xl font-bold text-foreground">{t("voice.title")}</h2>
+          <p className="mt-1 text-muted-foreground">{t("voice.subtitle")}</p>
         </div>
 
         <div className="grid gap-3">
@@ -369,7 +394,7 @@ const VoiceLab = () => {
               key={call.id}
               role="button"
               tabIndex={0}
-              aria-label={`${call.title}. ${call.difficulty}.`}
+              aria-label={`${locale === "ar" ? call.titleAr : call.title}. ${t(`difficulty.${call.difficulty}` as const)}.`}
               className="cursor-pointer hover:shadow-md transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               onClick={() => handleStart(call)}
               onKeyDown={(event) => {
@@ -382,18 +407,24 @@ const VoiceLab = () => {
               <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <div className="min-w-0 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-foreground">{call.title}</h3>
+                    <h3 className="font-semibold text-foreground">
+                      {locale === "ar" ? call.titleAr : call.title}
+                    </h3>
                     <span
                       className={`rounded-full border px-2 py-0.5 text-xs ${difficultyColor[call.difficulty]}`}
                     >
-                      {call.difficulty}
+                      {t(`difficulty.${call.difficulty}` as const)}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground">{call.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {locale === "ar" ? call.descriptionAr : call.description}
+                  </p>
                 </div>
                 <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-end">
                   <span className="text-xs font-semibold text-primary">
-                    {call.lines.filter((line) => line.isRedFlag).length} red flags
+                    {t("voice.redFlagCount", {
+                      count: formatNumber(call.lines.filter((line) => line.isRedFlag).length),
+                    })}
                   </span>
                   <ChevronRight
                     className="h-4 w-4 text-muted-foreground"

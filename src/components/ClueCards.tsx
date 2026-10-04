@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface ClueCardsProps {
   clues: [string, string, string];
@@ -8,15 +9,16 @@ interface ClueCardsProps {
 }
 
 const CLUE_CONFIG = [
-  { label: "Clue 1", dot: "bg-blue-500", tint: "bg-blue-50/60 dark:bg-blue-950/25" },
-  { label: "Clue 2", dot: "bg-amber-500", tint: "bg-amber-50/60 dark:bg-amber-950/25" },
-  { label: "Clue 3", dot: "bg-red-500", tint: "bg-red-50/60 dark:bg-red-950/25" },
+  { dot: "bg-blue-500", tint: "bg-blue-50/60 dark:bg-blue-950/25" },
+  { dot: "bg-amber-500", tint: "bg-amber-50/60 dark:bg-amber-950/25" },
+  { dot: "bg-red-500", tint: "bg-red-50/60 dark:bg-red-950/25" },
 ];
 
 const ALL_REVEALED = CLUE_CONFIG.length;
 
 const ClueCards = ({ clues, onAllRevealed }: ClueCardsProps) => {
   const [revealed, setRevealed] = useState(1); // Start with only clue 1 visible
+  const { t } = useI18n();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notifiedRef = useRef(false);
 
@@ -59,7 +61,7 @@ const ClueCards = ({ clues, onAllRevealed }: ClueCardsProps) => {
               />
               <div className="min-w-0">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {cfg.label}
+                  {t("results.clue", { n: i + 1 })}
                 </span>
                 <p className="mt-1 text-sm text-foreground">{clue}</p>
               </div>
@@ -70,7 +72,7 @@ const ClueCards = ({ clues, onAllRevealed }: ClueCardsProps) => {
       {revealed < ALL_REVEALED && (
         <Button variant="outline" size="sm" onClick={revealNext} className="gap-2">
           <Eye className="w-4 h-4" aria-hidden="true" />
-          Reveal clue {revealed + 1}
+          {t("results.revealClue", { n: revealed + 1 })}
         </Button>
       )}
     </div>

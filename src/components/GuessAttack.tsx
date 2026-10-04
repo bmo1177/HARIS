@@ -2,9 +2,17 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CheckCircle2, XCircle, HelpCircle } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface GuessAttackProps {
+  /** The attack type in English. Used for matching the student's guess. */
   attackType: string;
+  /**
+   * The attack type in the reader's language, shown in the result panel. This
+   * field has existed on every model response since the app was first written
+   * and was never rendered.
+   */
+  attackTypeLocalized: string;
   onCorrectGuess?: (attempt: number) => void;
 }
 
@@ -59,11 +67,12 @@ export function isGuessCorrect(guess: string, answer: string): boolean {
   return guessWords.length > 0 && guessWords.every(matches);
 }
 
-const GuessAttack = ({ attackType, onCorrectGuess }: GuessAttackProps) => {
+const GuessAttack = ({ attackType, attackTypeLocalized, onCorrectGuess }: GuessAttackProps) => {
   const [guess, setGuess] = useState("");
   const [attempts, setAttempts] = useState(0);
   const [status, setStatus] = useState<"guessing" | "correct" | "revealed">("guessing");
   const [flashCorrect, setFlashCorrect] = useState(false);
+  const { t } = useI18n();
 
   const checkGuess = () => {
     const newAttempts = attempts + 1;
@@ -89,7 +98,8 @@ const GuessAttack = ({ attackType, onCorrectGuess }: GuessAttackProps) => {
           {/* The full explanation is not repeated here: it is rendered in the
               English/Arabic tabs directly below, and it used to appear twice. */}
           <p className="font-semibold text-success">
-            Correct! It's <span className="underline">{attackType}</span>
+            {t("guess.correct", { type: "" }).trim()}{" "}
+            <span className="underline">{attackTypeLocalized}</span>
           </p>
         </div>
       </div>
@@ -103,11 +113,9 @@ const GuessAttack = ({ attackType, onCorrectGuess }: GuessAttackProps) => {
           <HelpCircle className="w-6 h-6 text-warning mt-0.5 shrink-0" aria-hidden="true" />
           <div>
             <p className="font-semibold text-warning">
-              It's <span className="underline">{attackType}</span>! No worries — now you know it.
+              <span className="underline">{attackTypeLocalized}</span> — {t("guess.explanationBelow")}
             </p>
-            <p className="text-sm text-warning mt-1">
-              The full explanation is below.
-            </p>
+
           </div>
         </div>
       </div>
@@ -116,27 +124,30 @@ const GuessAttack = ({ attackType, onCorrectGuess }: GuessAttackProps) => {
 
   return (
     <div className="space-y-3 animate-fade-in">
-      <h3 className="text-lg font-semibold text-foreground">What type of attack is this? Take a guess!</h3>
+      <h3 className="text-lg font-semibold text-foreground">{t("guess.title")}</h3>
       {attempts > 0 && status === "guessing" && (
         <div className="flex items-center gap-2 text-sm text-warning" role="status">
           <XCircle className="w-4 h-4" aria-hidden="true" />
-          Not quite — try again ({MAX_ATTEMPTS - attempts}{" "}
-          {MAX_ATTEMPTS - attempts === 1 ? "attempt" : "attempts"} left)
+          {t("guess.retry", {
+            count: MAX_ATTEMPTS - attempts,
+            unit:
+              MAX_ATTEMPTS - attempts === 1 ? t("guess.attempt") : t("guess.attempts"),
+          })}
         </div>
       )}
       <div className="flex gap-2">
         <Input
           value={guess}
           onChange={(e) => setGuess(e.target.value)}
-          placeholder="What type of attack is this?"
-          aria-label="Your guess at the attack type"
+          placeholder={t("guess.placeholder")}
+          aria-label={t("guess.label")}
           maxLength={60}
           onKeyDown={(e) => {
             if (e.key === "Enter" && guess.trim()) checkGuess();
           }}
         />
         <Button onClick={checkGuess} disabled={!guess.trim()}>
-          Submit
+          {t("guess.submit")}
         </Button>
       </div>
     </div>

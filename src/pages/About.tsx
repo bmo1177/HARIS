@@ -12,44 +12,47 @@ import {
   Users,
 } from "lucide-react";
 import { scenarios } from "@/data/scenarios";
+import { useI18n } from "@/lib/i18n";
+import type { MessageKey } from "@/locales/en";
 import { voiceCalls } from "@/data/voiceCalls";
 
-const THREAT_TYPES = [
-  { name: "Phishing", icon: ShieldAlert },
-  { name: "Vishing", icon: Phone },
-  { name: "Smishing", icon: MessageSquare },
-  { name: "Fake Giveaways", icon: Gift },
-  { name: "Gaming Scams", icon: Gamepad2 },
-  { name: "Social Engineering", icon: Users },
-  { name: "Stranger Danger", icon: Eye },
-  { name: "Safe Messages", icon: ShieldCheck },
+const THREAT_TYPES: ReadonlyArray<{ name: string; key: MessageKey; icon: typeof Shield }> = [
+  { name: "Phishing", key: "threat.phishing", icon: ShieldAlert },
+  { name: "Vishing", key: "threat.vishing", icon: Phone },
+  { name: "Smishing", key: "threat.smishing", icon: MessageSquare },
+  { name: "Fake Giveaways", key: "threat.fakeGiveaways", icon: Gift },
+  { name: "Gaming Scams", key: "threat.gamingScams", icon: Gamepad2 },
+  { name: "Social Engineering", key: "threat.socialEngineering", icon: Users },
+  { name: "Stranger Danger", key: "threat.strangerDanger", icon: Eye },
+  { name: "Safe Messages", key: "threat.safeMessages", icon: ShieldCheck },
 ];
 
 const PILLARS = [
   {
     icon: Shield,
-    title: "Message Analyzer",
-    desc: "Paste any suspicious message and discover through clues what kind of attack it is.",
+    titleKey: "about.analyzerTitle",
+    descKey: "about.analyzerDesc",
   },
   {
     icon: Target,
-    title: "Scenario Simulator",
-    desc: "Live through realistic attack scenarios. Make choices. Learn from every decision.",
+    titleKey: "about.scenariosTitle",
+    descKey: "about.scenariosDesc",
   },
   {
     icon: Phone,
-    title: "Voice Lab",
-    desc: "Hear vishing calls in Arabic and English. Flag red flags in real time. Train your ear.",
+    titleKey: "about.voiceTitle",
+    descKey: "about.voiceDesc",
   },
-];
+] as const;
 
 const About = () => {
+  const { t } = useI18n();
   return (
     <div className="space-y-8">
-        <h2 className="text-2xl font-bold text-foreground">About HARIS</h2>
+        <h2 className="text-2xl font-bold text-foreground">{t("about.title")}</h2>
 
         <div className="rounded-lg border border-border bg-card p-5">
-          <h3 className="font-semibold text-foreground mb-2">Built for students</h3>
+          <h3 className="mb-2 font-semibold text-foreground">{t("about.builtFor")}</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
             HARIS is a cybersecurity awareness platform designed for high school students
             (K11–K12). In a world where teenagers face online threats daily — through social
@@ -59,11 +62,11 @@ const About = () => {
         </div>
 
         <div>
-          <h3 className="text-lg font-bold text-foreground mb-3">Three ways to learn</h3>
+          <h3 className="mb-3 text-lg font-bold text-foreground">{t("about.threeWays")}</h3>
           <div className="space-y-3">
             {PILLARS.map((item) => (
               <div
-                key={item.title}
+                key={item.titleKey}
                 className="flex items-start gap-3 p-4 rounded-lg border border-border bg-card"
               >
                 <item.icon
@@ -71,21 +74,21 @@ const About = () => {
                   aria-hidden="true"
                 />
                 <div>
-                  <p className="font-medium text-foreground text-sm">{item.title}</p>
-                  <p className="text-sm text-muted-foreground">{item.desc}</p>
+                  <p className="text-sm font-medium text-foreground">{t(item.titleKey)}</p>
+                  <p className="text-sm text-muted-foreground">{t(item.descKey)}</p>
                 </div>
               </div>
             ))}
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            {scenarios.length} scenarios and {voiceCalls.length} voice calls available today.
+            {t("scenarios.available", { count: scenarios.length, calls: voiceCalls.length })}
           </p>
         </div>
 
         <div>
           <h3 className="text-lg font-bold text-foreground mb-2">
             <BookOpen className="w-5 h-5 inline mr-2" aria-hidden="true" />
-            How it teaches
+            {t("about.howItTeaches")}
           </h3>
           <div className="rounded-lg border border-border bg-card p-5 space-y-3">
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -103,7 +106,7 @@ const About = () => {
         </div>
 
         <div>
-          <h3 className="text-lg font-bold text-foreground mb-3">Supported threat types</h3>
+          <h3 className="mb-3 text-lg font-bold text-foreground">{t("about.threatTypes")}</h3>
           <ul className="grid grid-cols-2 sm:grid-cols-4 gap-2 list-none p-0 m-0">
             {THREAT_TYPES.map((threat) => (
               <li
@@ -111,7 +114,7 @@ const About = () => {
                 className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-card text-sm text-foreground"
               >
                 <threat.icon className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
-                {threat.name}
+                {t(threat.key)}
               </li>
             ))}
           </ul>

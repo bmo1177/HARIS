@@ -6,6 +6,7 @@ import RiskBadge from "./RiskBadge";
 import ClueCards from "./ClueCards";
 import GuessAttack from "./GuessAttack";
 import { useXP } from "@/lib/xpContext";
+import { useI18n } from "@/lib/i18n";
 import { REWARDS } from "@/lib/xp";
 import type { AnalysisResult } from "@/types/analysis";
 
@@ -17,6 +18,7 @@ interface AnalysisResultsProps {
 const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
   const [showGuess, setShowGuess] = useState(false);
   const { awardXP } = useXP();
+  const { t, locale } = useI18n();
 
   const handleAllCluesRevealed = () => {
     awardXP(REWARDS.allCluesRevealed);
@@ -31,15 +33,13 @@ const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
           <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
           <p className="text-sm font-medium text-destructive">
-            Do not click any links in this message!
+            {t("results.doNotClick")}
           </p>
         </div>
       )}
 
       <div>
-        <h3 className="text-sm font-semibold text-foreground mb-3">
-          Why HARIS flagged this — <span dir="rtl" lang="ar">اكتشف السبب</span>
-        </h3>
+        <h3 className="mb-3 text-sm font-semibold text-foreground">{t("results.whyFlagged")}</h3>
         <ClueCards
           clues={[result.clue_1, result.clue_2, result.clue_3]}
           onAllRevealed={handleAllCluesRevealed}
@@ -52,6 +52,7 @@ const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
           {result.is_threat ? (
             <GuessAttack
               attackType={result.attack_type}
+              attackTypeLocalized={locale === "ar" ? result.attack_type_ar : result.attack_type}
               onCorrectGuess={(attempt) =>
                 awardXP(
                   attempt === 1 ? REWARDS.correctGuessFirstTry : REWARDS.correctGuessRetry,
@@ -59,12 +60,8 @@ const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
               }
             />
           ) : (
-            <div className="rounded-xl border border-success/30 bg-success/10 p-5 animate-fade-in">
-              <p className="text-sm text-success">
-                <span className="font-semibold">Nothing to guess here.</span> This message showed
-                no attack indicators — noticing that is the skill. Try a message you suspect is
-                hostile and see what HARIS spots.
-              </p>
+            <div className="animate-fade-in rounded-xl border border-success/30 bg-success/10 p-5">
+              <p className="text-sm text-success">{t("guess.nothingToGuess")}</p>
             </div>
           )}
         </div>
@@ -72,22 +69,26 @@ const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
 
       <Tabs defaultValue="en" className="mt-6">
         <TabsList>
-          <TabsTrigger value="en">English</TabsTrigger>
-          <TabsTrigger value="ar">العربية</TabsTrigger>
+          <TabsTrigger value="en">{t("results.english")}</TabsTrigger>
+          <TabsTrigger value="ar">{t("results.arabic")}</TabsTrigger>
         </TabsList>
         <TabsContent value="en" className="rounded-lg border border-border bg-card p-4 mt-3">
           <p className="text-sm text-foreground leading-relaxed">{result.explanation}</p>
         </TabsContent>
         <TabsContent value="ar" className="rounded-lg border border-border bg-card p-4 mt-3">
-          <p className="text-sm text-foreground leading-relaxed" dir="rtl" lang="ar">
+          <p
+            className="text-sm leading-relaxed text-foreground"
+            dir="rtl"
+            lang="ar"
+          >
             {result.explanation_ar}
           </p>
         </TabsContent>
       </Tabs>
 
       <Button variant="outline" onClick={onReset} className="w-full gap-2">
-        <RotateCcw className="w-4 h-4" />
-        Analyze another message
+        <RotateCcw className="w-4 h-4" aria-hidden="true" />
+        {t("results.analyzeAnother")}
       </Button>
     </div>
   );
