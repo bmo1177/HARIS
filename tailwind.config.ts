@@ -6,14 +6,35 @@ export default {
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {
-    container: {
-      center: true,
-      padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
+    // Instrument typography. A tighter scale than the shadcn default, with
+    // explicitly stepped weights, because the app teaches through prose as well
+    // as through interaction and long-form readability outranks trendiness.
+    fontFamily: {
+      sans: [
+        "IBM Plex Sans Variable",
+        "IBM Plex Sans Arabic",
+        "ui-sans-serif",
+        "system-ui",
+        "-apple-system",
+        "Segoe UI",
+        "sans-serif",
+      ],
+      mono: ["IBM Plex Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
     },
     extend: {
+      fontSize: {
+        // Data display: the risk score. Tight tracking so large numerals read as
+        // an instrument readout rather than a headline.
+        display: ["3.5rem", { lineHeight: "1", letterSpacing: "-0.03em", fontWeight: "600" }],
+        title: ["1.75rem", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "600" }],
+      },
+      container: {
+        center: true,
+        padding: "1.5rem",
+        screens: {
+          "2xl": "1200px",
+        },
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

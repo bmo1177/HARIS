@@ -47,9 +47,10 @@ const Index = () => {
             <p className="text-muted-foreground">
               {t("analyzer.subtitle")}
             </p>
-            <p className="text-sm text-muted-foreground" dir="rtl" lang="ar">
-              {t("analyzer.tagline")}
-            </p>
+            {/* Direction now comes from the active locale on <html>. Hardcoding
+                `dir="rtl"` here made the English string render with its trailing
+                period on the wrong side. */}
+            <p className="text-sm text-muted-foreground">{t("analyzer.tagline")}</p>
           </div>
         )}
 

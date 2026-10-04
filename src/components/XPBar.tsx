@@ -21,20 +21,20 @@ const XPBar = ({ state }: XPBarProps) => {
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2">
-      <Shield className="w-4 h-4 text-primary" aria-hidden="true" />
-      <span className="text-xs font-semibold text-foreground whitespace-nowrap">
+      <Shield className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+      <span className="whitespace-nowrap font-mono text-xs tabular-nums text-foreground">
         {t("xp.level", { level: formatNumber(state.level) })}
       </span>
       <Progress
         value={progress}
-        className="w-12 h-2 sm:w-20"
+        className="h-1.5 w-12 sm:w-20"
         aria-label={
           atMax
             ? t("xp.maxLevel", { level: formatNumber(state.level) })
             : t("xp.progress", { level: formatNumber(state.level) })
         }
       />
-      <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
+      <span className="whitespace-nowrap font-mono text-xs tabular-nums text-muted-foreground">
         {t("xp.total", { xp: formatNumber(state.xp) })}
       </span>
     </div>

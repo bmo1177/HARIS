@@ -111,9 +111,12 @@ test.describe("theming", () => {
   test("the theme-color meta tag follows the theme", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: /Switch to dark theme/ }).click();
+    // Matches `--background` in the dark token block. The test caught this value
+    // drifting when the palette was redesigned, which is the point of asserting
+    // it rather than trusting the two to stay in sync.
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
       "content",
-      "#0b1220",
+      "#0c1018",
     );
   });
 });

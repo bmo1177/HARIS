@@ -89,6 +89,29 @@ how to point at a different model provider.
 
 ---
 
+## Design
+
+The visual system is an **instrument**, not a consumer security app — see
+[`PRODUCT.md`](PRODUCT.md) for the reasoning and the audience it is tuned for.
+
+- **Dark-first, both themes first-class.** Near-black blue surfaces, a single
+  cyan accent, and hairline borders instead of floating shadows.
+- **Colour means status, never decoration.** Green / amber / red only ever mean
+  safe / suspicious / dangerous. Every value was solved numerically against the
+  surface it sits on; all 20 text and fill combinations clear 4.5:1 in both
+  themes.
+- **IBM Plex across Latin, Arabic and mono**, self-hosted via `@fontsource`.
+  One superfamily is what makes the bilingual case work — Plex Sans Arabic is
+  designed to sit beside Plex Sans rather than being an unrelated face. No
+  third-party font request, which matters for both school networks and privacy.
+  Only 2 files load for an English visitor; Arabic weights load on demand.
+- **Monospace means data** — measurements, counts, scores, identifiers. Never as
+  decoration. That line is the difference between an instrument and a hacker
+  aesthetic.
+- The risk score is presented as a readout: tabular monospace figures over a
+  segmented scale with its thresholds marked, so the value is legible rather than
+  impressionistic.
+
 ## Architecture
 
 ```
