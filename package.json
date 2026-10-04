@@ -1,16 +1,20 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "haris",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "build": "tsc -b --noEmit && vite build",
     "lint": "eslint .",
+    "typecheck": "tsc -b --noEmit",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:deno": "deno test --allow-env --config supabase/functions/deno.json supabase/functions",
+    "check:deno": "deno check supabase/functions/analyze-message/index.ts supabase/functions/scenario-feedback/index.ts supabase/functions/voice-debrief/index.ts && deno lint supabase/functions",
+    "e2e": "playwright test",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -87,5 +91,24 @@
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
     "vitest": "^3.2.4"
-  }
+  },
+  "description": "Cybersecurity awareness training for high school students: message analysis, attack scenarios, and vishing practice.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bmo1177/HARIS.git"
+  },
+  "homepage": "https://github.com/bmo1177/HARIS#readme",
+  "bugs": {
+    "url": "https://github.com/bmo1177/HARIS/issues"
+  },
+  "keywords": [
+    "cybersecurity",
+    "security-awareness",
+    "education",
+    "phishing",
+    "scam",
+    "supabase"
+  ],
+  "packageManager": "npm@11.6.2"
 }

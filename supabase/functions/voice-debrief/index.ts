@@ -2,7 +2,7 @@ import { z } from "npm:zod@3.25.76";
 import { UpstreamError } from "../_shared/env.ts";
 import { generateStructured } from "../_shared/llm.ts";
 import { createHandler, jsonResponse } from "../_shared/http.ts";
-import { UNTRUSTED_CONTENT_RULES, clampText, wrapUntrusted } from "../_shared/prompt.ts";
+import { clampText, UNTRUSTED_CONTENT_RULES, wrapUntrusted } from "../_shared/prompt.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { parseRequest, voiceDebriefRequest } from "../_shared/schemas.ts";
 

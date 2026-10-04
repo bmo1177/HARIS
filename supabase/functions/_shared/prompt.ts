@@ -23,9 +23,15 @@
  *     before it reaches a user (see `llm.ts` and each function's `parse`).
  */
 
-/** C0 control characters, except tab and newline, carry no meaning for a human. */
-// deno-lint-ignore no-control-regex -- stripping control characters is the point
-// eslint-disable-next-line no-control-regex -- same
+/**
+ * C0 control characters, except tab and newline, carry no meaning for a human.
+ *
+ * Stripping them is the entire point of this pattern, so `no-control-regex` is
+ * switched off in `deno.json` and `eslint.config.js` rather than suppressed
+ * inline — inline suppressions for two linters on adjacent lines proved fragile
+ * against `deno fmt`.
+ */
+// eslint-disable-next-line no-control-regex
 const CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 
 /**

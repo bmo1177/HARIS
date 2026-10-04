@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield, AlertTriangle, Target, ChevronRight, RotateCcw, ArrowRight } from "lucide-react";
+import { AlertTriangle, Target, ChevronRight, RotateCcw, ArrowRight } from "lucide-react";
 import { scenarios, type Scenario } from "@/data/scenarios";
 import { errorMessage, invokeHarisFunction } from "@/integrations/supabase/functions";
 import { useXP } from "@/lib/xpContext";
