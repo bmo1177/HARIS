@@ -8,6 +8,7 @@ import { Shield, AlertTriangle, Target, ChevronRight, RotateCcw, ArrowRight } fr
 import { scenarios, type Scenario } from "@/data/scenarios";
 import { errorMessage, invokeHarisFunction } from "@/integrations/supabase/functions";
 import { useXP } from "@/lib/xpContext";
+import { scenarioMaxReward, scenarioReward } from "@/lib/xp";
 import { scenarioFeedbackSchema, type ScenarioFeedback } from "@/types/analysis";
 
 const difficultyColor = {
@@ -100,11 +101,7 @@ const Scenarios = () => {
     if (!selected) return;
     if (stepIndex + 1 >= selected.steps.length) {
       setIsComplete(true);
-      let xp = 10;
-      if (safeCount === 4) xp = 75;
-      else if (safeCount === 3) xp = 50;
-      else if (safeCount === 2) xp = 25;
-      awardXP(xp);
+      awardXP(scenarioReward(safeCount, selected.steps.length));
     } else {
       setStepIndex((i) => i + 1);
       setFeedback(null);
@@ -112,20 +109,27 @@ const Scenarios = () => {
   };
 
   const renderScoreScreen = () => {
+    if (!selected) return null;
+    const total = selected.steps.length;
+    const score = total > 0 ? safeCount / total : 0;
+
     let message = "";
-    if (safeCount === 4) message = "Perfect score! You are a human firewall.";
-    else if (safeCount === 3) message = "Strong instincts! One slip — review what you missed.";
-    else if (safeCount === 2) message = "Getting there. Scammers almost had you twice.";
+    if (score === 1) message = "Perfect score! You are a human firewall.";
+    else if (score >= 0.75) message = "Strong instincts! One slip — review what you missed.";
+    else if (score >= 0.5) message = "Getting there. Scammers almost had you.";
     else message = "This scenario would have fooled you — but not anymore.";
 
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="text-center space-y-2">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-            <Target className="w-8 h-8 text-primary" />
+            <Target className="w-8 h-8 text-primary" aria-hidden="true" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground">{safeCount}/4 Safe Choices</h2>
+          <h2 className="text-2xl font-bold text-foreground">{safeCount}/{total} Safe Choices</h2>
           <p className="text-muted-foreground">{message}</p>
+          <p className="text-sm font-semibold text-primary">
+            +{scenarioReward(safeCount, total)} XP
+          </p>
         </div>
 
         {redFlags.length > 0 && (
@@ -265,10 +269,23 @@ const Scenarios = () => {
 
         <div className="grid gap-3">
           {scenarios.map((s) => (
-            <Card key={s.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStart(s)}>
-              <CardContent className="p-4 flex items-center justify-between">
+            <Card
+              key={s.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`${s.title}. ${s.difficulty}. Up to ${scenarioMaxReward(s.steps.length)} XP.`}
+              className="cursor-pointer hover:shadow-md transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              onClick={() => handleStart(s)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  handleStart(s);
+                }
+              }}
+            >
+              <CardContent className="p-4 flex items-center justify-between gap-3">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-foreground">{s.title}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full border ${difficultyColor[s.difficulty]}`}>
                       {s.difficulty}
@@ -277,8 +294,12 @@ const Scenarios = () => {
                   <p className="text-sm text-muted-foreground">{s.description}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs font-semibold text-primary">{s.xp} XP</span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  {/* Derived from the same function that pays out, so the card
+                      cannot advertise a number the game does not award. */}
+                  <span className="text-xs font-semibold text-primary">
+                    up to {scenarioMaxReward(s.steps.length)} XP
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                 </div>
               </CardContent>
             </Card>

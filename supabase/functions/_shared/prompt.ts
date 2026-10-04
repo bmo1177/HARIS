@@ -25,6 +25,7 @@
 
 /** C0 control characters, except tab and newline, carry no meaning for a human. */
 // deno-lint-ignore no-control-regex -- stripping control characters is the point
+// eslint-disable-next-line no-control-regex -- same
 const CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 
 /**

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 
@@ -13,21 +13,34 @@ const CLUE_CONFIG = [
   { label: "Clue 3", border: "border-l-red-500", bg: "bg-red-50/50 dark:bg-red-950/20" },
 ];
 
+const ALL_REVEALED = CLUE_CONFIG.length;
+
 const ClueCards = ({ clues, onAllRevealed }: ClueCardsProps) => {
   const [revealed, setRevealed] = useState(1); // Start with only clue 1 visible
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notifiedRef = useRef(false);
+
+  // The reveal delay was previously a bare setTimeout that was never cleared, so
+  // navigating away mid-reveal still fired the callback.
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const revealNext = () => {
     const next = revealed + 1;
     setRevealed(next);
-    if (next >= 3) {
+
+    if (next >= ALL_REVEALED && !notifiedRef.current) {
+      notifiedRef.current = true;
       // Small delay so the last clue animates in before showing the guess input
-      setTimeout(() => onAllRevealed(), 600);
+      timerRef.current = setTimeout(onAllRevealed, 600);
     }
   };
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-foreground">🔍 Why HARIS flagged this</h3>
       <div className="space-y-3">
         {clues.map((clue, i) => {
           if (i >= revealed) return null;
@@ -36,7 +49,7 @@ const ClueCards = ({ clues, onAllRevealed }: ClueCardsProps) => {
             <div
               key={i}
               className={`border-l-4 ${cfg.border} ${cfg.bg} rounded-r-lg p-4 animate-fade-in`}
-              style={{ animationDuration: "0.5s", animationFillMode: "both", animationDelay: i === 0 ? "0ms" : "0ms" }}
+              style={{ animationDuration: "0.5s", animationFillMode: "both" }}
             >
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {cfg.label}
@@ -46,9 +59,9 @@ const ClueCards = ({ clues, onAllRevealed }: ClueCardsProps) => {
           );
         })}
       </div>
-      {revealed < 3 && (
+      {revealed < ALL_REVEALED && (
         <Button variant="outline" size="sm" onClick={revealNext} className="gap-2">
-          <Eye className="w-4 h-4" />
+          <Eye className="w-4 h-4" aria-hidden="true" />
           Reveal clue {revealed + 1}
         </Button>
       )}

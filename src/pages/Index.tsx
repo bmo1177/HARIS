@@ -5,6 +5,7 @@ import MessageAnalyzer from "@/components/MessageAnalyzer";
 import AnalysisResults from "@/components/AnalysisResults";
 import { errorMessage, invokeHarisFunction } from "@/integrations/supabase/functions";
 import { useXP } from "@/lib/xpContext";
+import { REWARDS } from "@/lib/xp";
 import { analysisResultSchema, type AnalysisResult } from "@/types/analysis";
 
 const Index = () => {
@@ -24,7 +25,7 @@ const Index = () => {
       );
 
       setResult(analysis);
-      awardXP(10); // +10 XP for completing analysis
+      awardXP(REWARDS.analysis);
     } catch (error) {
       toast.error(errorMessage(error));
     } finally {

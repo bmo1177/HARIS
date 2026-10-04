@@ -8,6 +8,7 @@ import { Phone, PhoneOff, Flag, CheckCircle2, XCircle, ChevronRight, RotateCcw }
 import { voiceCalls, type VoiceCall } from "@/data/voiceCalls";
 import { errorMessage, invokeHarisFunction } from "@/integrations/supabase/functions";
 import { useXP } from "@/lib/xpContext";
+import { voiceCallReward } from "@/lib/xp";
 import { voiceDebriefSchema, type VoiceDebrief } from "@/types/analysis";
 
 const difficultyColor = {
@@ -94,7 +95,7 @@ const VoiceLab = () => {
       const flags = userFlagsRef.current;
       const totalFlags = call.lines.filter((line) => line.isRedFlag).length;
       const caught = call.lines.filter((line, i) => line.isRedFlag && flags.has(i)).length;
-      awardXP(caught > 0 && caught / totalFlags >= 0.75 ? 60 : 40);
+      awardXP(voiceCallReward(caught, totalFlags));
       void fetchDebrief(call);
       return;
     }
@@ -161,7 +162,7 @@ const VoiceLab = () => {
       const flags = userFlagsRef.current;
       const totalFlags = selected.lines.filter((line) => line.isRedFlag).length;
       const caught = selected.lines.filter((line, i) => line.isRedFlag && flags.has(i)).length;
-      awardXP(caught > 0 && caught / totalFlags >= 0.75 ? 60 : 40);
+      awardXP(voiceCallReward(caught, totalFlags));
       void fetchDebrief(selected);
     }
   };
@@ -320,10 +321,23 @@ const VoiceLab = () => {
 
         <div className="grid gap-3">
           {voiceCalls.map((call) => (
-            <Card key={call.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStart(call)}>
-              <CardContent className="p-4 flex items-center justify-between">
+            <Card
+              key={call.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`${call.title}. ${call.difficulty}.`}
+              className="cursor-pointer hover:shadow-md transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              onClick={() => handleStart(call)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  handleStart(call);
+                }
+              }}
+            >
+              <CardContent className="p-4 flex items-center justify-between gap-3">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-foreground">{call.title}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full border ${difficultyColor[call.difficulty]}`}>
                       {call.difficulty}
@@ -331,7 +345,7 @@ const VoiceLab = () => {
                   </div>
                   <p className="text-sm text-muted-foreground">{call.description}</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" aria-hidden="true" />
               </CardContent>
             </Card>
           ))}

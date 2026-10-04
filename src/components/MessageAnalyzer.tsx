@@ -30,6 +30,10 @@ const EXAMPLES = [
   },
 ];
 
+const MESSAGE_ID = "message-input";
+/** Matches the server-side cap in `_shared/schemas.ts`. */
+const MAX_MESSAGE_LENGTH = 2_000;
+
 interface MessageAnalyzerProps {
   onAnalyze: (message: string) => void;
   isLoading: boolean;
@@ -37,20 +41,37 @@ interface MessageAnalyzerProps {
 
 const MessageAnalyzer = ({ onAnalyze, isLoading }: MessageAnalyzerProps) => {
   const [message, setMessage] = useState("");
+  const overLimit = message.length > MAX_MESSAGE_LENGTH;
+  const canSubmit = message.trim().length > 0 && !overLimit && !isLoading;
 
   return (
     <div className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-foreground mb-2">
+        {/* The label was a sibling of the textarea with no htmlFor, so screen
+            readers announced nothing at all for the app's main input. */}
+        <label htmlFor={MESSAGE_ID} className="block text-sm font-medium text-foreground mb-2">
           Paste a suspicious message
         </label>
         <Textarea
+          id={MESSAGE_ID}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Paste any suspicious message here — SMS, WhatsApp, email, DM... (Arabic or English)"
           className="min-h-[140px] text-base resize-none"
           dir="auto"
+          maxLength={MAX_MESSAGE_LENGTH * 2}
+          aria-describedby={`${MESSAGE_ID}-hint`}
+          aria-invalid={overLimit}
         />
+        <p
+          id={`${MESSAGE_ID}-hint`}
+          className={`text-xs mt-1 ${overLimit ? "text-destructive" : "text-muted-foreground"}`}
+          role={overLimit ? "alert" : undefined}
+        >
+          {overLimit
+            ? `Too long — ${message.length.toLocaleString()} characters. Trim it to ${MAX_MESSAGE_LENGTH.toLocaleString()} or fewer.`
+            : `${message.length.toLocaleString()} / ${MAX_MESSAGE_LENGTH.toLocaleString()}`}
+        </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -58,29 +79,30 @@ const MessageAnalyzer = ({ onAnalyze, isLoading }: MessageAnalyzerProps) => {
         {EXAMPLES.map((ex) => (
           <button
             key={ex.label}
+            type="button"
             onClick={() => setMessage(ex.message)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border border-border bg-card hover:bg-accent transition-colors text-foreground"
           >
-            <ex.icon className="w-3 h-3" />
+            <ex.icon className="w-3 h-3" aria-hidden="true" />
             {ex.label}
           </button>
         ))}
       </div>
 
       <Button
-        onClick={() => onAnalyze(message)}
-        disabled={!message.trim() || isLoading}
+        onClick={() => onAnalyze(message.slice(0, MAX_MESSAGE_LENGTH))}
+        disabled={!canSubmit}
         className="w-full h-12 text-base font-semibold"
         size="lg"
       >
         {isLoading ? (
           <>
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
             HARIS is analyzing...
           </>
         ) : (
           <>
-            <Search className="w-5 h-5" />
+            <Search className="w-5 h-5" aria-hidden="true" />
             Analyze with HARIS
           </>
         )}

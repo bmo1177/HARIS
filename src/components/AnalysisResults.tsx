@@ -6,6 +6,7 @@ import RiskBadge from "./RiskBadge";
 import ClueCards from "./ClueCards";
 import GuessAttack from "./GuessAttack";
 import { useXP } from "@/lib/xpContext";
+import { REWARDS } from "@/lib/xp";
 import type { AnalysisResult } from "@/types/analysis";
 
 interface AnalysisResultsProps {
@@ -18,7 +19,7 @@ const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
   const { awardXP } = useXP();
 
   const handleAllCluesRevealed = () => {
-    awardXP(15); // +15 for revealing all clues
+    awardXP(REWARDS.allCluesRevealed);
     setShowGuess(true);
   };
 
@@ -47,13 +48,26 @@ const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
 
       {showGuess && (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <GuessAttack
-            attackType={result.attack_type}
-            explanation={result.explanation}
-            onCorrectGuess={(attempt) => {
-              awardXP(attempt === 1 ? 30 : 15);
-            }}
-          />
+          {/* Only asked when there is an attack to name. */}
+          {result.is_threat ? (
+            <GuessAttack
+              attackType={result.attack_type}
+              explanation={result.explanation}
+              onCorrectGuess={(attempt) =>
+                awardXP(
+                  attempt === 1 ? REWARDS.correctGuessFirstTry : REWARDS.correctGuessRetry,
+                )
+              }
+            />
+          ) : (
+            <div className="rounded-xl border border-green-200 bg-green-50 p-5 animate-fade-in">
+              <p className="text-sm text-green-800">
+                <span className="font-semibold">Nothing to guess here.</span> This message showed
+                no attack indicators — noticing that is the skill. Try a message you suspect is
+                hostile and see what HARIS spots.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
