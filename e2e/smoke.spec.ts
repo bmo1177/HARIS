@@ -189,3 +189,78 @@ test.describe("XP persistence", () => {
     await expect(page.getByText("Lv 5")).toBeVisible();
   });
 });
+
+test.describe("bilingual support", () => {
+  test("switches the whole document to Arabic and back", async ({ page }) => {
+    await page.goto("/");
+
+    await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+    await expect(page.getByRole("heading", { name: "Got a suspicious message?" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Switch to Arabic" }).click();
+
+    // `lang` and `dir` have to be on <html> for screen readers to pick the right
+    // voice and the browser to apply the correct default alignment.
+    await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+    await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+    await expect(
+      page.getByRole("heading", { name: "وصلتك رسالة مشبوهة؟" }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /حلّل بهاريس/ })).toBeVisible();
+
+    await page.getByRole("button", { name: "التبديل إلى الإنجليزية" }).click();
+    await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+    await expect(page.getByRole("heading", { name: "Got a suspicious message?" })).toBeVisible();
+  });
+
+  test("remembers the language across a reload", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Switch to Arabic" }).click();
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+  });
+
+  test("localizes navigation, not just the page body", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Switch to Arabic" }).click();
+    const nav = page.getByRole("navigation", { name: "القائمة الرئيسية" });
+    await expect(nav.getByRole("link", { name: "السيناريوهات" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "المكالمات" })).toBeVisible();
+  });
+
+  test("renders the character counter left-to-right inside an RTL page", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Switch to Arabic" }).click();
+    // "0 / 2,000" is numbers and a slash, so an unpinned RTL paragraph renders it
+    // visually reversed as "2,000 / 0".
+    const counter = page.locator("#message-input-hint");
+    await expect(counter).toHaveAttribute("dir", "ltr");
+    await expect(counter).toHaveText("0 / 2,000");
+  });
+
+  test("shows Arabic example chips", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Switch to Arabic" }).click();
+    // These were English-only labels sitting inside an otherwise Arabic page.
+    await expect(page.getByRole("button", { name: /جائزة وهمية/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /رابط تصيّد/ })).toBeVisible();
+  });
+
+  test("does not overflow horizontally in Arabic", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Switch to Arabic" }).click();
+    for (const width of [320, 390, 768]) {
+      await page.setViewportSize({ width, height: 800 });
+      for (const path of ["/", "/scenarios", "/voice-lab", "/about", "/nope"]) {
+        await page.goto(path);
+        const { scrollWidth, innerWidth } = await page.evaluate(() => ({
+          scrollWidth: document.documentElement.scrollWidth,
+          innerWidth: window.innerWidth,
+        }));
+        expect(scrollWidth, `${path} overflows in Arabic at ${width}px`).toBeLessThanOrEqual(
+          innerWidth + 1,
+        );
+      }
+    }
+  });
+});

@@ -1,12 +1,14 @@
 import { Shield } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { isMaxLevel, type XPState } from "@/lib/xp";
+import { useI18n } from "@/lib/i18n";
 
 interface XPBarProps {
   state: XPState;
 }
 
 const XPBar = ({ state }: XPBarProps) => {
+  const { t, formatNumber } = useI18n();
   // At max level `nextLevelXP === currentLevelXP`, so the range is 0 and the
   // previous unguarded division produced NaN. It was only masked by a hardcoded
   // `state.level >= 5` check, which would have broken silently the moment a
@@ -21,19 +23,19 @@ const XPBar = ({ state }: XPBarProps) => {
     <div className="flex items-center gap-1.5 sm:gap-2">
       <Shield className="w-4 h-4 text-primary" aria-hidden="true" />
       <span className="text-xs font-semibold text-foreground whitespace-nowrap">
-        Lv {state.level}
+        {t("xp.level", { level: formatNumber(state.level) })}
       </span>
       <Progress
         value={progress}
         className="w-12 h-2 sm:w-20"
         aria-label={
           atMax
-            ? `Level ${state.level}, maximum level reached`
-            : `Level ${state.level} progress`
+            ? t("xp.maxLevel", { level: formatNumber(state.level) })
+            : t("xp.progress", { level: formatNumber(state.level) })
         }
       />
       <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
-        {state.xp} XP
+        {t("xp.total", { xp: formatNumber(state.xp) })}
       </span>
     </div>
   );

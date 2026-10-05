@@ -1,13 +1,23 @@
 import { useEffect, useState } from "react";
 import { Shield } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface LevelUpBannerProps {
-  title: string;
+  /** 1-based level index, used to look up the localized title. */
+  level: number;
   onDone?: () => void;
 }
 
-const LevelUpBanner = ({ title, onDone }: LevelUpBannerProps) => {
+/**
+ * Level-up banner.
+ *
+ * Previously received the English title string, so `titleAr` existed on every
+ * level in `lib/xp.ts` and was never shown. It now takes the level number and
+ * reads the localized title, which means both dictionaries have to be present.
+ */
+const LevelUpBanner = ({ level, onDone }: LevelUpBannerProps) => {
   const [visible, setVisible] = useState(true);
+  const { t, levelTitle } = useI18n();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -20,11 +30,11 @@ const LevelUpBanner = ({ title, onDone }: LevelUpBannerProps) => {
   if (!visible) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[110] animate-fade-in">
-      <div className="bg-green-500 text-white py-3 px-4 text-center flex items-center justify-center gap-2 shadow-lg">
-        <Shield className="w-5 h-5" />
-        <span className="font-bold">Level Up!</span>
-        <span>You are now a {title}</span>
+    <div className="fixed inset-x-0 top-0 z-[110] animate-fade-in">
+      <div className="flex items-center justify-center gap-2 bg-success px-4 py-3 text-center text-success-foreground shadow-lg">
+        <Shield className="h-5 w-5" aria-hidden="true" />
+        <span className="font-bold">{t("xp.levelUp")}</span>
+        <span>{levelTitle(level)}</span>
       </div>
     </div>
   );

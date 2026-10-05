@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import MessageAnalyzer from "@/components/MessageAnalyzer";
 import AnalysisResults from "@/components/AnalysisResults";
 import { errorMessage } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/xpContext";
 import { REWARDS } from "@/lib/xp";
@@ -11,6 +12,7 @@ import { analysisResultSchema, type AnalysisResult } from "@/types/analysis";
 const Index = () => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const { awardXP } = useXP();
+  const { t } = useI18n();
 
   const analyze = useHarisMutation("analyze-message", analysisResultSchema);
 
@@ -40,13 +42,13 @@ const Index = () => {
         {!result && (
           <div className="mb-8 space-y-2 text-center">
             <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-              Got a suspicious message?
+              {t("analyzer.title")}
             </h2>
             <p className="text-muted-foreground">
-              Paste it below. HARIS will analyze it and teach you exactly what it is.
+              {t("analyzer.subtitle")}
             </p>
             <p className="text-sm text-muted-foreground" dir="rtl" lang="ar">
-              درّب حدسك. تفوّق على التهديدات.
+              {t("analyzer.tagline")}
             </p>
           </div>
         )}

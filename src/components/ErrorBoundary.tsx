@@ -1,6 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
-import { RotateCcw } from "lucide-react";
+import { ErrorFallback } from "@/components/ErrorFallback";
 
 interface Props {
   children: ReactNode;
@@ -44,24 +43,7 @@ class ErrorBoundary extends Component<Props, State> {
     const { error } = this.state;
     if (!error) return this.props.children;
 
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="max-w-md w-full text-center space-y-4">
-          <h1 className="text-2xl font-bold text-foreground">Something went wrong</h1>
-          <p className="text-muted-foreground">
-            HARIS hit an unexpected error and stopped. Your XP is safe — it is stored on this
-            device.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={this.handleReset} variant="outline" className="gap-2">
-              <RotateCcw className="w-4 h-4" />
-              Try again
-            </Button>
-            <Button onClick={this.handleReload}>Reload the page</Button>
-          </div>
-        </div>
-      </div>
-    );
+    return <ErrorFallback onRetry={this.handleReset} onReload={this.handleReload} />;
   }
 }
 

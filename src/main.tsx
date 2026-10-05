@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import MissingEnvNotice from "./components/MissingEnvNotice.tsx";
+import { I18nProvider } from "@/lib/i18n";
 import { missingEnv } from "@/lib/env";
 import "./index.css";
 
@@ -12,6 +13,8 @@ createRoot(container).render(
   // React.StrictMode double-invokes effects in development, which surfaces
   // effect bugs that otherwise only show up once in production.
   <React.StrictMode>
-    {missingEnv.length > 0 ? <MissingEnvNotice /> : <App />}
+    <I18nProvider>
+      {missingEnv.length > 0 ? <MissingEnvNotice /> : <App />}
+    </I18nProvider>
   </React.StrictMode>,
 );

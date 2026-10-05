@@ -2,28 +2,30 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Search, Gift, ShieldAlert, MessageSquare, Gamepad2 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
+import type { MessageKey } from "@/locales/en";
 
-const EXAMPLES = [
+const EXAMPLES: ReadonlyArray<{ key: MessageKey; icon: typeof Gift; message: string }> = [
   {
-    label: "Fake prize",
+    key: "example.fakePrize",
     icon: Gift,
     message:
       "Congratulations! You have been selected to win a FREE PS5 from PlayStation Arabia! You are one of 10 lucky winners this week. Click here to claim your prize before it expires in 2 hours: ps5-winners-qatar.com/claim",
   },
   {
-    label: "Phishing link",
+    key: "example.phishingLink",
     icon: ShieldAlert,
     message:
       "Your Snapchat account will be deleted in 24 hours due to suspicious activity. Verify your account now to keep it active: snapchat-verify-account.net/login",
   },
   {
-    label: "Safe message",
+    key: "example.safeMessage",
     icon: MessageSquare,
     message:
       "Hi! Don't forget we have football practice tomorrow at 5pm at the school field. Bring your kit. See you there!",
   },
   {
-    label: "Gaming scam",
+    key: "example.gamingScam",
     icon: Gamepad2,
     message:
       "FREE 10,000 V-Bucks! Limited offer for Fortnite players in Qatar. Download this mod to get free V-Bucks directly to your account: fortnite-vbucks-free.com — works 100% guaranteed!",
@@ -41,6 +43,7 @@ interface MessageAnalyzerProps {
 
 const MessageAnalyzer = ({ onAnalyze, isLoading }: MessageAnalyzerProps) => {
   const [message, setMessage] = useState("");
+  const { t, formatNumber } = useI18n();
   const overLimit = message.length > MAX_MESSAGE_LENGTH;
   const canSubmit = message.trim().length > 0 && !overLimit && !isLoading;
 
@@ -50,41 +53,52 @@ const MessageAnalyzer = ({ onAnalyze, isLoading }: MessageAnalyzerProps) => {
         {/* The label was a sibling of the textarea with no htmlFor, so screen
             readers announced nothing at all for the app's main input. */}
         <label htmlFor={MESSAGE_ID} className="block text-sm font-medium text-foreground mb-2">
-          Paste a suspicious message
+          {t("analyzer.label")}
         </label>
         <Textarea
           id={MESSAGE_ID}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Paste any suspicious message here — SMS, WhatsApp, email, DM... (Arabic or English)"
+          placeholder={t("analyzer.placeholder")}
           className="min-h-[140px] text-base resize-none"
           dir="auto"
           maxLength={MAX_MESSAGE_LENGTH * 2}
           aria-describedby={`${MESSAGE_ID}-hint`}
           aria-invalid={overLimit}
         />
+        {/* "0 / 2,000" is numbers and a slash, so inside an RTL paragraph it
+            renders visually reversed as "2,000 / 0". Pin the direction. */}
         <p
           id={`${MESSAGE_ID}-hint`}
-          className={`text-xs mt-1 ${overLimit ? "text-destructive" : "text-muted-foreground"}`}
+          dir={overLimit ? undefined : "ltr"}
+          className={`mt-1 text-start text-xs ${overLimit ? "text-destructive" : "text-muted-foreground"}`}
           role={overLimit ? "alert" : undefined}
         >
           {overLimit
-            ? `Too long — ${message.length.toLocaleString()} characters. Trim it to ${MAX_MESSAGE_LENGTH.toLocaleString()} or fewer.`
-            : `${message.length.toLocaleString()} / ${MAX_MESSAGE_LENGTH.toLocaleString()}`}
+            ? t("analyzer.tooLong", {
+                count: formatNumber(message.length),
+                max: formatNumber(MAX_MESSAGE_LENGTH),
+              })
+            : t("analyzer.counter", {
+                count: formatNumber(message.length),
+                max: formatNumber(MAX_MESSAGE_LENGTH),
+              })}
         </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <span className="text-xs text-muted-foreground self-center mr-1">Try an example:</span>
+        <span className="mr-1 self-center text-xs text-muted-foreground">
+          {t("analyzer.tryExample")}
+        </span>
         {EXAMPLES.map((ex) => (
           <button
-            key={ex.label}
+            key={ex.key}
             type="button"
             onClick={() => setMessage(ex.message)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border border-border bg-card hover:bg-accent transition-colors text-foreground"
           >
             <ex.icon className="w-3 h-3" aria-hidden="true" />
-            {ex.label}
+            {t(ex.key)}
           </button>
         ))}
       </div>
@@ -98,12 +112,12 @@ const MessageAnalyzer = ({ onAnalyze, isLoading }: MessageAnalyzerProps) => {
         {isLoading ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
-            HARIS is analyzing...
+            {t("analyzer.submitting")}
           </>
         ) : (
           <>
             <Search className="w-5 h-5" aria-hidden="true" />
-            Analyze with HARIS
+            {t("analyzer.submit")}
           </>
         )}
       </Button>
@@ -113,11 +127,11 @@ const MessageAnalyzer = ({ onAnalyze, isLoading }: MessageAnalyzerProps) => {
           fragile across a responsive grid and read as a strikethrough across
           the number badges. */}
       <ol className="grid grid-cols-3 gap-3 text-center">
-        {[
-          { step: "1", text: "Paste the message" },
-          { step: "2", text: "HARIS scores the threat" },
-          { step: "3", text: "Discover it through clues" },
-        ].map((s) => (
+        {([
+          { step: "1", key: "analyzer.step1" },
+          { step: "2", key: "analyzer.step2" },
+          { step: "3", key: "analyzer.step3" },
+        ] as const).map((s) => (
           <li
             key={s.step}
             className="flex min-h-[4.5rem] flex-col items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-3"
@@ -125,7 +139,7 @@ const MessageAnalyzer = ({ onAnalyze, isLoading }: MessageAnalyzerProps) => {
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
               {s.step}
             </span>
-            <span className="text-xs leading-snug text-muted-foreground">{s.text}</span>
+            <span className="text-xs leading-snug text-muted-foreground">{t(s.key)}</span>
           </li>
         ))}
       </ol>

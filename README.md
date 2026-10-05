@@ -21,6 +21,10 @@ Live: **https://haris-two-xi.vercel.app**
 | **Scenario Simulator** | `/scenarios` | Five branching social-engineering scenarios. Every choice gets AI feedback explaining what it would have cost in the real world. |
 | **Voice Lab** | `/voice-lab` | Three simulated scam calls in Arabic and English, read aloud via the Web Speech API. Flag the red flags in real time, then get a debrief on what you missed. |
 
+**Available in English and Arabic**, with the whole interface flipping to RTL —
+including the explanations, attack names and red-flag reasons the model returns,
+which were previously generated on every request and thrown away.
+
 XP and five levels track progress, stored locally in the browser.
 
 ---

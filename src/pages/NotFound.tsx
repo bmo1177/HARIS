@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import { Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 const NotFound = () => {
+  const { t } = useI18n();
   // Previously a bare flex box with no `<main>`, no header to match the rest of
   // the app, and a raw `<a href="/">` that threw away client-side routing with a
   // full page reload.
@@ -15,20 +17,19 @@ const NotFound = () => {
         <div className="space-y-2">
           <p className="text-4xl font-bold tracking-tight text-foreground">404</p>
           <h2 className="text-xl font-semibold text-foreground">
-            This page does not exist
+            {t("notFound.title")}
           </h2>
           <p className="mx-auto max-w-sm text-muted-foreground">
-            The link may be out of date, or the address may have a typo. Nothing was lost —
-            your XP is stored on this device.
+            {t("notFound.body")}
           </p>
         </div>
 
         <div className="mt-2 flex flex-col gap-3 sm:flex-row">
           <Button asChild>
-            <Link to="/">Analyse a message</Link>
+            <Link to="/">{t("notFound.home")}</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link to="/scenarios">Browse scenarios</Link>
+            <Link to="/scenarios">{t("notFound.scenarios")}</Link>
           </Button>
         </div>
     </div>
