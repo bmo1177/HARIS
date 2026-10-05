@@ -22,7 +22,7 @@ for the full list. The essentials:
 | --- | --- | --- |
 | `LLM_API_KEY` | yes | Key for any OpenAI-compatible provider |
 | `LLM_BASE_URL` | no | Defaults to `https://openrouter.ai/api/v1` |
-| `LLM_MODEL` | no | Defaults to `google/gemini-3.5-flash` |
+| `LLM_MODEL` | no | Defaults to `google/gemini-3.5-flash`. See [Free models](#free-models) — the only verified free option is `nvidia/nemotron-3-super-120b-a12b:free`. |
 | `LLM_TIMEOUT_MS` | no | Defaults to `20000` |
 | `LLM_MAX_TOKENS` | no | Defaults to `1200` |
 | `SUPABASE_URL` | injected | Supplied by the Edge Function runtime. |
@@ -32,7 +32,9 @@ for the full list. The essentials:
 ### Deploying
 
 ```bash
-# Once, per machine.
+# Once, per machine. Needs SUPABASE_ACCESS_TOKEN set, or an interactive
+# `supabase login`. `db push` additionally needs the database password.
+export SUPABASE_ACCESS_TOKEN=sbp_...
 supabase link --project-ref fnucljasscadjhlzootl
 
 # 1. Create the rate-limit table and function.
@@ -45,6 +47,35 @@ supabase secrets set --env-file supabase/functions/.env.local
 
 # 3. Deploy the three functions.
 supabase functions deploy analyze-message scenario-feedback voice-debrief --no-verify-jwt
+
+# 4. Prove it. Requires SUPABASE_URL and SUPABASE_SECRET_KEYS in the shell.
+npm run preflight:live
+```
+
+### Free models
+
+`nvidia/nemotron-3-super-120b-a12b:free` is the only free model measured to work
+with this schema. Every other `:free` model failed on one of three counts:
+
+| Model | Outcome |
+| --- | --- |
+| `nvidia/nemotron-3-super-120b-a12b:free` | works: full analysis, correct `risk_band`, Arabic, ~0.4-0.7s |
+| `google/gemma-4-31b-it:free`, `google/gemma-4-26b-a4b-it:free` | HTTP 429 — free tier unavailable |
+| `apodex/apodex-1.1-mini:free` | HTTP 400 — rejects the schema despite advertising `response_format` |
+| `openrouter/free` | meta-router; returned prose instead of JSON on the second call |
+| `thinkingmachines/inkling`, `inkling-small` | no `response_format` support |
+| `nvidia/nemotron-3-ultra`, `3.5-lightning`, `nemotron-3-nano-omni` | no `response_format` support |
+| `cohere/north-mini-code`, `poolside/laguna-*`, `inclusionai/ling-*` | no `response_format`, or coding/medical domain |
+
+**Read this before using a free model in production.** OpenRouter's free tier
+allows **50 requests/day**. The measured live run hit that ceiling after 35 of 45
+cases, so it is adequate for development and evaluation but not for a classroom.
+It also scored a 93% false-positive rate before the `risk_band` calibration fix.
+Use a paid model for anything real; treat the free tier as a development default.
+
+```bash
+supabase secrets set LLM_API_KEY=sk-or-... \
+  LLM_MODEL=nvidia/nemotron-3-super-120b-a12b:free
 ```
 
 **On `--no-verify-jwt`.** `config.toml` records `verify_jwt = false` for each
