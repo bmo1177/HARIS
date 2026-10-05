@@ -6,6 +6,8 @@ import RiskBadge from "./RiskBadge";
 import ClueCards from "./ClueCards";
 import GuessAttack from "./GuessAttack";
 import { useXP } from "@/lib/xpContext";
+import { useI18n } from "@/lib/i18n";
+import { REWARDS } from "@/lib/xp";
 import type { AnalysisResult } from "@/types/analysis";
 
 interface AnalysisResultsProps {
@@ -16,9 +18,10 @@ interface AnalysisResultsProps {
 const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
   const [showGuess, setShowGuess] = useState(false);
   const { awardXP } = useXP();
+  const { t, locale } = useI18n();
 
   const handleAllCluesRevealed = () => {
-    awardXP(15); // +15 for revealing all clues
+    awardXP(REWARDS.allCluesRevealed);
     setShowGuess(true);
   };
 
@@ -30,15 +33,13 @@ const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
           <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
           <p className="text-sm font-medium text-destructive">
-            Do not click any links in this message!
+            {t("results.doNotClick")}
           </p>
         </div>
       )}
 
       <div>
-        <h3 className="text-sm font-semibold text-foreground mb-3">
-          Why HARIS flagged this — <span dir="rtl" lang="ar">اكتشف السبب</span>
-        </h3>
+        <h3 className="mb-3 text-sm font-semibold text-foreground">{t("results.whyFlagged")}</h3>
         <ClueCards
           clues={[result.clue_1, result.clue_2, result.clue_3]}
           onAllRevealed={handleAllCluesRevealed}
@@ -47,34 +48,49 @@ const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
 
       {showGuess && (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <GuessAttack
-            attackType={result.attack_type}
-            explanation={result.explanation}
-            onCorrectGuess={(attempt) => {
-              awardXP(attempt === 1 ? 30 : 15);
-            }}
-          />
+          {/* Only asked when there is an attack to name. */}
+          {result.is_threat ? (
+            <GuessAttack
+              attackType={result.attack_type}
+              attackTypeLocalized={locale === "ar" ? result.attack_type_ar : result.attack_type}
+              onCorrectGuess={(attempt) =>
+                awardXP(
+                  attempt === 1 ? REWARDS.correctGuessFirstTry : REWARDS.correctGuessRetry,
+                )
+              }
+            />
+          ) : (
+            <div className="animate-fade-in rounded-xl border border-success/30 bg-success/10 p-5">
+              <p className="text-sm text-success">{t("guess.nothingToGuess")}</p>
+            </div>
+          )}
         </div>
       )}
 
-      <Tabs defaultValue="en" className="mt-6">
+      {/* Default to the reader's own language. The triggers were localised but
+          the default was not, so Arabic readers always landed on English. */}
+      <Tabs value={locale === "ar" ? "ar" : "en"} className="mt-6">
         <TabsList>
-          <TabsTrigger value="en">English</TabsTrigger>
-          <TabsTrigger value="ar">العربية</TabsTrigger>
+          <TabsTrigger value="en">{t("results.english")}</TabsTrigger>
+          <TabsTrigger value="ar">{t("results.arabic")}</TabsTrigger>
         </TabsList>
         <TabsContent value="en" className="rounded-lg border border-border bg-card p-4 mt-3">
           <p className="text-sm text-foreground leading-relaxed">{result.explanation}</p>
         </TabsContent>
         <TabsContent value="ar" className="rounded-lg border border-border bg-card p-4 mt-3">
-          <p className="text-sm text-foreground leading-relaxed" dir="rtl" lang="ar">
+          <p
+            className="text-sm leading-relaxed text-foreground"
+            dir="rtl"
+            lang="ar"
+          >
             {result.explanation_ar}
           </p>
         </TabsContent>
       </Tabs>
 
       <Button variant="outline" onClick={onReset} className="w-full gap-2">
-        <RotateCcw className="w-4 h-4" />
-        Analyze another message
+        <RotateCcw className="w-4 h-4" aria-hidden="true" />
+        {t("results.analyzeAnother")}
       </Button>
     </div>
   );

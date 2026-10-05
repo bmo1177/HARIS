@@ -25,16 +25,52 @@ for the full list. The essentials:
 | `LLM_MODEL` | no | Defaults to `google/gemini-3.5-flash` |
 | `LLM_TIMEOUT_MS` | no | Defaults to `20000` |
 | `LLM_MAX_TOKENS` | no | Defaults to `1200` |
-| `SUPABASE_SERVICE_ROLE_KEY` | yes | Used server-side for rate-limit counters |
+| `SUPABASE_URL` | injected | Supplied by the Edge Function runtime. |
+| `SUPABASE_SECRET_KEYS` | injected | JSON dict of secret keys, e.g. `{"default":"sb_secret_…"}`. Read for rate-limit bookkeeping. Privileged — bypasses RLS. |
 | `ALLOWED_ORIGINS` | no | Comma-separated browser origin allowlist |
 
-Apply the migration, then set the secrets:
+### Deploying
 
 ```bash
+# Once, per machine.
+supabase link --project-ref fnucljasscadjhlzootl
+
+# 1. Create the rate-limit table and function.
 supabase db push
+
+# 2. Server-side secrets. These live in Deno.env on the functions, never in the
+#    browser bundle. SUPABASE_SERVICE_ROLE_KEY is the *secret* key
+#    (`sb_secret_...`) from Settings -> API Keys, not the publishable one.
 supabase secrets set --env-file supabase/functions/.env.local
-supabase functions deploy analyze-message scenario-feedback voice-debrief
+
+# 3. Deploy the three functions.
+supabase functions deploy analyze-message scenario-feedback voice-debrief --no-verify-jwt
 ```
+
+**On `--no-verify-jwt`.** `config.toml` records `verify_jwt = false` for each
+function with the reasoning inline, and the CLI does read that file — but the
+flag is passed explicitly anyway. These functions have no auth flow, so a
+deploy that silently flipped JWT verification on would fail every call at the
+gateway with a 401, and the symptom looks like a CORS or config problem rather
+than a deploy flag. Cheaper to be explicit.
+
+The functions also read `config.toml`'s own `[functions.*]` blocks only for that
+setting; everything else they need comes from `supabase secrets set`.
+
+Confirm it worked:
+
+```bash
+curl -s -X POST \
+  "https://fnucljasscadjhlzootl.supabase.co/functions/v1/analyze-message" \
+  -H "Content-Type: application/json" \
+  -H "apikey: $VITE_SUPABASE_PUBLISHABLE_KEY" \
+  -d '{"message":"Free prize! Claim now: example.com"}' | head -c 400
+```
+
+A JSON verdict means the whole chain is live: gateway, migration, secrets and
+model. A `{"error":...,"code":"rate_limited"}` means the migration is missing —
+the limiter fails closed on purpose, so that is the expected failure mode before
+step 1.
 
 Pointing at a different provider is three variables. The client code is plain
 OpenAI-compatible HTTP, so OpenRouter, OpenAI, Groq, Together, a self-hosted
@@ -67,10 +103,10 @@ LLM_MODEL=llama-3.3-70b-versatile
    - Structured output is requested via provider-enforced JSON Schema rather
      than a forced tool call, so the model is not obliged to emit anything.
 3. **Information disclosure.** The functions used to return `e.message` verbatim,
-   leaking `LOVABLE_API_KEY is not configured` and raw upstream `fetch` errors to
-   anonymous callers. *Mitigation:* a fixed client-safe message per error code;
-   real causes are logged server-side alongside a request id returned to the
-   client for correlation.
+   leaking the names of unconfigured environment variables and raw upstream
+   `fetch` errors to anonymous callers. *Mitigation:* a fixed client-safe message
+   per error code; real causes are logged server-side alongside a request id
+   returned to the client for correlation.
 4. **Data fabrication.** `voice-debrief` interpolated an arbitrary untyped JSON
    blob from the caller into the prompt and trusted the reported scores, so a
    crafted request could get the model to narrate "caught 12 of 12, flawless
@@ -92,6 +128,32 @@ LLM_MODEL=llama-3.3-70b-versatile
 - **PII retention.** Nothing is persisted. Pasted messages are not stored,
   logged in full, or sent anywhere except the configured LLM provider. If
   persistence is added later, do not store raw pasted message content.
+
+## Key handling
+
+Supabase issues two kinds of key and they are easy to confuse:
+
+| Key | Format | Where it may live |
+| --- | --- | --- |
+| Publishable | `sb_publishable_…` | Browser. Bundled into the client on purpose. |
+| Secret | `sb_secret_…` | Server only. **Bypasses RLS**, full project access. |
+
+The publishable key is safe in the browser *provided RLS is enabled on any table
+you add*. This app currently has no tables, so the question does not arise yet —
+but it is the condition that stops being true the moment someone adds one, and it
+belongs in the first migration rather than in a later audit.
+
+The secret key is read from `Deno.env` inside the functions and is never bundled.
+Supabase also refuses a secret key sent from a browser — it matches on the
+`User-Agent` header and returns 401 — so `dist/` containing one means the build
+picked up a server-side variable. Treat that as compromised and rotate:
+
+```bash
+grep -o 'sb_secret_[A-Za-z0-9_-]*' dist/assets/*.js   # must return nothing
+```
+
+Projects created before the new key format still use the legacy `eyJ…` JWT anon
+key for the publishable slot. Both work.
 
 ## Development
 

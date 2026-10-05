@@ -3,7 +3,7 @@
  * envelope.
  *
  * The previous edge functions returned `e.message` straight to the caller,
- * which leaked things like `LOVABLE_API_KEY is not configured` and raw upstream
+ * which leaked the names of unconfigured environment variables and raw upstream
  * `fetch` errors to anonymous users. Everything now goes through
  * `errorResponse`, which logs the real cause server-side and returns a fixed,
  * client-safe message plus a request id for correlation.

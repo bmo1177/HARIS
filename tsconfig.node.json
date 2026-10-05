@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2023"],
+    /* DOM is included because the e2e specs pass browser callbacks to
+       `page.evaluate`, which typecheck here but execute in the browser. */
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
 
@@ -14,9 +16,18 @@
 
     /* Linting */
     "strict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts"]
+  /* Was `vite.config.ts` only, which left every other root-level TS file
+     (vitest, tailwind, playwright) outside every typechecked project. */
+  "include": [
+    "vite.config.ts",
+    "vitest.config.ts",
+    "tailwind.config.ts",
+    "playwright.config.ts",
+    "playwright-fixture.ts",
+    "e2e/**/*.ts"
+  ]
 }

@@ -1,10 +1,10 @@
 /**
  * Provider-agnostic structured-output client.
  *
- * Replaces the hardcoded `https://ai.gateway.lovable.dev` + `LOVABLE_API_KEY`
- * pair, which made the backend impossible to run or deploy without a Lovable
- * account. The new configuration is plain OpenAI-compatible HTTP, so any of
- * OpenRouter, OpenAI, Together, Groq, a self-hosted vLLM, or Ollama works by
+ * The backend used to be pinned to a single proprietary AI gateway and its
+ * bespoke API key, which made it impossible to run or deploy without an account
+ * on that one service. Configuration is now plain OpenAI-compatible HTTP, so any
+ * of OpenRouter, OpenAI, Together, Groq, a self-hosted vLLM, or Ollama works by
  * changing three environment variables.
  *
  * Deliberate change: the old code used `tool_choice` forced to a single
@@ -43,7 +43,9 @@ function retryAfterMs(response: Response): number {
   return Number.isFinite(seconds) && seconds >= 0 ? Math.min(seconds * 1_000, 10_000) : 1_500;
 }
 
-async function requestCompletion(body: Record<string, unknown>): Promise<Response> {
+async function requestCompletion(
+  body: Record<string, unknown>,
+): Promise<Response> {
   const { llm } = getConfig();
 
   return await fetch(`${llm.baseUrl}/chat/completions`, {
@@ -66,7 +68,9 @@ async function requestCompletion(body: Record<string, unknown>): Promise<Respons
  * Throws `UpstreamError` for every failure mode; callers should not attempt to
  * distinguish provider-specific codes.
  */
-export async function generateStructured(call: StructuredCall): Promise<unknown> {
+export async function generateStructured(
+  call: StructuredCall,
+): Promise<unknown> {
   const { llm } = getConfig();
 
   const body: Record<string, unknown> = {
@@ -96,9 +100,13 @@ export async function generateStructured(call: StructuredCall): Promise<unknown>
       response = await requestCompletion(body);
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
-      const timedOut = error instanceof DOMException && error.name === "TimeoutError";
+      const timedOut = error instanceof DOMException &&
+        error.name === "TimeoutError";
       if (attempt === 0) {
-        console.warn(`llm request failed (${timedOut ? "timeout" : "network"}), retrying:`, reason);
+        console.warn(
+          `llm request failed (${timedOut ? "timeout" : "network"}), retrying:`,
+          reason,
+        );
         await sleep(600);
         continue;
       }
@@ -134,7 +142,11 @@ export async function generateStructured(call: StructuredCall): Promise<unknown>
   }
 
   if (payload.error) {
-    throw new UpstreamError(`llm error: ${payload.error.message ?? "unknown"}`, 502, false);
+    throw new UpstreamError(
+      `llm error: ${payload.error.message ?? "unknown"}`,
+      502,
+      false,
+    );
   }
 
   const content = payload.choices?.[0]?.message?.content;

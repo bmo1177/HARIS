@@ -2,7 +2,7 @@ import { z } from "npm:zod@3.25.76";
 import { UpstreamError } from "../_shared/env.ts";
 import { generateStructured } from "../_shared/llm.ts";
 import { createHandler, jsonResponse } from "../_shared/http.ts";
-import { UNTRUSTED_CONTENT_RULES, clampText, wrapUntrusted } from "../_shared/prompt.ts";
+import { clampText, UNTRUSTED_CONTENT_RULES, wrapUntrusted } from "../_shared/prompt.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { parseRequest, voiceDebriefRequest } from "../_shared/schemas.ts";
 
@@ -14,12 +14,18 @@ const DEBRIEF_SCHEMA = {
       description:
         "Three sentences of honest, specific feedback on how the call went. Reference what the student actually missed or caught.",
     },
-    debrief_ar: { type: "string", description: "Arabic translation of the debrief" },
+    debrief_ar: {
+      type: "string",
+      description: "Arabic translation of the debrief",
+    },
     top_tip: {
       type: "string",
       description: "One specific, actionable thing to do differently next time",
     },
-    top_tip_ar: { type: "string", description: "Arabic translation of the tip" },
+    top_tip_ar: {
+      type: "string",
+      description: "Arabic translation of the tip",
+    },
   },
   required: ["debrief", "debrief_ar", "top_tip", "top_tip_ar"],
   additionalProperties: false,
@@ -51,7 +57,9 @@ How to respond:
 ${UNTRUSTED_CONTENT_RULES}`;
 
 /** Renders the transcript for the prompt, one fenced line at a time. */
-function renderTranscript(lines: Array<{ lineNumber: number; text: string }>): string {
+function renderTranscript(
+  lines: Array<{ lineNumber: number; text: string }>,
+): string {
   return lines.map((line) => `${line.lineNumber}. ${wrapUntrusted("LINE", line.text)}`).join("\n");
 }
 
@@ -90,16 +98,31 @@ Deno.serve(
 
     const parsed = MODEL_OUTPUT.safeParse(raw);
     if (!parsed.success) {
-      console.error(`[${requestId}] model output failed validation:`, parsed.error.issues);
-      throw new UpstreamError("model output did not match the expected schema", 502, false);
+      console.error(
+        `[${requestId}] model output failed validation:`,
+        parsed.error.issues,
+      );
+      throw new UpstreamError(
+        "model output did not match the expected schema",
+        502,
+        false,
+      );
     }
 
     const { debrief, debrief_ar, top_tip, top_tip_ar } = parsed.data;
 
     return jsonResponse(req, 200, {
-      debrief: clampText(debrief.trim(), 900, "Review the transcript and note what you missed."),
+      debrief: clampText(
+        debrief.trim(),
+        900,
+        "Review the transcript and note what you missed.",
+      ),
       debrief_ar: clampText(debrief_ar.trim(), 900, ""),
-      top_tip: clampText(top_tip.trim(), 300, "Hang up and verify independently if in doubt."),
+      top_tip: clampText(
+        top_tip.trim(),
+        300,
+        "Hang up and verify independently if in doubt.",
+      ),
       top_tip_ar: clampText(top_tip_ar.trim(), 300, ""),
     });
   }),

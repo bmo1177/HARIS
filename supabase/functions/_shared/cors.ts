@@ -33,7 +33,8 @@ const ALLOWED_METHODS = "POST, OPTIONS";
 
 export function corsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get("origin");
-  const allowed = origin !== null && getConfig().allowedOrigins.includes(origin);
+  const allowed = origin !== null &&
+    getConfig().allowedOrigins.includes(origin);
 
   const headers: Record<string, string> = {
     "Access-Control-Allow-Headers": ALLOWED_HEADERS,

@@ -35,7 +35,10 @@ export function clientIdentity(req: Request): string {
   );
 }
 
-async function bump(key: string, windowSeconds: number): Promise<number | null> {
+async function bump(
+  key: string,
+  windowSeconds: number,
+): Promise<number | null> {
   const { supabase } = getConfig();
 
   const response = await fetch(`${supabase.url}${RPC_PATH}`, {
@@ -53,7 +56,11 @@ async function bump(key: string, windowSeconds: number): Promise<number | null> 
   if (!response.ok) {
     // Fail closed. If we cannot count requests we cannot bound spend, and an
     // unbounded LLM endpoint is exactly the problem this module exists to fix.
-    console.error("rate limit RPC failed:", response.status, await response.text());
+    console.error(
+      "rate limit RPC failed:",
+      response.status,
+      await response.text(),
+    );
     throw new RequestError("service_unavailable", "rate limiter unavailable");
   }
 
@@ -75,12 +82,18 @@ export async function enforceRateLimit(
   const minuteLimit = override ?? config.rateLimit;
   const identity = clientIdentity(req);
 
-  const dailyCount = await bump(`${scope}:day:${identity}`, config.dailyRateLimit.windowSeconds);
+  const dailyCount = await bump(
+    `${scope}:day:${identity}`,
+    config.dailyRateLimit.windowSeconds,
+  );
   if (dailyCount !== null && dailyCount > config.dailyRateLimit.max) {
     throw new RequestError("rate_limited", "daily quota exhausted");
   }
 
-  const minuteCount = await bump(`${scope}:min:${identity}`, minuteLimit.windowSeconds);
+  const minuteCount = await bump(
+    `${scope}:min:${identity}`,
+    minuteLimit.windowSeconds,
+  );
   if (minuteCount !== null && minuteCount > minuteLimit.max) {
     throw new RequestError("rate_limited", "per-minute quota exhausted");
   }
@@ -96,17 +109,23 @@ async function sweepStaleBuckets(): Promise<void> {
   const { supabase } = getConfig();
 
   try {
-    await fetch(`${supabase.url}/rest/v1/rate_limit_buckets?window_start=lt.${Date.now() / 1000 - 172_800}`, {
-      method: "DELETE",
-      headers: {
-        apikey: supabase.serviceRoleKey,
-        Authorization: `Bearer ${supabase.serviceRoleKey}`,
-        Prefer: "return=minimal",
+    await fetch(
+      `${supabase.url}/rest/v1/rate_limit_buckets?window_start=lt.${Date.now() / 1000 - 172_800}`,
+      {
+        method: "DELETE",
+        headers: {
+          apikey: supabase.serviceRoleKey,
+          Authorization: `Bearer ${supabase.serviceRoleKey}`,
+          Prefer: "return=minimal",
+        },
+        signal: AbortSignal.timeout(5_000),
       },
-      signal: AbortSignal.timeout(5_000),
-    });
+    );
   } catch (error) {
     // Housekeeping only; never surface to the caller.
-    console.warn("rate limit sweep failed:", error instanceof Error ? error.message : error);
+    console.warn(
+      "rate limit sweep failed:",
+      error instanceof Error ? error.message : error,
+    );
   }
 }

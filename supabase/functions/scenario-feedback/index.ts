@@ -2,7 +2,7 @@ import { z } from "npm:zod@3.25.76";
 import { UpstreamError } from "../_shared/env.ts";
 import { generateStructured } from "../_shared/llm.ts";
 import { createHandler, jsonResponse } from "../_shared/http.ts";
-import { UNTRUSTED_CONTENT_RULES, clampText, wrapUntrusted } from "../_shared/prompt.ts";
+import { clampText, UNTRUSTED_CONTENT_RULES, wrapUntrusted } from "../_shared/prompt.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { parseRequest, scenarioFeedbackRequest } from "../_shared/schemas.ts";
 
@@ -17,7 +17,10 @@ const FEEDBACK_SCHEMA = {
       type: "string",
       description: "1-2 sentences, direct and encouraging, addressed to the student",
     },
-    feedback_ar: { type: "string", description: "Arabic translation of the feedback" },
+    feedback_ar: {
+      type: "string",
+      description: "Arabic translation of the feedback",
+    },
     red_flag: {
       type: "string",
       description:
@@ -35,7 +38,8 @@ const MODEL_OUTPUT = z.object({
   red_flag: z.string(),
 });
 
-const SYSTEM_PROMPT = `You are HARIS, a friendly cybersecurity coach for high school students aged 16-18.
+const SYSTEM_PROMPT =
+  `You are HARIS, a friendly cybersecurity coach for high school students aged 16-18.
 A student is role-playing a social engineering scenario and has just replied to an attacker.
 Judge their reply on its own merits and coach them on what to do instead.
 
@@ -79,15 +83,26 @@ Deno.serve(
 
     const parsed = MODEL_OUTPUT.safeParse(raw);
     if (!parsed.success) {
-      console.error(`[${requestId}] model output failed validation:`, parsed.error.issues);
-      throw new UpstreamError("model output did not match the expected schema", 502, false);
+      console.error(
+        `[${requestId}] model output failed validation:`,
+        parsed.error.issues,
+      );
+      throw new UpstreamError(
+        "model output did not match the expected schema",
+        502,
+        false,
+      );
     }
 
     const { safe, feedback, feedback_ar, red_flag } = parsed.data;
 
     return jsonResponse(req, 200, {
       safe,
-      feedback: clampText(feedback.trim(), 600, "Take another look at who was asking for what."),
+      feedback: clampText(
+        feedback.trim(),
+        600,
+        "Take another look at who was asking for what.",
+      ),
       // The Arabic string is optional: an empty value renders as omitted rather
       // than as an empty bordered box.
       feedback_ar: clampText(feedback_ar.trim(), 600, ""),

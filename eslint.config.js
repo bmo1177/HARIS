@@ -23,4 +23,21 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  {
+    // Edge functions run on Deno, not in a browser. They need the `Deno`
+    // global and reach for `Deno.serve` / `Deno.env`, which the browser globals
+    // block above does not provide.
+    files: ["supabase/functions/**/*.ts"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        Deno: "readonly",
+      },
+    },
+    rules: {
+      // `_shared/prompt.ts` strips control characters from untrusted input,
+      // which is what the rule flags. See the comment on that regex.
+      "no-control-regex": "off",
+    },
+  },
 );

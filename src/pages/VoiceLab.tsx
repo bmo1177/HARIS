@@ -1,20 +1,17 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Phone, PhoneOff, Flag, CheckCircle2, XCircle, ChevronRight, RotateCcw } from "lucide-react";
 import { voiceCalls, type VoiceCall } from "@/data/voiceCalls";
-import { errorMessage, invokeHarisFunction } from "@/integrations/supabase/functions";
+import { errorMessage } from "@/lib/api";
+import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/xpContext";
+import { useI18n } from "@/lib/i18n";
+import { difficultyClassName } from "@/lib/difficulty";
+import { voiceCallReward } from "@/lib/xp";
 import { voiceDebriefSchema, type VoiceDebrief } from "@/types/analysis";
-
-const difficultyColor = {
-  Beginner: "text-green-600 bg-green-50 border-green-200",
-  Intermediate: "text-amber-600 bg-amber-50 border-amber-200",
-  Advanced: "text-red-600 bg-red-50 border-red-200",
-};
 
 const VoiceLab = () => {
   const [selected, setSelected] = useState<VoiceCall | null>(null);
@@ -38,9 +35,10 @@ const VoiceLab = () => {
    */
   const userFlagsRef = useRef<Set<number>>(new Set());
   const advanceTimerRef = useRef<number | null>(null);
-  const [isLoadingDebrief, setIsLoadingDebrief] = useState(false);
   const { awardXP } = useXP();
   const navigate = useNavigate();
+  const { t, locale, formatNumber } = useI18n();
+  const debriefRequest = useHarisMutation("voice-debrief", voiceDebriefSchema);
 
   const clearAdvanceTimer = useCallback(() => {
     if (advanceTimerRef.current !== null) {
@@ -49,9 +47,8 @@ const VoiceLab = () => {
     }
   }, []);
 
-  const fetchDebrief = useCallback(async (call: VoiceCall) => {
-    setIsLoadingDebrief(true);
-    try {
+  const fetchDebrief = useCallback(
+    async (call: VoiceCall) => {
       const flags = userFlagsRef.current;
       const redFlagLines = call.lines
         .map((line, index) => ({ line, index }))
@@ -59,9 +56,8 @@ const VoiceLab = () => {
       const totalFlags = redFlagLines.length;
       const caught = redFlagLines.filter(({ index }) => flags.has(index)).length;
 
-      const result = await invokeHarisFunction(
-        "voice-debrief",
-        {
+      try {
+        const result = await debriefRequest.mutateAsync({
           callTitle: call.title,
           totalFlags,
           caughtFlags: caught,
@@ -73,18 +69,16 @@ const VoiceLab = () => {
             flagReason: line.flagReason,
             userFlagged: flags.has(index),
           })),
-        },
-        voiceDebriefSchema,
-      );
+        });
 
-      setDebrief(result);
-    } catch (error) {
-      // Previously swallowed entirely, so a failed debrief was invisible.
-      toast.error(errorMessage(error));
-    } finally {
-      setIsLoadingDebrief(false);
-    }
-  }, []);
+        setDebrief(result);
+      } catch (error) {
+        // Previously swallowed entirely, so a failed debrief was invisible.
+        toast.error(errorMessage(error));
+      }
+    },
+    [debriefRequest],
+  );
 
   const speakLine = useCallback((call: VoiceCall, lineIndex: number) => {
     if (lineIndex >= call.lines.length) {
@@ -94,7 +88,7 @@ const VoiceLab = () => {
       const flags = userFlagsRef.current;
       const totalFlags = call.lines.filter((line) => line.isRedFlag).length;
       const caught = call.lines.filter((line, i) => line.isRedFlag && flags.has(i)).length;
-      awardXP(caught > 0 && caught / totalFlags >= 0.75 ? 60 : 40);
+      awardXP(voiceCallReward(caught, totalFlags));
       void fetchDebrief(call);
       return;
     }
@@ -130,10 +124,16 @@ const VoiceLab = () => {
     };
   }, []);
 
-  const handleStart = (call: VoiceCall) => {
+  /**
+   * Single definition of "back to the call list". Back mid-call and "Try another
+   * call" on the debrief both used to clear state piecemeal, which is the same
+   * class of bug the Scenario Simulator had, where one exit cleared `selected`
+   * but not `isComplete` and left a blank page.
+   */
+  const resetToCallList = () => {
     clearAdvanceTimer();
     window.speechSynthesis?.cancel();
-    setSelected(call);
+    setSelected(null);
     setCurrentLine(0);
     setIsPlaying(false);
     setIsSpeaking(false);
@@ -141,6 +141,12 @@ const VoiceLab = () => {
     userFlagsRef.current = new Set();
     setIsComplete(false);
     setDebrief(null);
+    debriefRequest.reset();
+  };
+
+  const handleStart = (call: VoiceCall) => {
+    resetToCallList();
+    setSelected(call);
   };
 
   const handlePlay = () => {
@@ -161,7 +167,7 @@ const VoiceLab = () => {
       const flags = userFlagsRef.current;
       const totalFlags = selected.lines.filter((line) => line.isRedFlag).length;
       const caught = selected.lines.filter((line, i) => line.isRedFlag && flags.has(i)).length;
-      awardXP(caught > 0 && caught / totalFlags >= 0.75 ? 60 : 40);
+      awardXP(voiceCallReward(caught, totalFlags));
       void fetchDebrief(selected);
     }
   };
@@ -179,11 +185,14 @@ const VoiceLab = () => {
     const caught = selected.lines.filter((l, i) => l.isRedFlag && userFlags.has(i)).length;
 
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
-          <h2 className="text-xl font-bold text-foreground">Call Debrief</h2>
-          <p className="text-muted-foreground">You caught {caught} of {totalFlags} red flags.</p>
+      <div className="space-y-6">
+          <h2 className="text-xl font-bold text-foreground">{t("voice.debrief")}</h2>
+          <p className="text-muted-foreground">
+            {t("voice.caught", {
+              caught: formatNumber(caught),
+              total: formatNumber(totalFlags),
+            })}
+          </p>
 
           <div className="space-y-2">
             {selected.lines.map((line, i) => {
@@ -194,26 +203,30 @@ const VoiceLab = () => {
                   className={`p-3 rounded-lg border text-sm ${
                     line.isRedFlag
                       ? flagged
-                        ? "border-green-200 bg-green-50"
+                        ? "border-success/30 bg-success/10"
                         : "border-destructive/20 bg-destructive/5"
                       : flagged
-                        ? "border-amber-200 bg-amber-50"
+                        ? "border-warning/30 bg-warning/10"
                         : "border-border bg-card"
                   }`}
                   dir={line.lang.startsWith("ar") ? "rtl" : "ltr"}
                 >
                   <div className="flex items-start gap-2">
-                    {line.isRedFlag && flagged && <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />}
+                    {line.isRedFlag && flagged && <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />}
                     {line.isRedFlag && !flagged && <XCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />}
                     <div>
                       <p className="text-foreground">{line.text}</p>
                       {line.isRedFlag && (
-                        <p className={`text-xs mt-1 ${flagged ? "text-green-600" : "text-destructive"}`}>
-                          {flagged ? "You caught this!" : `Missed: ${line.flagReason}`}
+                        <p className={`text-xs mt-1 ${flagged ? "text-success" : "text-destructive"}`}>
+                          {flagged
+                            ? t("scenarios.caught")
+                            : t("scenarios.missed", { reason: line.flagReason ?? "" })}
                         </p>
                       )}
                       {!line.isRedFlag && flagged && (
-                        <p className="text-xs mt-1 text-amber-600">Good instinct, but this one was safe.</p>
+                        <p className="mt-1 text-xs text-warning">
+                          {t("scenarios.overFlagged")}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -222,27 +235,35 @@ const VoiceLab = () => {
             })}
           </div>
 
-          {isLoadingDebrief ? (
+          {debriefRequest.isPending ? (
             <div className="rounded-lg border border-border bg-card p-4 flex items-center gap-2 text-sm text-muted-foreground">
               <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              HARIS is writing your debrief...
+              {t("voice.writingDebrief")}
             </div>
           ) : debrief ? (
-            <div className="rounded-lg border border-border bg-card p-4 space-y-2">
-              <p className="text-sm text-foreground">{debrief.debrief}</p>
-              <p className="text-sm font-semibold text-primary">{debrief.top_tip}</p>
+            /* `debrief_ar` and `top_tip_ar` were generated on every completed
+               call and never rendered. */
+            <div
+              dir={locale === "ar" ? "rtl" : "ltr"}
+              className="space-y-2 rounded-lg border border-border bg-card p-4"
+            >
+              <p className="text-sm text-foreground">
+                {locale === "ar" && debrief.debrief_ar ? debrief.debrief_ar : debrief.debrief}
+              </p>
+              <p className="text-sm font-semibold text-primary">
+                {locale === "ar" && debrief.top_tip_ar ? debrief.top_tip_ar : debrief.top_tip}
+              </p>
             </div>
           ) : null}
 
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setSelected(null)} className="flex-1 gap-2">
-              <RotateCcw className="w-4 h-4" /> Try another call
+            <Button variant="outline" onClick={resetToCallList} className="flex-1 gap-2">
+              <RotateCcw className="w-4 h-4" aria-hidden="true" /> {t("voice.tryAnother")}
             </Button>
             <Button onClick={() => navigate("/scenarios")} className="flex-1 gap-2">
-              Go to Scenarios <ChevronRight className="w-4 h-4" />
+              {t("voice.goToScenarios")} <ChevronRight className="w-4 h-4" aria-hidden="true" />
             </Button>
           </div>
-        </main>
       </div>
     );
   }
@@ -250,93 +271,167 @@ const VoiceLab = () => {
   if (selected) {
     const line = selected.lines[currentLine];
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
-          <Button variant="ghost" size="sm" onClick={() => { window.speechSynthesis.cancel(); setSelected(null); }}>Back</Button>
-
-          <div className="rounded-xl border-2 border-border bg-card p-6 text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <Phone className="w-8 h-8 text-primary" />
+      <div className="flex h-full flex-col">
+          <div className="my-auto space-y-6">
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="sm" onClick={resetToCallList}>
+                {t("scenarios.back")}
+              </Button>
+              {isPlaying && (
+                <span className="text-sm font-medium text-muted-foreground">
+                  {t("voice.line", {
+                    current: formatNumber(currentLine + 1),
+                    total: formatNumber(selected.lines.length),
+                  })}
+                </span>
+              )}
             </div>
-            <div>
-              <p className="font-semibold text-foreground">{selected.callerName}</p>
-              <p className="text-sm text-muted-foreground">{selected.callerNumber}</p>
-            </div>
 
-            {!isPlaying ? (
-              !speechSupported ? (
-                <p className="text-sm text-destructive">Voice not supported in your browser. Please use Chrome or Safari.</p>
+            <div className="space-y-4 rounded-xl border-2 border-border bg-card p-6 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mx-auto">
+                <Phone className="h-8 w-8 text-primary" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">{selected.callerName}</p>
+                <p className="text-sm text-muted-foreground">{selected.callerNumber}</p>
+              </div>
+
+              {!isPlaying ? (
+                !speechSupported ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-destructive">
+                      {t("voice.unsupported")}
+                    </p>
+                    {/* The lesson still works: the transcript is the exercise, the
+                        audio is only a convenience. */}
+                    <Button onClick={handleEndCall} variant="outline" className="gap-2">
+                      <PhoneOff className="h-4 w-4" aria-hidden="true" /> {t("voice.skipToDebrief")}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      {t("voice.instructions")}
+                    </p>
+                    <Button onClick={handlePlay} className="gap-2">
+                      <Phone className="h-4 w-4" aria-hidden="true" /> {t("voice.answer")}
+                    </Button>
+                  </div>
+                )
               ) : (
-                <Button onClick={handlePlay} className="gap-2">
-                  <Phone className="w-4 h-4" /> Answer Call
-                </Button>
-              )
-            ) : (
-              <>
-                <div className="min-h-[80px] flex items-center justify-center px-4">
-                  <p
-                    className={`text-foreground text-center ${isSpeaking ? "animate-pulse" : ""}`}
-                    dir={line?.lang.startsWith("ar") ? "rtl" : "ltr"}
+                <>
+                  {/* A caption region: `aria-live` so each line is announced as it
+                      is spoken, and `lang` so an Arabic line is read by a screen
+                      reader using an Arabic voice. */}
+                  <div
+                    className="min-h-[5rem] flex items-center justify-center px-4"
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
                   >
-                    {line?.text}
-                  </p>
-                </div>
+                    <p
+                      className={`text-foreground text-center ${isSpeaking ? "animate-pulse" : ""}`}
+                      dir={line?.lang.startsWith("ar") ? "rtl" : "ltr"}
+                      lang={line?.lang}
+                      /* The transcript is the lesson; audio is a convenience, so
+                         an Arabic line stays readable whatever the speech voice. */
+                    >
+                      {line?.text}
+                    </p>
+                  </div>
 
-                <p className="text-xs text-muted-foreground">
-                  Line {currentLine + 1} of {selected.lines.length}
-                </p>
-
-                <div className="flex gap-3 justify-center">
-                  <Button
-                    variant="destructive"
-                    onClick={handleFlag}
-                    disabled={userFlags.has(currentLine)}
-                    className="gap-2"
+                  <div
+                    className="mx-auto h-1 w-40 overflow-hidden rounded-full bg-muted"
+                    role="progressbar"
+                    aria-label={t("voice.callProgress")}
+                    aria-valuemin={1}
+                    aria-valuemax={selected.lines.length}
+                    aria-valuenow={currentLine + 1}
                   >
-                    <Flag className="w-4 h-4" />
-                    {userFlags.has(currentLine) ? "Flagged" : "FLAG — Suspicious!"}
-                  </Button>
-                  <Button variant="outline" onClick={handleEndCall} className="gap-2">
-                    <PhoneOff className="w-4 h-4" /> End Call
-                  </Button>
-                </div>
-              </>
-            )}
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width] duration-500"
+                      style={{
+                        width: `${((currentLine + 1) / selected.lines.length) * 100}%`,
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+                    <Button
+                      variant="destructive"
+                      onClick={handleFlag}
+                      disabled={userFlags.has(currentLine)}
+                      className="gap-2"
+                    >
+                      <Flag className="h-4 w-4" aria-hidden="true" />
+                      {userFlags.has(currentLine) ? t("voice.flagged") : t("voice.flag")}
+                    </Button>
+                    <Button variant="outline" onClick={handleEndCall} className="gap-2">
+                      <PhoneOff className="h-4 w-4" aria-hidden="true" /> {t("voice.endCall")}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
+    <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Voice Lab</h2>
-          <p className="text-muted-foreground mt-1">Hear a real scam call. Flag the red flags in real time. Train your ear.</p>
+          <h2 className="text-2xl font-bold text-foreground">{t("voice.title")}</h2>
+          <p className="mt-1 text-muted-foreground">{t("voice.subtitle")}</p>
         </div>
 
         <div className="grid gap-3">
           {voiceCalls.map((call) => (
-            <Card key={call.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStart(call)}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-foreground">{call.title}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${difficultyColor[call.difficulty]}`}>
-                      {call.difficulty}
+            <Card
+              key={call.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`${locale === "ar" ? call.titleAr : call.title}. ${t(`difficulty.${call.difficulty}` as const)}.`}
+              className="cursor-pointer hover:shadow-md transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              onClick={() => handleStart(call)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  handleStart(call);
+                }
+              }}
+            >
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-foreground">
+                      {locale === "ar" ? call.titleAr : call.title}
+                    </h3>
+                    <span
+                      className={`rounded-full border px-2 py-0.5 text-xs ${difficultyClassName(call.difficulty)}`}
+                    >
+                      {t(`difficulty.${call.difficulty}` as const)}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground">{call.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {locale === "ar" ? call.descriptionAr : call.description}
+                  </p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-end">
+                  <span className="text-xs font-semibold text-primary">
+                    {t("voice.redFlagCount", {
+                      count: formatNumber(call.lines.filter((line) => line.isRedFlag).length),
+                    })}
+                  </span>
+                  <ChevronRight
+                    className="h-4 w-4 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
-      </main>
     </div>
   );
 };

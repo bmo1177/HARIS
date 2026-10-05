@@ -66,6 +66,34 @@ export interface AppConfig {
   dailyRateLimit: RateLimitConfig;
 }
 
+/**
+ * Resolves the privileged key used for rate-limit bookkeeping.
+ *
+ * Supabase injects `SUPABASE_SECRET_KEYS` into the Edge Function runtime as a
+ * JSON dictionary keyed by key name, and that is where the current
+ * `sb_secret_…` keys live. The documented `SUPABASE_SERVICE_ROLE_KEY` variable
+ * still exists but carries the **legacy** JWT, and Supabase is deprecating the
+ * `anon` / `service_role` JWT keys — reading it keeps the project on the
+ * deprecated path.
+ *
+ * Order matters: the injected dictionary first, then an explicitly configured
+ * secret for local development, then the legacy variable for older runtimes.
+ */
+function resolveServiceRoleKey(): string {
+  const injected = optional("SUPABASE_SECRET_KEYS");
+  if (injected) {
+    try {
+      const keys = JSON.parse(injected) as Record<string, string>;
+      const value = keys.default ?? Object.values(keys)[0];
+      if (value) return value;
+    } catch {
+      // Fall through to the explicit secret below.
+    }
+  }
+
+  return required("SUPABASE_SERVICE_ROLE_KEY");
+}
+
 const DEFAULT_ORIGINS = [
   "https://haris-two-xi.vercel.app",
   "http://localhost:8080",
@@ -78,20 +106,18 @@ export function getConfig(): AppConfig {
   if (cached) return cached;
 
   const origins = optional("ALLOWED_ORIGINS")
-    ? (optional("ALLOWED_ORIGINS") as string).split(",").map((o) => o.trim()).filter(Boolean)
+    ? (optional("ALLOWED_ORIGINS") as string).split(",").map((o) => o.trim())
+      .filter(Boolean)
     : DEFAULT_ORIGINS;
 
-  cached = {
+  const config = {
     llm: {
       apiKey: required("LLM_API_KEY"),
-      baseUrl: (optional("LLM_BASE_URL") ?? "https://openrouter.ai/api/v1").replace(/\/+$/, ""),
+      baseUrl: (optional("LLM_BASE_URL") ?? "https://openrouter.ai/api/v1")
+        .replace(/\/+$/, ""),
       model: optional("LLM_MODEL") ?? "google/gemini-3.5-flash",
       timeoutMs: positiveInt("LLM_TIMEOUT_MS", 20_000),
       maxTokens: positiveInt("LLM_MAX_TOKENS", 1_200),
-    },
-    supabase: {
-      url: required("SUPABASE_URL"),
-      serviceRoleKey: required("SUPABASE_SERVICE_ROLE_KEY"),
     },
     allowedOrigins: origins,
     rateLimit: {
@@ -102,8 +128,29 @@ export function getConfig(): AppConfig {
       max: positiveInt("DAILY_RATE_LIMIT_MAX", 100),
       windowSeconds: 86_400,
     },
-  };
+    // `supabase` is attached below as a lazy accessor. Asserted rather than
+    // written out so the required property is not duplicated in two places.
+  } as AppConfig;
 
+  // Resolved on first access rather than here. Building the whole config eagerly
+  // meant every caller needed both sets of credentials, so the eval harness — which
+  // calls the LLM path and never touches the database — failed all 45 cases with
+  // "Missing required environment variable: SUPABASE_URL". A failure that has
+  // nothing to do with the model under test is worse than no measurement, because
+  // it is easy to misread as a bad score.
+  //
+  // Injected by the Edge Function runtime, and by `supabase start` locally, so
+  // this still resolves in both places without a separate override.
+  Object.defineProperty(config, "supabase", {
+    enumerable: true,
+    configurable: true,
+    get: () => ({
+      url: required("SUPABASE_URL"),
+      serviceRoleKey: resolveServiceRoleKey(),
+    }),
+  });
+
+  cached = config;
   return cached;
 }
 

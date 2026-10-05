@@ -5,7 +5,10 @@
   },
   "lint": {
     "rules": {
-      "tags": ["recommended"]
+      "tags": ["recommended"],
+      "exclude": [
+        "no-control-regex"
+      ]
     }
   },
   "fmt": {

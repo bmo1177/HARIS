@@ -1,20 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield, AlertTriangle, Target, ChevronRight, RotateCcw, ArrowRight } from "lucide-react";
+import { AlertTriangle, Target, ChevronRight, RotateCcw, ArrowRight } from "lucide-react";
 import { scenarios, type Scenario } from "@/data/scenarios";
-import { errorMessage, invokeHarisFunction } from "@/integrations/supabase/functions";
+import { errorMessage } from "@/lib/api";
+import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/xpContext";
+import { useI18n } from "@/lib/i18n";
+import { difficultyClassName } from "@/lib/difficulty";
+import { scenarioMaxReward, scenarioReward } from "@/lib/xp";
 import { scenarioFeedbackSchema, type ScenarioFeedback } from "@/types/analysis";
-
-const difficultyColor = {
-  Beginner: "text-green-600 bg-green-50 border-green-200",
-  Intermediate: "text-amber-600 bg-amber-50 border-amber-200",
-  Advanced: "text-red-600 bg-red-50 border-red-200",
-};
 
 const Scenarios = () => {
   const [selected, setSelected] = useState<Scenario | null>(null);
@@ -22,20 +19,35 @@ const Scenarios = () => {
   const [safeCount, setSafeCount] = useState(0);
   const [redFlags, setRedFlags] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<ScenarioFeedback | null>(null);
-  const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
   const [chatHistory, setChatHistory] = useState<{ role: "attacker" | "user"; text: string; feedbackData?: ScenarioFeedback }[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const { awardXP } = useXP();
   const navigate = useNavigate();
+  const { t, locale, formatNumber } = useI18n();
+  const feedbackRequest = useHarisMutation("scenario-feedback", scenarioFeedbackSchema);
 
-  const handleStart = (scenario: Scenario) => {
-    setSelected(scenario);
+  /**
+   * Single definition of "back to the list". The score screen's "Try another
+   * scenario" button used to call `setSelected(null)` alone, leaving
+   * `isComplete === true` — and since the completion branch is checked after the
+   * play branch, the route fell through to `renderScoreScreen()`, which returns
+   * null with nothing selected. The result was a blank page with no way back to
+   * the list except reloading or navigating away.
+   */
+  const resetToList = () => {
+    setSelected(null);
     setStepIndex(0);
     setSafeCount(0);
     setRedFlags([]);
     setFeedback(null);
     setChatHistory([]);
     setIsComplete(false);
+    feedbackRequest.reset();
+  };
+
+  const handleStart = (scenario: Scenario) => {
+    resetToList();
+    setSelected(scenario);
   };
 
   const handleChoice = async (choiceIndex: number) => {
@@ -49,23 +61,18 @@ const Scenarios = () => {
       { role: "user", text: choice.label },
     ]);
 
-    setIsLoadingFeedback(true);
     setFeedback(null);
 
     try {
       // `choiceType` is deliberately not sent. It used to be passed straight to
       // the model as "this is a safe choice", so the AI was narrating an answer
       // the client already held rather than judging the reply.
-      const fb = await invokeHarisFunction(
-        "scenario-feedback",
-        {
-          scenarioTitle: selected.title,
-          stepNumber: stepIndex + 1,
-          attackerMessage: step.attacker,
-          userChoice: choice.label,
-        },
-        scenarioFeedbackSchema,
-      );
+      const fb = await feedbackRequest.mutateAsync({
+        scenarioTitle: selected.title,
+        stepNumber: stepIndex + 1,
+        attackerMessage: step.attacker,
+        userChoice: choice.label,
+      });
 
       setFeedback(fb);
 
@@ -84,15 +91,18 @@ const Scenarios = () => {
 
       const fallbackFb: ScenarioFeedback = {
         safe: choice.type === "safe",
-        feedback: choice.type === "safe" ? "Smart move! You spotted the red flag." : choice.type === "unsafe" ? "Be careful — this could put your personal information at risk." : "Not the worst choice, but there's a safer option.",
+        feedback:
+          choice.type === "safe"
+            ? "Smart move! You spotted the red flag."
+            : choice.type === "unsafe"
+              ? "Be careful — this could put your personal information at risk."
+              : "Not the worst choice, but there's a safer option.",
         feedback_ar: "",
         red_flag: choice.type !== "safe" ? "Watch for this pattern in real life." : "",
       };
       setFeedback(fallbackFb);
       if (choice.type === "safe") setSafeCount((c) => c + 1);
       if (fallbackFb.red_flag) setRedFlags((prev) => [...prev, fallbackFb.red_flag]);
-    } finally {
-      setIsLoadingFeedback(false);
     }
   };
 
@@ -100,11 +110,7 @@ const Scenarios = () => {
     if (!selected) return;
     if (stepIndex + 1 >= selected.steps.length) {
       setIsComplete(true);
-      let xp = 10;
-      if (safeCount === 4) xp = 75;
-      else if (safeCount === 3) xp = 50;
-      else if (safeCount === 2) xp = 25;
-      awardXP(xp);
+      awardXP(scenarioReward(safeCount, selected.steps.length));
     } else {
       setStepIndex((i) => i + 1);
       setFeedback(null);
@@ -112,25 +118,37 @@ const Scenarios = () => {
   };
 
   const renderScoreScreen = () => {
+    if (!selected) return null;
+    const total = selected.steps.length;
+    const score = total > 0 ? safeCount / total : 0;
+
     let message = "";
-    if (safeCount === 4) message = "Perfect score! You are a human firewall.";
-    else if (safeCount === 3) message = "Strong instincts! One slip — review what you missed.";
-    else if (safeCount === 2) message = "Getting there. Scammers almost had you twice.";
-    else message = "This scenario would have fooled you — but not anymore.";
+    if (score === 1) message = t("scenarios.perfect");
+    else if (score >= 0.75) message = t("scenarios.strong");
+    else if (score >= 0.5) message = t("scenarios.gettingThere");
+    else message = t("scenarios.fooled");
 
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="text-center space-y-2">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-            <Target className="w-8 h-8 text-primary" />
+            <Target className="w-8 h-8 text-primary" aria-hidden="true" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground">{safeCount}/4 Safe Choices</h2>
+          <h2 className="text-2xl font-bold text-foreground">
+            {t("scenarios.scoreTitle", {
+              safe: formatNumber(safeCount),
+              total: formatNumber(total),
+            })}
+          </h2>
           <p className="text-muted-foreground">{message}</p>
+          <p className="text-sm font-semibold text-primary">
+            {t("scenarios.scoreXp", { xp: formatNumber(scenarioReward(safeCount, total)) })}
+          </p>
         </div>
 
         {redFlags.length > 0 && (
           <div className="space-y-2">
-            <h3 className="font-semibold text-foreground">Red flags to remember:</h3>
+            <h3 className="font-semibold text-foreground">{t("scenarios.redFlags")}</h3>
             {redFlags.map((flag, i) => (
               <div key={i} className="flex items-start gap-2 p-3 rounded-lg border border-destructive/20 bg-destructive/5">
                 <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
@@ -141,13 +159,13 @@ const Scenarios = () => {
         )}
 
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => { setSelected(null); }} className="flex-1 gap-2">
-            <RotateCcw className="w-4 h-4" />
-            Try another scenario
+          <Button variant="outline" onClick={resetToList} className="flex-1 gap-2">
+            <RotateCcw className="w-4 h-4" aria-hidden="true" />
+            {t("scenarios.tryAnother")}
           </Button>
           <Button onClick={() => navigate("/")} className="flex-1 gap-2">
-            <ArrowRight className="w-4 h-4" />
-            Test a real message
+            <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            {t("scenarios.testReal")}
           </Button>
         </div>
       </div>
@@ -157,15 +175,20 @@ const Scenarios = () => {
   if (selected && !isComplete) {
     const step = selected.steps[stepIndex];
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-6 max-w-2xl space-y-4">
+      <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>Back</Button>
-            <span className="text-sm text-muted-foreground font-medium">Step {stepIndex + 1} of {selected.steps.length}</span>
+            <Button variant="ghost" size="sm" onClick={resetToList}>
+              {t("scenarios.back")}
+            </Button>
+            <span className="text-sm font-medium text-muted-foreground">
+              {t("scenarios.step", {
+                current: formatNumber(stepIndex + 1),
+                total: formatNumber(selected.steps.length),
+              })}
+            </span>
           </div>
 
-          <h2 className="text-lg font-bold text-foreground">{selected.title}</h2>
+          <h2 className="text-lg font-bold text-foreground">{locale === "ar" ? selected.titleAr : selected.title}</h2>
 
           <div className="space-y-3">
             {chatHistory.map((msg, i) => (
@@ -187,8 +210,19 @@ const Scenarios = () => {
                         <p className="text-sm">{msg.text}</p>
                       </div>
                       {msg.feedbackData && (
-                        <div className={`rounded-lg p-3 border text-sm ${msg.feedbackData.safe ? "border-green-200 bg-green-50 text-green-800" : "border-destructive/20 bg-destructive/5 text-destructive"}`}>
-                          {msg.feedbackData.feedback}
+                        <div
+                          dir={locale === "ar" ? "rtl" : "ltr"}
+                          className={`rounded-lg border p-3 text-sm ${
+                            msg.feedbackData.safe
+                              ? "border-success/30 bg-success/10 text-success"
+                              : "border-destructive/20 bg-destructive/5 text-destructive"
+                          }`}
+                        >
+                          {/* `feedback_ar` was generated on every single call and
+                              never rendered. */}
+                          {locale === "ar" && msg.feedbackData.feedback_ar
+                            ? msg.feedbackData.feedback_ar
+                            : msg.feedbackData.feedback}
                         </div>
                       )}
                     </div>
@@ -210,17 +244,19 @@ const Scenarios = () => {
             )}
           </div>
 
-          {isLoadingFeedback ? (
+          {feedbackRequest.isPending ? (
             <div className="text-center py-4">
               <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                HARIS is evaluating...
+                {t("scenarios.evaluating")}
               </div>
             </div>
           ) : feedback ? (
             <div className="animate-fade-in">
               <Button onClick={handleNextStep} className="w-full gap-2">
-                {stepIndex + 1 >= selected.steps.length ? "See results" : "Next step"}
+                {stepIndex + 1 >= selected.steps.length
+                  ? t("scenarios.seeResults")
+                  : t("scenarios.nextStep")}
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
@@ -238,53 +274,75 @@ const Scenarios = () => {
               ))}
             </div>
           )}
-        </main>
       </div>
     );
   }
 
   if (isComplete) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-8 max-w-2xl">
-          {renderScoreScreen()}
-        </main>
-      </div>
+      <div className="py-2">{renderScoreScreen()}</div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
+    <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Scenario Simulator</h2>
-          <p className="text-muted-foreground mt-1">Live through a real attack. Make smart choices. Earn XP.</p>
+          <h2 className="text-2xl font-bold text-foreground">{t("scenarios.title")}</h2>
+          <p className="mt-1 text-muted-foreground">{t("scenarios.subtitle")}</p>
         </div>
 
         <div className="grid gap-3">
           {scenarios.map((s) => (
-            <Card key={s.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStart(s)}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-foreground">{s.title}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${difficultyColor[s.difficulty]}`}>
-                      {s.difficulty}
+            <Card
+              key={s.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`${locale === "ar" ? s.titleAr : s.title}. ${t(`difficulty.${s.difficulty}` as const)}. ${t("scenarios.upToXp", { xp: formatNumber(scenarioMaxReward(s.steps.length)) })}.`}
+              className="cursor-pointer hover:shadow-md transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              onClick={() => handleStart(s)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  handleStart(s);
+                }
+              }}
+            >
+              {/* Stacks on narrow screens. Previously the XP badge and chevron
+                  were vertically centred against a description that wrapped to
+                  three lines, which tore a hole in the middle of the card. */}
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-foreground">
+                      {locale === "ar" ? s.titleAr : s.title}
+                    </h3>
+                    <span
+                      className={`rounded-full border px-2 py-0.5 text-xs ${difficultyClassName(s.difficulty)}`}
+                    >
+                      {t(`difficulty.${s.difficulty}` as const)}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground">{s.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {locale === "ar" ? s.descriptionAr : s.description}
+                  </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs font-semibold text-primary">{s.xp} XP</span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-end">
+                  {/* Derived from the same function that pays out, so the card
+                      cannot advertise a number the game does not award. */}
+                  <span className="text-xs font-semibold text-primary">
+                    {t("scenarios.upToXp", {
+                      xp: formatNumber(scenarioMaxReward(s.steps.length)),
+                    })}
+                  </span>
+                  <ChevronRight
+                    className="h-4 w-4 text-muted-foreground"
+                    aria-hidden="true"
+                  />
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-      </main>
     </div>
   );
 };

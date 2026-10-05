@@ -9,8 +9,13 @@ export interface Scenario {
   title: string;
   titleAr: string;
   description: string;
+  descriptionAr: string;
   difficulty: "Beginner" | "Intermediate" | "Advanced";
-  xp: number;
+  /**
+   * Unused. The card and the payout both derive from `scenarios.available` and
+   * `scenarioMaxReward()` instead, so the advertised figure cannot drift from
+   * what the game awards.
+   */
   steps: ScenarioStep[];
 }
 
@@ -20,8 +25,8 @@ export const scenarios: Scenario[] = [
     title: "The Free PS5 Scam",
     titleAr: "احتيال PS5 المجاني",
     description: "You get a DM saying you won a free PS5. What do you do?",
+    descriptionAr: "تصلك رسالة مباشرة تقول إنك ربحت جهاز PS5 مجاناً. ماذا ستفعل؟",
     difficulty: "Beginner",
-    xp: 50,
     steps: [
       {
         attacker: "Hey! Your account was randomly selected in our Qatar National Day giveaway. You won a FREE PS5! To claim it, you just need to pay a small 50 QAR shipping fee. Reply with your full name and phone number to start.",
@@ -66,8 +71,8 @@ export const scenarios: Scenario[] = [
     title: "Fake Instagram Giveaway",
     titleAr: "هبة إنستغرام المزيفة",
     description: "A verified-looking account says you won a prize. Is it real?",
+    descriptionAr: "حساب يبدو موثّقاً يقول إنك ربحت جائزة. هل هذا حقيقي؟",
     difficulty: "Beginner",
-    xp: 50,
     steps: [
       {
         attacker: "Congratulations! You have been selected as today's lucky winner! You won 500 QAR shopping voucher. Follow us and send us a DM with the code WINNER2026 to claim!",
@@ -112,8 +117,8 @@ export const scenarios: Scenario[] = [
     title: "The Gaming Cheat Download",
     titleAr: "تنزيل غش الألعاب",
     description: "Someone in your game offers free V-Bucks through a download. Trust them?",
+    descriptionAr: "شخص داخل لعبتك يعرض عليك عملات V-Bucks مجاناً عبر تحميل. هل تثق به؟",
     difficulty: "Intermediate",
-    xp: 50,
     steps: [
       {
         attacker: "Bro I found a working V-Bucks generator for Fortnite. I already got 10,000 free. Just download this tool: vbucks-gen-2026.exe — you need to disable your antivirus first or it won't work.",
@@ -158,8 +163,8 @@ export const scenarios: Scenario[] = [
     title: "Scholarship Phishing",
     titleAr: "تصيد المنح الدراسية",
     description: "You receive an email about a full scholarship. It looks official.",
+    descriptionAr: "تصلك رسالة بريدية عن منحة دراسية كاملة. تبدو رسمية.",
     difficulty: "Intermediate",
-    xp: 50,
     steps: [
       {
         attacker: "Dear Student, You have been selected for the Qatar Future Leaders Scholarship — a full scholarship worth 120,000 QAR. Please confirm your interest by submitting your details within 48 hours using the link below.",
@@ -204,8 +209,8 @@ export const scenarios: Scenario[] = [
     title: "The Stranger Who Knows You",
     titleAr: "الغريب الذي يعرفك",
     description: "Someone online claims to know you and slowly gains your trust.",
+    descriptionAr: "شخص على الإنترنت يدّعي أنه يعرفك ويكسب ثقةك تدريجياً.",
     difficulty: "Advanced",
-    xp: 50,
     steps: [
       {
         attacker: "Hey! I think we met at the sports competition last month? You play football right? I'm Sarah, I go to the school near yours.",
