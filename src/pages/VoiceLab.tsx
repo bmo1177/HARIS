@@ -80,6 +80,50 @@ const VoiceLab = () => {
     [debriefRequest],
   );
 
+  const clearAdvanceTimer = useCallback(() => {
+    if (advanceTimerRef.current !== null) {
+      window.clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+  }, []);
+
+  const fetchDebrief = useCallback(async (call: VoiceCall) => {
+    setIsLoadingDebrief(true);
+    try {
+      const flags = userFlagsRef.current;
+      const redFlagLines = call.lines
+        .map((line, index) => ({ line, index }))
+        .filter(({ line }) => line.isRedFlag);
+      const totalFlags = redFlagLines.length;
+      const caught = redFlagLines.filter(({ index }) => flags.has(index)).length;
+
+      const result = await invokeHarisFunction(
+        "voice-debrief",
+        {
+          callTitle: call.title,
+          totalFlags,
+          caughtFlags: caught,
+          missedFlags: totalFlags - caught,
+          flagDetails: redFlagLines.map(({ line, index }) => ({
+            lineNumber: index + 1,
+            text: line.text,
+            isRedFlag: line.isRedFlag,
+            flagReason: line.flagReason,
+            userFlagged: flags.has(index),
+          })),
+        },
+        voiceDebriefSchema,
+      );
+
+      setDebrief(result);
+    } catch (error) {
+      // Previously swallowed entirely, so a failed debrief was invisible.
+      toast.error(errorMessage(error));
+    } finally {
+      setIsLoadingDebrief(false);
+    }
+  }, []);
+
   const speakLine = useCallback((call: VoiceCall, lineIndex: number) => {
     if (lineIndex >= call.lines.length) {
       setIsPlaying(false);
