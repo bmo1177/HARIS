@@ -15,8 +15,8 @@
     "check:deno": "deno check supabase/functions/analyze-message/index.ts supabase/functions/scenario-feedback/index.ts supabase/functions/voice-debrief/index.ts && deno lint supabase/functions",
     "e2e": "playwright test",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build",
-    "eval": "deno run --allow-env --allow-net eval/run.ts",
-    "eval:live": "deno run --allow-env --allow-net eval/run.ts --provider=live"
+    "preflight": "node scripts/preflight.mjs",
+    "preflight:live": "node scripts/preflight.mjs --live"
   },
   "dependencies": {
     "@fontsource-variable/ibm-plex-sans": "^5.3.0",

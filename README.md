@@ -169,6 +169,29 @@ is in [`supabase/README.md`](supabase/README.md). In short:
 
 ---
 
+## Pre-flight
+
+The failure modes in this project are quiet, so they are checked explicitly:
+
+```bash
+npm run preflight          # before pushing
+npm run preflight:live     # after deploying the functions
+```
+
+It verifies `.env` exists and holds a **publishable** key in the current
+`sb_publishable_` format, that no `sb_secret_` string reached the bundle, that
+`vercel.json` carries the SPA rewrite, that migrations exist, and — with
+`--live` — that a deployed function returns a real verdict.
+
+The live probe distinguishes its failure modes rather than reporting "fetch
+failed" for all of them: a rejected key, a missing migration (`rate_limited`,
+because the limiter fails closed by design), an unconfigured secret
+(`service_unavailable`), and DNS that does not resolve. Each prints the command
+that fixes it.
+
+If DNS fails it reports the live check as **inconclusive** rather than passing,
+so a green run never implies more than it checked.
+
 ## Contributing
 
 Issues and pull requests are welcome. Please run `npm run verify` before
