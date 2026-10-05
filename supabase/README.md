@@ -35,7 +35,7 @@ for the full list. The essentials:
 # Once, per machine. Needs SUPABASE_ACCESS_TOKEN set, or an interactive
 # `supabase login`. `db push` additionally needs the database password.
 export SUPABASE_ACCESS_TOKEN=sbp_...
-supabase link --project-ref fnucljasscadjhlzootl
+supabase link --project-ref xxhymbgomlhnhykhhkul
 
 # 1. Create the rate-limit table and function.
 supabase db push
@@ -131,7 +131,7 @@ Confirm it worked:
 
 ```bash
 curl -s -X POST \
-  "https://fnucljasscadjhlzootl.supabase.co/functions/v1/analyze-message" \
+  "https://xxhymbgomlhnhykhhkul.supabase.co/functions/v1/analyze-message" \
   -H "Content-Type: application/json" \
   -H "apikey: $VITE_SUPABASE_PUBLISHABLE_KEY" \
   -d '{"message":"Free prize! Claim now: example.com"}' | head -c 400
