@@ -78,6 +78,45 @@ supabase secrets set LLM_API_KEY=sk-or-... \
   LLM_MODEL=nvidia/nemotron-3-super-120b-a12b:free
 ```
 
+#### NVIDIA Build as an alternative
+
+`integrate.api.nvidia.com` is also OpenAI-compatible, and its free tier is far
+more usable than OpenRouter's: roughly **40 requests/minute** and up to
+**10,000/day**, rate-limited rather than quota-limited, so it recovers on its own
+instead of hitting a daily cliff. OpenRouter's 50/day is not viable for a
+classroom.
+
+It also lists `nvidia/nemotron-3-super-120b-a12b` — the same model verified above,
+so no prompt or schema changes are needed. Configuration only:
+
+```bash
+supabase secrets set LLM_API_KEY=nvapi-... \
+  LLM_BASE_URL=https://integrate.api.nvidia.com/v1 \
+  LLM_MODEL=nvidia/nemotron-3-super-120b-a12b
+```
+
+Caveats:
+
+- Requires a phone-verified NVIDIA Developer Program account. Fourteen countries
+  are excluded from phone verification.
+- Free-tier RPM is not adjustable. Higher limits mean deploying the model.
+- Free status is per model and marked on each model page; membership in
+  `/v1/models` does not imply free access, and ids get renamed without notice.
+- Rate limits vary by model and are shared with other users' traffic.
+- **Verify structured output first.** NIM endpoints vary in how they express
+  guided decoding; some want `extra_body.guided_json` rather than
+  `response_format`. Run the probe.
+
+```bash
+LLM_API_KEY=nvapi-... \
+LLM_BASE_URL=https://integrate.api.nvidia.com/v1 \
+LLM_MODEL=nvidia/nemotron-3-super-120b-a12b \
+npm run probe:provider
+```
+
+It exits non-zero when nothing was measured, so an exhausted quota can never be
+mistaken for a working provider.
+
 **On `--no-verify-jwt`.** `config.toml` records `verify_jwt = false` for each
 function with the reasoning inline, and the CLI does read that file — but the
 flag is passed explicitly anyway. These functions have no auth flow, so a
