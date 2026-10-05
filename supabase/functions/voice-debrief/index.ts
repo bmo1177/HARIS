@@ -1,78 +1,106 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "npm:zod@3.25.76";
+import { UpstreamError } from "../_shared/env.ts";
+import { generateStructured } from "../_shared/llm.ts";
+import { createHandler, jsonResponse } from "../_shared/http.ts";
+import { UNTRUSTED_CONTENT_RULES, clampText, wrapUntrusted } from "../_shared/prompt.ts";
+import { enforceRateLimit } from "../_shared/rateLimit.ts";
+import { parseRequest, voiceDebriefRequest } from "../_shared/schemas.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const DEBRIEF_SCHEMA = {
+  type: "object",
+  properties: {
+    debrief: {
+      type: "string",
+      description:
+        "Three sentences of honest, specific feedback on how the call went. Reference what the student actually missed or caught.",
+    },
+    debrief_ar: { type: "string", description: "Arabic translation of the debrief" },
+    top_tip: {
+      type: "string",
+      description: "One specific, actionable thing to do differently next time",
+    },
+    top_tip_ar: { type: "string", description: "Arabic translation of the tip" },
+  },
+  required: ["debrief", "debrief_ar", "top_tip", "top_tip_ar"],
+  additionalProperties: false,
+} as const;
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+const MODEL_OUTPUT = z.object({
+  debrief: z.string(),
+  debrief_ar: z.string(),
+  top_tip: z.string(),
+  top_tip_ar: z.string(),
+});
 
-  try {
-    const { callTitle, totalFlags, caughtFlags, missedFlags, flagDetails } = await req.json();
+const SYSTEM_PROMPT = `You are HARIS, a friendly cybersecurity coach for high school students.
+A student has just finished a simulated scam phone call and flagged the moments that
+suspicious to them. Give them an honest debrief.
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+How to respond:
+- Be honest. If they missed something, say plainly what it was and why it mattered. Do not
+  soften a bad result into a vague encouragement.
+- Be specific to *this* call. Refer to the actual lines and the actual pattern at work
+  (claimed authority, manufactured urgency, a fee to release a prize, a request for a
+  one-time code), not to generic advice about scams in general.
+- Credit genuine instinct. If they flagged something harmless, note that over-flagging is
+  its own problem, because it trains real warnings to be ignored.
+- top_tip is one concrete action, not a slogan.
+- Never claim the student is an expert, a genius, or that they passed. The counters passed
+  in are data to interpret, not conclusions to repeat.
 
-    const systemPrompt = `You are HARIS, a friendly cybersecurity coach for high school students. Give encouraging, honest feedback to a teen who just completed a vishing call simulation. Use the suggest_debrief tool to respond.`;
+${UNTRUSTED_CONTENT_RULES}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Call: "${callTitle}". Student caught ${caughtFlags}/${totalFlags} red flags (missed ${missedFlags}).\nDetails: ${JSON.stringify(flagDetails)}\nGive debrief.` },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "suggest_debrief",
-              description: "Return voice call debrief",
-              parameters: {
-                type: "object",
-                properties: {
-                  debrief: { type: "string", description: "3 sentences, direct teen-friendly tone" },
-                  debrief_ar: { type: "string", description: "Arabic translation" },
-                  top_tip: { type: "string", description: "One actionable tip in English" },
-                  top_tip_ar: { type: "string", description: "Arabic translation of the tip" },
-                },
-                required: ["debrief", "debrief_ar", "top_tip", "top_tip_ar"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "suggest_debrief" } },
-      }),
+/** Renders the transcript for the prompt, one fenced line at a time. */
+function renderTranscript(lines: Array<{ lineNumber: number; text: string }>): string {
+  return lines.map((line) => `${line.lineNumber}. ${wrapUntrusted("LINE", line.text)}`).join("\n");
+}
+
+Deno.serve(
+  createHandler(async ({ req, requestId, body }) => {
+    await enforceRateLimit(req, "voice-debrief");
+
+    const { callTitle, totalFlags, caughtFlags, missedFlags, flagDetails } = parseRequest(
+      voiceDebriefRequest,
+      body,
+    );
+
+    // Only red-flag lines carry signal for the coach. Sending every line would
+    // spend tokens restating the safe parts of the script.
+    const redFlagLines = flagDetails.filter((detail) => detail.isRedFlag);
+    const overFlagged = flagDetails.filter((detail) => !detail.isRedFlag && detail.userFlagged);
+
+    const raw = await generateStructured({
+      system: SYSTEM_PROMPT,
+      user: [
+        `Call: ${callTitle}`,
+        `Red flags present: ${totalFlags}. Caught: ${caughtFlags}. Missed: ${missedFlags}.`,
+        overFlagged.length > 0
+          ? `The student also flagged ${overFlagged.length} line(s) that were actually harmless.`
+          : "The student did not over-flag any harmless lines.",
+        "",
+        "Red-flag lines from the call:",
+        renderTranscript(redFlagLines),
+        "",
+        "Give the debrief.",
+      ].join("\n"),
+      schemaName: "suggest_debrief",
+      schema: DEBRIEF_SCHEMA as unknown as Record<string, unknown>,
+      maxTokens: 800,
     });
 
-    if (!response.ok) {
-      if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (response.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error("AI gateway error");
+    const parsed = MODEL_OUTPUT.safeParse(raw);
+    if (!parsed.success) {
+      console.error(`[${requestId}] model output failed validation:`, parsed.error.issues);
+      throw new UpstreamError("model output did not match the expected schema", 502, false);
     }
 
-    const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall?.function?.arguments) throw new Error("No tool call");
+    const { debrief, debrief_ar, top_tip, top_tip_ar } = parsed.data;
 
-    return new Response(toolCall.function.arguments, {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return jsonResponse(req, 200, {
+      debrief: clampText(debrief.trim(), 900, "Review the transcript and note what you missed."),
+      debrief_ar: clampText(debrief_ar.trim(), 900, ""),
+      top_tip: clampText(top_tip.trim(), 300, "Hang up and verify independently if in doubt."),
+      top_tip_ar: clampText(top_tip_ar.trim(), 300, ""),
     });
-  } catch (e) {
-    console.error("voice-debrief error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-});
+  }),
+);

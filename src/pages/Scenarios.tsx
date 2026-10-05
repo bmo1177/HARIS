@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, AlertTriangle, Target, ChevronRight, RotateCcw, ArrowRight } from "lucide-react";
-import { scenarios, type Scenario, type ScenarioStep } from "@/data/scenarios";
-import { supabase } from "@/integrations/supabase/client";
+import { scenarios, type Scenario } from "@/data/scenarios";
+import { errorMessage, invokeHarisFunction } from "@/integrations/supabase/functions";
 import { useXP } from "@/lib/xpContext";
+import { scenarioFeedbackSchema, type ScenarioFeedback } from "@/types/analysis";
 
 const difficultyColor = {
   Beginner: "text-green-600 bg-green-50 border-green-200",
@@ -19,9 +21,9 @@ const Scenarios = () => {
   const [stepIndex, setStepIndex] = useState(0);
   const [safeCount, setSafeCount] = useState(0);
   const [redFlags, setRedFlags] = useState<string[]>([]);
-  const [feedback, setFeedback] = useState<{ safe: boolean; feedback: string; feedback_ar: string; red_flag: string } | null>(null);
+  const [feedback, setFeedback] = useState<ScenarioFeedback | null>(null);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
-  const [chatHistory, setChatHistory] = useState<{ role: "attacker" | "user"; text: string; feedbackData?: typeof feedback }[]>([]);
+  const [chatHistory, setChatHistory] = useState<{ role: "attacker" | "user"; text: string; feedbackData?: ScenarioFeedback }[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const { awardXP } = useXP();
   const navigate = useNavigate();
@@ -51,19 +53,20 @@ const Scenarios = () => {
     setFeedback(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("scenario-feedback", {
-        body: {
+      // `choiceType` is deliberately not sent. It used to be passed straight to
+      // the model as "this is a safe choice", so the AI was narrating an answer
+      // the client already held rather than judging the reply.
+      const fb = await invokeHarisFunction(
+        "scenario-feedback",
+        {
           scenarioTitle: selected.title,
           stepNumber: stepIndex + 1,
           attackerMessage: step.attacker,
           userChoice: choice.label,
-          choiceType: choice.type,
         },
-      });
+        scenarioFeedbackSchema,
+      );
 
-      if (error) throw error;
-
-      const fb = data as { safe: boolean; feedback: string; feedback_ar: string; red_flag: string };
       setFeedback(fb);
 
       if (choice.type === "safe") setSafeCount((c) => c + 1);
@@ -74,8 +77,12 @@ const Scenarios = () => {
         updated[updated.length - 1] = { ...updated[updated.length - 1], feedbackData: fb };
         return updated;
       });
-    } catch {
-      const fallbackFb = {
+    } catch (error) {
+      // Say so rather than silently substituting a canned answer, which left
+      // students unable to tell that HARIS had not actually responded.
+      toast.error(errorMessage(error));
+
+      const fallbackFb: ScenarioFeedback = {
         safe: choice.type === "safe",
         feedback: choice.type === "safe" ? "Smart move! You spotted the red flag." : choice.type === "unsafe" ? "Be careful — this could put your personal information at risk." : "Not the worst choice, but there's a safer option.",
         feedback_ar: "",
