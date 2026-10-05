@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2023"],
+    /* DOM is included because the e2e specs pass browser callbacks to
+       `page.evaluate`, which typecheck here but execute in the browser. */
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
 

@@ -32,6 +32,12 @@ XP and five levels track progress, stored locally in the browser.
 - **AI** — any OpenAI-compatible provider (OpenRouter by default)
 - **Testing** — Vitest, Playwright, Deno test
 
+16 runtime dependencies. The browser talks to the Edge Functions over `fetch`;
+`@supabase/supabase-js` is deliberately not a dependency, because the app has no
+accounts, database or realtime subscriptions and the client was ~60% of the
+bundle for one `functions.invoke` call. See
+[`src/lib/api.ts`](src/lib/api.ts).
+
 ---
 
 ## Quick start
