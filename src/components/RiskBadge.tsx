@@ -115,21 +115,24 @@ const RiskBadge = ({ score, level }: RiskBadgeProps) => {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            {t("analyzer.step2")}
+            {t("risk.score")}
           </p>
           <div
             ref={scoreRef}
             className={`mt-1 font-mono text-display tabular-nums ${config.text}`}
             role="status"
-            aria-label={t("xp.progress", { level: formatNumber(safeScore) })}
+            aria-label={t("risk.scoreOf", { score: formatNumber(safeScore) })}
           >
             {safeScore}%
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Icon className={`h-6 w-6 ${config.text}`} aria-hidden="true" />
-          <span className={`font-mono text-sm uppercase tracking-wider ${config.text}`}>
-            {level}
+          <span
+            className={`font-mono text-sm uppercase tracking-wider ${config.text}`}
+            aria-label={t("risk.level", { level: t(`risk.${level}` as never) })}
+          >
+            {t(`risk.${level}` as never)}
           </span>
         </div>
       </div>
@@ -139,7 +142,7 @@ const RiskBadge = ({ score, level }: RiskBadgeProps) => {
       <div
         className="mt-5 flex gap-px"
         role="img"
-        aria-label={t("analyzer.step2")}
+        aria-label={t("risk.scale")}
       >
         {Array.from({ length: SEGMENTS }, (_, i) => (
           <span

@@ -21,6 +21,7 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { promises as dnsPromises } from "node:dns";
 import { join } from "node:path";
 
 const LIVE = process.argv.includes("--live");
@@ -192,17 +193,22 @@ if (!LIVE) {
     try {
       // Distinguishes "wrong project ref" from "no network here", which are
       // very different problems and look identical if you only report fetch failed.
-      const dns = await new Promise((resolve) => {
-        const [host] = base.replace("https://", "").split("/");
-        try {
-          const { address } = require("node:dns").lookupSync(host);
-          resolve(address);
-        } catch {
-          resolve(null);
-        }
-      });
+      // Two bugs lived here, both of which reported the same innocent-looking
+      // "host does not resolve" and so read as a network problem:
+      //   1. `require("node:dns")` inline, which is not defined in an ES module.
+      //   2. `let dns = null` shadowing the imported `dns`, so `dns.lookupSync`
+      //      was `null.lookupSync` and threw a TypeError.
+      // Both were swallowed by the catch. Verified by pointing the URL at a host
+      // known to resolve and confirming it is now found.
+      const host = base.replace("https://", "").split("/")[0];
+      let address = null;
+      try {
+        address = (await dnsPromises.lookup(host)).address;
+      } catch {
+        address = null;
+      }
 
-      if (!dns) {
+      if (!address) {
         // Deliberately inconclusive. Exit 0 here, because a fork on CI or a
         // sandbox without egress would otherwise always fail — but the summary
         // below says so, rather than letting "passed" imply the deploy is fine.
@@ -210,7 +216,7 @@ if (!LIVE) {
         info("if this is your machine, the project may be paused — reactivate it in the dashboard");
         info("if this is CI or a sandbox, it is likely an egress restriction, not a project fault");
       } else {
-        info(`resolved ${new URL(base).host} -> ${dns}`);
+        info(`resolved ${new URL(base).host} -> ${address}`);
         liveProbed = true;
 
         const res = await fetch(`${base.replace(/\/+$/, "")}/functions/v1/analyze-message`, {

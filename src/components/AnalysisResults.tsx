@@ -67,7 +67,9 @@ const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
         </div>
       )}
 
-      <Tabs defaultValue="en" className="mt-6">
+      {/* Default to the reader's own language. The triggers were localised but
+          the default was not, so Arabic readers always landed on English. */}
+      <Tabs value={locale === "ar" ? "ar" : "en"} className="mt-6">
         <TabsList>
           <TabsTrigger value="en">{t("results.english")}</TabsTrigger>
           <TabsTrigger value="ar">{t("results.arabic")}</TabsTrigger>

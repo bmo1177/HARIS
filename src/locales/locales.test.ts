@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { ar } from "@/locales/ar";
 import { en, type MessageKey } from "@/locales/en";
 import { scenarios } from "@/data/scenarios";
 import { voiceCalls } from "@/data/voiceCalls";
+import type { AnalysisResult } from "@/types/analysis";
 
 const keys = Object.keys(en) as MessageKey[];
 
@@ -169,5 +172,91 @@ describe("Arabic content in data files", () => {
     // Guards against adding an Arabic field to one call and forgetting another.
     expect(scenarios.every((s) => s.descriptionAr.trim().length > 0)).toBe(true);
     expect(voiceCalls.every((c) => c.descriptionAr.trim().length > 0)).toBe(true);
+  });
+});
+
+/**
+ * No dead translations.
+ *
+ * Sixteen keys existed in both dictionaries while the components rendered
+ * hardcoded English — including the whole About page and the setup screen. The
+ * `Record<MessageKey, string>` type makes a *missing* key a compile error, but it
+ * says nothing about a key nobody uses, so nothing caught it. This does.
+ *
+ * `difficulty.*` and `level.*` are read through template literals, so they are
+ * excluded by prefix rather than by exact match.
+ */
+describe("key usage", () => {
+  const walk = (dir: string): string[] => {
+    const out: string[] = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === "node_modules" || entry.name === "locales") continue;
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) out.push(...walk(path));
+      else if (/\.(ts|tsx)$/.test(entry.name) && !/\.test\./.test(entry.name)) out.push(path);
+    }
+    return out;
+  };
+
+  const sources = [...walk("src"), ...walk("e2e")].map((f) => readFileSync(f, "utf8"));
+
+  /**
+   * Keys reached through a template literal, listed exactly rather than by
+   * prefix. A prefix rule would silently exempt any future `risk.*` or
+   * `level.*` key, which is the opposite of what this test is for.
+   */
+  const dynamicKeys = new Set<MessageKey>([
+    "difficulty.Beginner",
+    "difficulty.Intermediate",
+    "difficulty.Advanced",
+    "level.0",
+    "level.1",
+    "level.2",
+    "level.3",
+    "level.4",
+    "risk.Safe",
+    "risk.Suspicious",
+    "risk.Dangerous",
+  ]);
+
+  it("has no unused keys", () => {
+    const unused = keys.filter(
+      (key) => !dynamicKeys.has(key) && !sources.some((source) => source.includes(key)),
+    );
+    expect(unused, `unused keys: ${unused.join(", ")}`).toEqual([]);
+  });
+
+  it("declares every shape-driven key, so none can hide behind a prefix rule", () => {
+    // Only these two families are generated from a shape. `risk.*` is not one of
+    // them — three of its keys are the verdict enum, listed individually.
+    const shapeDriven = keys.filter(
+      (key) => /^difficulty\./.test(key) || /^level\.\d+$/.test(key),
+    );
+    const undeclared = shapeDriven.filter((key) => !dynamicKeys.has(key));
+    expect(undeclared, `shape-driven keys not declared: ${undeclared.join(", ")}`).toEqual(
+      [],
+    );
+  });
+
+  it("translates every risk_level the type can hold", () => {
+    // Ties the dictionary to AnalysisResult["risk_level"]. If a fourth verdict is
+    // ever added to the schema, this fails rather than rendering an English enum.
+    const levels: Array<AnalysisResult["risk_level"]> = ["Safe", "Suspicious", "Dangerous"];
+    for (const level of levels) {
+      expect(en, `missing risk.${level}`).toHaveProperty(`risk.${level}`);
+      expect(ar, `missing risk.${level}`).toHaveProperty(`risk.${level}`);
+      expect(dynamicKeys.has(`risk.${level}` as MessageKey)).toBe(true);
+    }
+    const riskKeys = keys.filter((key) => /^risk\.[A-Z]/.test(key));
+    expect(riskKeys.length).toBe(levels.length);
+  });
+
+  it("covers every difficulty level the app can render", () => {
+    // `difficulty.${s.difficulty}` is a template literal, so nothing checks that
+    // all three levels exist until a student hits an untranslated pill.
+    for (const level of ["Beginner", "Intermediate", "Advanced"]) {
+      expect(en, `missing difficulty.${level}`).toHaveProperty(`difficulty.${level}`);
+      expect(ar, `missing difficulty.${level}`).toHaveProperty(`difficulty.${level}`);
+    }
   });
 });

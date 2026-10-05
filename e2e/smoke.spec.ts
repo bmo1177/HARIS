@@ -267,3 +267,86 @@ test.describe("bilingual support", () => {
     }
   });
 });
+
+test.describe("scenario playback", () => {
+  /**
+   * The scenario flow is reachable without a backend because `handleChoice` has
+   * a fallback path: when the AI call fails it substitutes canned feedback and
+   * still advances. Intercepting the function lets the whole state machine run
+   * offline, which is the only way to cover it in e2e at all.
+   */
+  async function playScenario(page: import("@playwright/test").Page) {
+    await page.route("**/functions/v1/scenario-feedback", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          safe: true,
+          feedback: "Good instinct.",
+          feedback_ar: "حدس جيد.",
+          red_flag: "",
+        }),
+      }),
+    );
+
+    await page.goto("/scenarios");
+    await page.getByRole("button").filter({ hasText: /XP/ }).first().click();
+
+    // Four steps in every shipped scenario. The count comes from the data, not
+    // a hardcoded 4, so this keeps working if a scenario is added.
+    for (let step = 0; step < 4; step++) {
+      const choice = page.locator("button").filter({ hasText: /Reply|Check|Ask|Ignore|Block|Send|Stop/ }).first();
+      if ((await choice.count()) === 0) break;
+      await choice.click();
+      await expect(page.getByRole("button", { name: /Next step|See results/ })).toBeVisible();
+      await page.getByRole("button", { name: /Next step|See results/ }).click();
+    }
+    await expect(page.getByRole("heading", { name: /Safe Choices/ })).toBeVisible();
+  }
+
+  test("reaching the score screen shows the result", async ({ page }) => {
+    await playScenario(page);
+    await expect(page.getByText(/Safe Choices/)).toBeVisible();
+  });
+
+  test("'Try another scenario' returns to the list instead of a blank page", async ({ page }) => {
+    await playScenario(page);
+
+    // Regression: this button used to clear only `selected`, leaving
+    // `isComplete` true. The completion branch renders `renderScoreScreen()`,
+    // which returns null with nothing selected — a dead end with no route back
+    // to the list except a reload.
+    await page.getByRole("button", { name: /Try another scenario|جرّب سيناريو آخر/ }).click();
+
+    await expect(page.getByRole("heading", { name: "Scenario Simulator" })).toBeVisible();
+    await expect(page.getByRole("button").filter({ hasText: /XP/ }).first()).toBeVisible();
+    await expect(page.getByText(/Safe Choices/)).toHaveCount(0);
+  });
+
+  test("the Back button mid-scenario returns to the list", async ({ page }) => {
+    await page.route("**/functions/v1/scenario-feedback", (route) =>
+      route.fulfill({ status: 500, contentType: "application/json", body: "{}" }),
+    );
+    await page.goto("/scenarios");
+    await page.getByRole("button").filter({ hasText: /XP/ }).first().click();
+    await page.getByRole("button", { name: /^Back$|رجوع/ }).click();
+    await expect(page.getByRole("heading", { name: "Scenario Simulator" })).toBeVisible();
+  });
+
+  test("a failed AI call shows an error rather than silently pretending", async ({ page }) => {
+    await page.route("**/functions/v1/scenario-feedback", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "The analysis could not be completed.", code: "internal_error" }),
+      }),
+    );
+    await page.goto("/scenarios");
+    await page.getByRole("button").filter({ hasText: /XP/ }).first().click();
+    await page.locator("button").filter({ hasText: /Reply|Check|Ask|Ignore|Block|Send|Stop/ }).first().click();
+
+    // Previously the error was swallowed entirely, so the student could not
+    // tell that HARIS had not actually responded.
+    await expect(page.getByText(/could not be completed|Taught|فشل|تعذّر/)).toBeVisible({ timeout: 15_000 });
+  });
+});

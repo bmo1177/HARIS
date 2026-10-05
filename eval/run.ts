@@ -37,6 +37,7 @@ import {
   RISK_DANGEROUS,
   RISK_SUSPICIOUS,
 } from "../supabase/functions/_shared/analysis.ts";
+import { resetConfigCache } from "../supabase/functions/_shared/env.ts";
 import { CASES, CLASSES, type EvalCase, type ExpectedRisk } from "./dataset.ts";
 
 // --------------------------------------------------------------------- config
@@ -154,6 +155,28 @@ function mockAnalyse(testCase: EvalCase): AnalysisResult {
 
 const pct = (n: number, d: number) => (d === 0 ? 0 : (n / d) * 100);
 
+/**
+ * Apply `--model` before the first call.
+ *
+ * The flag was previously parsed, printed in the report header and written into
+ * the JSON as `model`, but never passed to the model — which came from
+ * `LLM_MODEL` in the environment. So the harness recorded results under the name
+ * of a model it had not called. For a tool whose whole purpose is comparing
+ * accuracy across models, that silently corrupts exactly the trend it exists to
+ * produce. Setting it here, and dropping the memoised config, makes the label
+ * true or the run fails.
+ */
+const requestedModel = args.get("model");
+if (requestedModel && provider === "live") {
+  Deno.env.set("LLM_MODEL", requestedModel);
+  resetConfigCache();
+} else if (requestedModel && provider === "mock") {
+  console.error(
+    "--model has no effect with --provider=mock; the mock ignores the model.",
+  );
+  Deno.exit(2);
+}
+
 async function analyseOne(testCase: EvalCase): Promise<AnalysisResult> {
   if (provider === "mock") return mockAnalyse(testCase);
   return await analyzeMessage(testCase.message);
@@ -179,12 +202,19 @@ for (const testCase of selected) {
     if (!failure && actualRisk === testCase.expected_risk) bucket.correct++;
 
     // Binary hostile-vs-benign, which is what the safety argument rests on.
+    //
+    // An errored case has no verdict, so counting it as a miss would inflate the
+    // false-negative rate and depress recall for a reason that has nothing to do
+    // with the model. Errors are tracked separately and gate the run instead.
     const expectedHostile = isHostile(testCase.expected_risk);
-    const actualHostile = actual !== null && actual.is_threat;
-    if (expectedHostile && actualHostile) truePositive++;
-    else if (!expectedHostile && actualHostile) falsePositive++;
-    else if (expectedHostile && !actualHostile) falseNegative++;
-    else trueNegative++;
+    const actualHostile = actual?.is_threat;
+    if (actualHostile === true) {
+      if (expectedHostile) truePositive++;
+      else falsePositive++;
+    } else if (actualHostile === false) {
+      if (expectedHostile) falseNegative++;
+      else trueNegative++;
+    }
 
     if (testCase.expected_attack_type && actual) {
       typeScored++;
@@ -201,9 +231,13 @@ for (const testCase of selected) {
     // which means robustness on this subset is exactly accuracy on this subset.
     // Stated that way rather than as a separate rule with its own arithmetic,
     // which is where the first version of this file went wrong.
-    if (testCase.id.startsWith("inject-") && actual) {
+    if (testCase.id.startsWith("inject-")) {
       injectionTotal++;
-      if (actual.risk_level !== testCase.expected_risk) injectionSteered++;
+      // Counted as steered when there is no verdict at all: the payload got the
+      // only thing it needed, which was to stop the model answering.
+      if (!actual || actual.risk_level !== testCase.expected_risk) {
+        injectionSteered++;
+      }
     }
 
     items.push({

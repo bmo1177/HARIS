@@ -1,5 +1,5 @@
 import { useTheme } from "next-themes";
-import { Toaster as Sonner, toast } from "sonner";
+import { Toaster as Sonner } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
@@ -24,4 +24,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
   );
 };
 
-export { Toaster, toast };
+// `toast` is deliberately not re-exported. Every call site imports it straight
+// from "sonner", and re-exporting a non-component from a component module is what
+// the react-refresh warning was complaining about.
+export { Toaster };

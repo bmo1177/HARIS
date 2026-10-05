@@ -9,14 +9,9 @@ import { errorMessage } from "@/lib/api";
 import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/xpContext";
 import { useI18n } from "@/lib/i18n";
+import { difficultyClassName } from "@/lib/difficulty";
 import { voiceCallReward } from "@/lib/xp";
 import { voiceDebriefSchema, type VoiceDebrief } from "@/types/analysis";
-
-const difficultyColor = {
-  Beginner: "text-success bg-success/10 border-success/30",
-  Intermediate: "text-warning bg-warning/10 border-warning/30",
-  Advanced: "text-destructive bg-destructive/10 border-destructive/30",
-};
 
 const VoiceLab = () => {
   const [selected, setSelected] = useState<VoiceCall | null>(null);
@@ -129,10 +124,16 @@ const VoiceLab = () => {
     };
   }, []);
 
-  const handleStart = (call: VoiceCall) => {
+  /**
+   * Single definition of "back to the call list". Back mid-call and "Try another
+   * call" on the debrief both used to clear state piecemeal, which is the same
+   * class of bug the Scenario Simulator had, where one exit cleared `selected`
+   * but not `isComplete` and left a blank page.
+   */
+  const resetToCallList = () => {
     clearAdvanceTimer();
     window.speechSynthesis?.cancel();
-    setSelected(call);
+    setSelected(null);
     setCurrentLine(0);
     setIsPlaying(false);
     setIsSpeaking(false);
@@ -141,6 +142,11 @@ const VoiceLab = () => {
     setIsComplete(false);
     setDebrief(null);
     debriefRequest.reset();
+  };
+
+  const handleStart = (call: VoiceCall) => {
+    resetToCallList();
+    setSelected(call);
   };
 
   const handlePlay = () => {
@@ -251,7 +257,7 @@ const VoiceLab = () => {
           ) : null}
 
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setSelected(null)} className="flex-1 gap-2">
+            <Button variant="outline" onClick={resetToCallList} className="flex-1 gap-2">
               <RotateCcw className="w-4 h-4" aria-hidden="true" /> {t("voice.tryAnother")}
             </Button>
             <Button onClick={() => navigate("/scenarios")} className="flex-1 gap-2">
@@ -268,15 +274,8 @@ const VoiceLab = () => {
       <div className="flex h-full flex-col">
           <div className="my-auto space-y-6">
             <div className="flex items-center justify-between">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  window.speechSynthesis.cancel();
-                  setSelected(null);
-                }}
-              >
-                Back
+              <Button variant="ghost" size="sm" onClick={resetToCallList}>
+                {t("scenarios.back")}
               </Button>
               {isPlaying && (
                 <span className="text-sm font-medium text-muted-foreground">
@@ -306,15 +305,13 @@ const VoiceLab = () => {
                     {/* The lesson still works: the transcript is the exercise, the
                         audio is only a convenience. */}
                     <Button onClick={handleEndCall} variant="outline" className="gap-2">
-                      <PhoneOff className="h-4 w-4" /> Skip to the debrief
+                      <PhoneOff className="h-4 w-4" aria-hidden="true" /> {t("voice.skipToDebrief")}
                     </Button>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                      Answer the call. Tap <span className="font-medium text-foreground">FLAG</span>{" "}
-                      the moment a line feels off — you will not be told whether you were right
-                      until the debrief.
+                      {t("voice.instructions")}
                     </p>
                     <Button onClick={handlePlay} className="gap-2">
                       <Phone className="h-4 w-4" aria-hidden="true" /> {t("voice.answer")}
@@ -411,7 +408,7 @@ const VoiceLab = () => {
                       {locale === "ar" ? call.titleAr : call.title}
                     </h3>
                     <span
-                      className={`rounded-full border px-2 py-0.5 text-xs ${difficultyColor[call.difficulty]}`}
+                      className={`rounded-full border px-2 py-0.5 text-xs ${difficultyClassName(call.difficulty)}`}
                     >
                       {t(`difficulty.${call.difficulty}` as const)}
                     </span>

@@ -59,6 +59,13 @@ export const en = {
 
   // Analysis results
   "results.whyFlagged": "Why HARIS flagged this",
+  "risk.score": "Risk score",
+  "risk.scoreOf": "Risk score {score} out of 100",
+  "risk.level": "Verdict {level}",
+  "risk.scale": "Risk scale from 0 to 100",
+  "risk.Safe": "Safe",
+  "risk.Suspicious": "Suspicious",
+  "risk.Dangerous": "Dangerous",
   "results.doNotClick": "Do not click any links in this message!",
   "results.english": "English",
   "results.arabic": "العربية",
@@ -76,7 +83,6 @@ export const en = {
   "guess.attempts": "attempts",
   "guess.correct": "Correct! It's {type}",
   "guess.revealed": "It's {type}! No worries — now you know it.",
-  "guess.explanationBelow": "The full explanation is below.",
   "guess.nothingToGuess":
     "Nothing to guess here. This message showed no attack indicators — noticing that is the skill. Try a message you suspect is hostile and see what HARIS spots.",
 
@@ -147,7 +153,7 @@ export const en = {
     "Hear vishing calls in Arabic and English. Flag red flags in real time. Train your ear.",
   "about.howItTeaches": "How it teaches",
   "about.teachesBody1":
-    "Rather than lecturing students about threats, HARIS makes them discover them. Every analysis reveals one clue at a time, so a student forms their own hypothesis before seeing the verdict. Scenarios and voice calls put the decision in their hands, and feedback arrives immediately afterwards while the reasoning is still fresh.",
+    "Rather than lecturing students about threats, HARIS makes them work them out. Every analysis reveals one clue at a time, so a student forms their own hypothesis before seeing the verdict. Scenarios and voice calls put the decision in their hands, and feedback arrives immediately afterwards while the reasoning is still fresh.",
   "about.teachesBody2":
     "The aim is to make the skill automatic: not “HARIS said this was a scam” but “I noticed the urgency and the payment channel, so I stopped.”",
   "about.threatTypes": "Supported threat types",

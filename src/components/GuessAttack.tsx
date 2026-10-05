@@ -113,7 +113,7 @@ const GuessAttack = ({ attackType, attackTypeLocalized, onCorrectGuess }: GuessA
           <HelpCircle className="w-6 h-6 text-warning mt-0.5 shrink-0" aria-hidden="true" />
           <div>
             <p className="font-semibold text-warning">
-              <span className="underline">{attackTypeLocalized}</span> — {t("guess.explanationBelow")}
+              {t("guess.revealed", { type: attackTypeLocalized })}
             </p>
 
           </div>

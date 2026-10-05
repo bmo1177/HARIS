@@ -2,20 +2,18 @@ const XP_KEY = "haris_xp";
 
 export interface XPState {
   xp: number;
+  /** 1-based. */
   level: number;
-  title: string;
-  titleAr: string;
   nextLevelXP: number;
   currentLevelXP: number;
 }
 
-export const LEVELS = [
-  { min: 0, title: "Digital Newbie", titleAr: "مبتدئ رقمي" },
-  { min: 100, title: "Scam Spotter", titleAr: "كاشف الاحتيال" },
-  { min: 250, title: "Threat Hunter", titleAr: "صائد التهديدات" },
-  { min: 500, title: "Cyber Guardian", titleAr: "حارس إلكتروني" },
-  { min: 800, title: "HARIS Elite", titleAr: "نخبة هاريس" },
-] as const;
+/**
+ * Thresholds only. Level *titles* live in `src/locales/` and are read through
+ * `useI18n().levelTitle()`, so there is exactly one place a title is defined.
+ * They used to be duplicated here in English and Arabic, and nothing read them.
+ */
+export const LEVELS = [{ min: 0 }, { min: 100 }, { min: 250 }, { min: 500 }, { min: 800 }] as const;
 
 /**
  * Every XP award in the app, in one place.
@@ -109,8 +107,6 @@ export function computeState(xp: number): XPState {
   return {
     xp: safeXP,
     level,
-    title: current.title,
-    titleAr: current.titleAr,
     nextLevelXP: next ? next.min : current.min,
     currentLevelXP: current.min,
   };

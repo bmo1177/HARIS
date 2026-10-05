@@ -117,7 +117,7 @@ The visual system is an **instrument**, not a consumer security app — see
 ```
 Browser (React SPA)
   │
-  │  supabase.functions.invoke — every response validated with zod
+  │  fetch + `apikey` header — every response validated with zod
   ▼
 Supabase Edge Functions  ── analyze-message   pasted message   → risk verdict
   (Deno, TypeScript)      ── scenario-feedback  a reply          → coaching

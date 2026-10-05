@@ -1,7 +1,6 @@
 import { Suspense, lazy } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Layout from "@/components/Layout";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -37,7 +36,6 @@ const App = () => (
   <ErrorBoundary>
     <ThemeProvider>
       <>
-        <TooltipProvider>
           <Sonner />
           <BrowserRouter>
             <XPProvider>
@@ -80,7 +78,6 @@ const App = () => (
               </Routes>
             </XPProvider>
           </BrowserRouter>
-        </TooltipProvider>
       </>
     </ThemeProvider>
   </ErrorBoundary>

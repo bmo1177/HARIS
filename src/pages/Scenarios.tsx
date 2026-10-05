@@ -9,14 +9,9 @@ import { errorMessage } from "@/lib/api";
 import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/xpContext";
 import { useI18n } from "@/lib/i18n";
+import { difficultyClassName } from "@/lib/difficulty";
 import { scenarioMaxReward, scenarioReward } from "@/lib/xp";
 import { scenarioFeedbackSchema, type ScenarioFeedback } from "@/types/analysis";
-
-const difficultyColor = {
-  Beginner: "text-success bg-success/10 border-success/30",
-  Intermediate: "text-warning bg-warning/10 border-warning/30",
-  Advanced: "text-destructive bg-destructive/10 border-destructive/30",
-} as const;
 
 const Scenarios = () => {
   const [selected, setSelected] = useState<Scenario | null>(null);
@@ -31,8 +26,16 @@ const Scenarios = () => {
   const { t, locale, formatNumber } = useI18n();
   const feedbackRequest = useHarisMutation("scenario-feedback", scenarioFeedbackSchema);
 
-  const handleStart = (scenario: Scenario) => {
-    setSelected(scenario);
+  /**
+   * Single definition of "back to the list". The score screen's "Try another
+   * scenario" button used to call `setSelected(null)` alone, leaving
+   * `isComplete === true` — and since the completion branch is checked after the
+   * play branch, the route fell through to `renderScoreScreen()`, which returns
+   * null with nothing selected. The result was a blank page with no way back to
+   * the list except reloading or navigating away.
+   */
+  const resetToList = () => {
+    setSelected(null);
     setStepIndex(0);
     setSafeCount(0);
     setRedFlags([]);
@@ -40,6 +43,11 @@ const Scenarios = () => {
     setChatHistory([]);
     setIsComplete(false);
     feedbackRequest.reset();
+  };
+
+  const handleStart = (scenario: Scenario) => {
+    resetToList();
+    setSelected(scenario);
   };
 
   const handleChoice = async (choiceIndex: number) => {
@@ -151,7 +159,7 @@ const Scenarios = () => {
         )}
 
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => { setSelected(null); }} className="flex-1 gap-2">
+          <Button variant="outline" onClick={resetToList} className="flex-1 gap-2">
             <RotateCcw className="w-4 h-4" aria-hidden="true" />
             {t("scenarios.tryAnother")}
           </Button>
@@ -169,7 +177,7 @@ const Scenarios = () => {
     return (
       <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
+            <Button variant="ghost" size="sm" onClick={resetToList}>
               {t("scenarios.back")}
             </Button>
             <span className="text-sm font-medium text-muted-foreground">
@@ -309,7 +317,7 @@ const Scenarios = () => {
                       {locale === "ar" ? s.titleAr : s.title}
                     </h3>
                     <span
-                      className={`rounded-full border px-2 py-0.5 text-xs ${difficultyColor[s.difficulty]}`}
+                      className={`rounded-full border px-2 py-0.5 text-xs ${difficultyClassName(s.difficulty)}`}
                     >
                       {t(`difficulty.${s.difficulty}` as const)}
                     </span>

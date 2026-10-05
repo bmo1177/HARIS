@@ -57,6 +57,13 @@ export const ar: Record<MessageKey, string> = {
   "example.gamingScam": "احتيال ألعاب",
 
   "results.whyFlagged": "لماذا رصد هاريس هذه الرسالة",
+  "risk.score": "درجة الخطورة",
+  "risk.scoreOf": "درجة الخطورة {score} من 100",
+  "risk.level": "الحكم: {level}",
+  "risk.scale": "مقياس الخطورة من 0 إلى 100",
+  "risk.Safe": "آمن",
+  "risk.Suspicious": "مشبوه",
+  "risk.Dangerous": "خطير",
   "results.doNotClick": "لا تضغط على أي رابط في هذه الرسالة!",
   "results.english": "English",
   "results.arabic": "العربية",
@@ -73,7 +80,6 @@ export const ar: Record<MessageKey, string> = {
   "guess.attempts": "محاولات",
   "guess.correct": "إجابة صحيحة! هذا {type}",
   "guess.revealed": "هذا {type}! لا تقلق — صرت تعرفه الآن.",
-  "guess.explanationBelow": "الشرح الكامل بالأسفل.",
   "guess.nothingToGuess":
     "لا شيء تخمّنه هنا. لم تظهر في الرسالة أي مؤشرات هجوم — ملاحظتها هي المهارة نفسها. جرّب رسالة تشك أنها عدائية وشاهد ما يرصده هاريس.",
 

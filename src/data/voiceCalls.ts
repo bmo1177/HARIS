@@ -2,6 +2,15 @@ export interface CallLine {
   text: string;
   lang: string;
   isRedFlag: boolean;
+  /**
+   * Why this line is a red flag.
+   *
+   * English only. An earlier revision of this file declared a `flagReasonAr` and
+   * a comment claiming Arabic reasons were wired up; neither was true, and the
+   * field sat on `VoiceCall` rather than on `CallLine`, so it could never have
+   * worked. Both the field and the claim are gone. See the known-gaps note in
+   * the README.
+   */
   flagReason?: string;
 }
 
@@ -11,11 +20,6 @@ export interface VoiceCall {
   titleAr: string;
   description: string;
   descriptionAr: string;
-  /**
-   * Why this line is a red flag, in both languages. `flagReason` was English-only
-   * and shown to Arabic readers verbatim in the debrief.
-   */
-  flagReasonAr?: string;
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   callerName: string;
   callerNumber: string;

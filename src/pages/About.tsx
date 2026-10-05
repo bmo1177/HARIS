@@ -53,11 +53,8 @@ const About = () => {
 
         <div className="rounded-lg border border-border bg-card p-5">
           <h3 className="mb-2 font-semibold text-foreground">{t("about.builtFor")}</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            HARIS is a cybersecurity awareness platform designed for high school students
-            (K11–K12). In a world where teenagers face online threats daily — through social
-            media, gaming, messaging apps, and fake offers — HARIS trains real instincts through
-            AI-powered analysis, interactive scenarios, and voice simulations.
+          <p className="prose-measure text-sm leading-relaxed text-muted-foreground">
+            {t("about.body")}
           </p>
         </div>
 
@@ -91,16 +88,11 @@ const About = () => {
             {t("about.howItTeaches")}
           </h3>
           <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Rather than lecturing students about threats, HARIS makes them{" "}
-              <strong className="text-foreground">discover</strong> them. Every analysis reveals
-              one clue at a time, so a student forms their own hypothesis before seeing the
-              verdict. Scenarios and voice calls put the decision in their hands, and feedback
-              arrives immediately afterwards while the reasoning is still fresh.
+            <p className="prose-measure text-sm leading-relaxed text-muted-foreground">
+              {t("about.teachesBody1")}
             </p>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              The aim is to make the skill automatic: not "HARIS said this was a scam" but "I
-              noticed the urgency and the payment channel, so I stopped."
+            <p className="prose-measure text-sm leading-relaxed text-muted-foreground">
+              {t("about.teachesBody2")}
             </p>
           </div>
         </div>
