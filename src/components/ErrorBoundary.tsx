@@ -21,13 +21,13 @@ interface State {
  * that an unexpected failure degrades into a recoverable screen.
  */
 class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  override state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
     return { error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo): void {
+  override componentDidCatch(error: Error, info: ErrorInfo): void {
     // Replace with a real reporting service if one is added.
     console.error("Unhandled UI error:", error, info.componentStack);
   }
@@ -40,7 +40,7 @@ class ErrorBoundary extends Component<Props, State> {
     window.location.reload();
   };
 
-  render(): ReactNode {
+  override render(): ReactNode {
     const { error } = this.state;
     if (!error) return this.props.children;
 

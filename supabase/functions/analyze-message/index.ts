@@ -2,7 +2,7 @@ import { z } from "npm:zod@3.25.76";
 import { UpstreamError } from "../_shared/env.ts";
 import { generateStructured } from "../_shared/llm.ts";
 import { createHandler, jsonResponse } from "../_shared/http.ts";
-import { UNTRUSTED_CONTENT_RULES, clampText, wrapUntrusted } from "../_shared/prompt.ts";
+import { clampText, UNTRUSTED_CONTENT_RULES, wrapUntrusted } from "../_shared/prompt.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { analyzeMessageRequest, parseRequest } from "../_shared/schemas.ts";
 
@@ -31,7 +31,8 @@ const ANALYSIS_SCHEMA = {
     attack_type_ar: { type: "string", description: "The same category in Arabic" },
     clue_1: {
       type: "string",
-      description: "First concrete clue in the message: a specific red flag, or a specific sign it is safe",
+      description:
+        "First concrete clue in the message: a specific red flag, or a specific sign it is safe",
     },
     clue_2: { type: "string", description: "Second clue" },
     clue_3: { type: "string", description: "Third clue" },

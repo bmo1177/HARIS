@@ -84,6 +84,6 @@ export const voiceDebriefRequest = z
   .refine(
     (value) =>
       value.flagDetails.filter((detail) => detail.isRedFlag && detail.userFlagged).length ===
-      value.caughtFlags,
+        value.caughtFlags,
     { message: "caughtFlags does not match the supplied flag details" },
   );

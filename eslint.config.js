@@ -34,5 +34,10 @@ export default tseslint.config(
         Deno: "readonly",
       },
     },
+    rules: {
+      // `_shared/prompt.ts` strips control characters from untrusted input,
+      // which is what the rule flags. See the comment on that regex.
+      "no-control-regex": "off",
+    },
   },
 );

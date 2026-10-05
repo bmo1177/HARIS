@@ -52,7 +52,6 @@ const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
           {result.is_threat ? (
             <GuessAttack
               attackType={result.attack_type}
-              explanation={result.explanation}
               onCorrectGuess={(attempt) =>
                 awardXP(
                   attempt === 1 ? REWARDS.correctGuessFirstTry : REWARDS.correctGuessRetry,

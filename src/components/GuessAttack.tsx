@@ -5,7 +5,6 @@ import { CheckCircle2, XCircle, HelpCircle } from "lucide-react";
 
 interface GuessAttackProps {
   attackType: string;
-  explanation: string;
   onCorrectGuess?: (attempt: number) => void;
 }
 
@@ -60,7 +59,7 @@ export function isGuessCorrect(guess: string, answer: string): boolean {
   return guessWords.length > 0 && guessWords.every(matches);
 }
 
-const GuessAttack = ({ attackType, explanation, onCorrectGuess }: GuessAttackProps) => {
+const GuessAttack = ({ attackType, onCorrectGuess }: GuessAttackProps) => {
   const [guess, setGuess] = useState("");
   const [attempts, setAttempts] = useState(0);
   const [status, setStatus] = useState<"guessing" | "correct" | "revealed">("guessing");

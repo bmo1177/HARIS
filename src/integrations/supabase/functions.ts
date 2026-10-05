@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { supabase } from "./client";
+import { missingSupabaseEnv, supabase } from "./client";
 
 /**
  * Typed wrapper around `supabase.functions.invoke`.
@@ -71,6 +71,13 @@ export async function invokeHarisFunction<TOutput extends z.ZodTypeAny>(
   body: Record<string, unknown>,
   schema: TOutput,
 ): Promise<z.infer<TOutput>> {
+  if (supabase === null) {
+    throw new HarisError(
+      `HARIS is not configured: ${missingSupabaseEnv.join(", ")}`,
+      "service_unavailable",
+    );
+  }
+
   // `Database["Functions"]` is empty (there is no schema yet), so supabase-js
   // types `body` as `never`. The cast is confined to this one line; the
   // response is still validated by `schema` below.

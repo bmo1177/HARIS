@@ -96,15 +96,18 @@ async function sweepStaleBuckets(): Promise<void> {
   const { supabase } = getConfig();
 
   try {
-    await fetch(`${supabase.url}/rest/v1/rate_limit_buckets?window_start=lt.${Date.now() / 1000 - 172_800}`, {
-      method: "DELETE",
-      headers: {
-        apikey: supabase.serviceRoleKey,
-        Authorization: `Bearer ${supabase.serviceRoleKey}`,
-        Prefer: "return=minimal",
+    await fetch(
+      `${supabase.url}/rest/v1/rate_limit_buckets?window_start=lt.${Date.now() / 1000 - 172_800}`,
+      {
+        method: "DELETE",
+        headers: {
+          apikey: supabase.serviceRoleKey,
+          Authorization: `Bearer ${supabase.serviceRoleKey}`,
+          Prefer: "return=minimal",
+        },
+        signal: AbortSignal.timeout(5_000),
       },
-      signal: AbortSignal.timeout(5_000),
-    });
+    );
   } catch (error) {
     // Housekeeping only; never surface to the caller.
     console.warn("rate limit sweep failed:", error instanceof Error ? error.message : error);
