@@ -25,7 +25,8 @@ for the full list. The essentials:
 | `LLM_MODEL` | no | Defaults to `google/gemini-3.5-flash` |
 | `LLM_TIMEOUT_MS` | no | Defaults to `20000` |
 | `LLM_MAX_TOKENS` | no | Defaults to `1200` |
-| `SUPABASE_SERVICE_ROLE_KEY` | yes | Used server-side for rate-limit counters. Privileged — bypasses RLS. |
+| `SUPABASE_URL` | injected | Supplied by the Edge Function runtime. |
+| `SUPABASE_SECRET_KEYS` | injected | JSON dict of secret keys, e.g. `{"default":"sb_secret_…"}`. Read for rate-limit bookkeeping. Privileged — bypasses RLS. |
 | `ALLOWED_ORIGINS` | no | Comma-separated browser origin allowlist |
 
 ### Deploying
@@ -142,9 +143,10 @@ you add*. This app currently has no tables, so the question does not arise yet �
 but it is the condition that stops being true the moment someone adds one, and it
 belongs in the first migration rather than in a later audit.
 
-`SUPABASE_SERVICE_ROLE_KEY` is read from `Deno.env` inside the functions and is
-never bundled. If you ever find an `sb_secret_` string in `dist/`, something has
-gone wrong and it should be treated as compromised and rotated immediately:
+The secret key is read from `Deno.env` inside the functions and is never bundled.
+Supabase also refuses a secret key sent from a browser — it matches on the
+`User-Agent` header and returns 401 — so `dist/` containing one means the build
+picked up a server-side variable. Treat that as compromised and rotate:
 
 ```bash
 grep -o 'sb_secret_[A-Za-z0-9_-]*' dist/assets/*.js   # must return nothing

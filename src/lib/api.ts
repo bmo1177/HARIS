@@ -104,8 +104,11 @@ export async function invokeHarisFunction<TOutput extends z.ZodTypeAny>(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        // Supabase keys are short strings, not JWTs. They go on `apikey` only:
+        // sending one as `Authorization: Bearer` asks the gateway to verify a
+        // non-JWT as a JWT, which fails. The previous version sent both headers
+        // because the key used to be a legacy `eyJ...` JWT.
         apikey: supabasePublishableKey,
-        Authorization: `Bearer ${supabasePublishableKey}`,
       },
       body: JSON.stringify(body),
       signal: combined,

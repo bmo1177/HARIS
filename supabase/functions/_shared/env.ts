@@ -66,6 +66,34 @@ export interface AppConfig {
   dailyRateLimit: RateLimitConfig;
 }
 
+/**
+ * Resolves the privileged key used for rate-limit bookkeeping.
+ *
+ * Supabase injects `SUPABASE_SECRET_KEYS` into the Edge Function runtime as a
+ * JSON dictionary keyed by key name, and that is where the current
+ * `sb_secret_…` keys live. The documented `SUPABASE_SERVICE_ROLE_KEY` variable
+ * still exists but carries the **legacy** JWT, and Supabase is deprecating the
+ * `anon` / `service_role` JWT keys — reading it keeps the project on the
+ * deprecated path.
+ *
+ * Order matters: the injected dictionary first, then an explicitly configured
+ * secret for local development, then the legacy variable for older runtimes.
+ */
+function resolveServiceRoleKey(): string {
+  const injected = optional("SUPABASE_SECRET_KEYS");
+  if (injected) {
+    try {
+      const keys = JSON.parse(injected) as Record<string, string>;
+      const value = keys.default ?? Object.values(keys)[0];
+      if (value) return value;
+    } catch {
+      // Fall through to the explicit secret below.
+    }
+  }
+
+  return required("SUPABASE_SERVICE_ROLE_KEY");
+}
+
 const DEFAULT_ORIGINS = [
   "https://haris-two-xi.vercel.app",
   "http://localhost:8080",
@@ -92,8 +120,10 @@ export function getConfig(): AppConfig {
       maxTokens: positiveInt("LLM_MAX_TOKENS", 1_200),
     },
     supabase: {
+      // Injected by the Edge Function runtime, and by `supabase start` locally,
+      // so this resolves in both places without a separate override.
       url: required("SUPABASE_URL"),
-      serviceRoleKey: required("SUPABASE_SERVICE_ROLE_KEY"),
+      serviceRoleKey: resolveServiceRoleKey(),
     },
     allowedOrigins: origins,
     rateLimit: {
