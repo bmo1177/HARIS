@@ -110,7 +110,7 @@ export function getConfig(): AppConfig {
       .filter(Boolean)
     : DEFAULT_ORIGINS;
 
-  cached = {
+  const config = {
     llm: {
       apiKey: required("LLM_API_KEY"),
       baseUrl: (optional("LLM_BASE_URL") ?? "https://openrouter.ai/api/v1")
@@ -118,12 +118,6 @@ export function getConfig(): AppConfig {
       model: optional("LLM_MODEL") ?? "google/gemini-3.5-flash",
       timeoutMs: positiveInt("LLM_TIMEOUT_MS", 20_000),
       maxTokens: positiveInt("LLM_MAX_TOKENS", 1_200),
-    },
-    supabase: {
-      // Injected by the Edge Function runtime, and by `supabase start` locally,
-      // so this resolves in both places without a separate override.
-      url: required("SUPABASE_URL"),
-      serviceRoleKey: resolveServiceRoleKey(),
     },
     allowedOrigins: origins,
     rateLimit: {
@@ -134,8 +128,29 @@ export function getConfig(): AppConfig {
       max: positiveInt("DAILY_RATE_LIMIT_MAX", 100),
       windowSeconds: 86_400,
     },
-  };
+    // `supabase` is attached below as a lazy accessor. Asserted rather than
+    // written out so the required property is not duplicated in two places.
+  } as AppConfig;
 
+  // Resolved on first access rather than here. Building the whole config eagerly
+  // meant every caller needed both sets of credentials, so the eval harness — which
+  // calls the LLM path and never touches the database — failed all 45 cases with
+  // "Missing required environment variable: SUPABASE_URL". A failure that has
+  // nothing to do with the model under test is worse than no measurement, because
+  // it is easy to misread as a bad score.
+  //
+  // Injected by the Edge Function runtime, and by `supabase start` locally, so
+  // this still resolves in both places without a separate override.
+  Object.defineProperty(config, "supabase", {
+    enumerable: true,
+    configurable: true,
+    get: () => ({
+      url: required("SUPABASE_URL"),
+      serviceRoleKey: resolveServiceRoleKey(),
+    }),
+  });
+
+  cached = config;
   return cached;
 }
 

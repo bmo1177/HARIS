@@ -74,3 +74,27 @@ correctness failures rather than tuning knobs:
 
 If you want to track accuracy over time, `--json` output is stable enough to commit to `results/`
 and diff between runs. Do that before adding a gate.
+
+## Measured results, and their limits
+
+The first live run used `nvidia/nemotron-3-super-120b-a12b:free`, the only free
+model that both advertises `response_format` and actually honours it.
+
+**`low` → 35 scored a 93% false-positive rate.** That mapping contradicted the
+band description it came from ("worth a second look but no clear attack" cannot
+mean a "Suspicious" verdict), and the model answers `low` for ordinary messages.
+`low` now maps to 15, below the suspicious threshold.
+
+Two caveats, stated because the corrected numbers have **not** been measured:
+
+- OpenRouter's free tier allows **50 requests/day**. The run completed 35 of 45
+  cases before returning 429, so the accuracy figures above cover a subset.
+- Correcting the mapping should remove most of those false positives, but
+  "should" is not a measurement. Re-run once the daily limit resets before quoting
+  accuracy for this model, and treat the subset result as a lower bound on quality
+  and an upper bound on false positives.
+
+An earlier version of this harness also counted rate-limit errors as successful
+injection attacks, printing `0/4` when three of the four payloads had never been
+sent anywhere. Errored cases are now excluded from the denominator and reported
+separately.
