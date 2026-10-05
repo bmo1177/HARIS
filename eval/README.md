@@ -75,26 +75,58 @@ correctness failures rather than tuning knobs:
 If you want to track accuracy over time, `--json` output is stable enough to commit to `results/`
 and diff between runs. Do that before adding a gate.
 
-## Measured results, and their limits
+## Measured results
 
-The first live run used `nvidia/nemotron-3-super-120b-a12b:free`, the only free
-model that both advertises `response_format` and actually honours it.
+Full 45-case run against **`nvidia/nemotron-3-super-120b-a12b` on NVIDIA Build**
+(`integrate.api.nvidia.com`), which honours `response_format` and has no daily
+cap. Exit 0, zero errors, every case measured.
 
-**`low` → 35 scored a 93% false-positive rate.** That mapping contradicted the
-band description it came from ("worth a second look but no clear attack" cannot
-mean a "Suspicious" verdict), and the model answers `low` for ordinary messages.
-`low` now maps to 15, below the suspicious threshold.
+```
+overall accuracy        84.4%
+FALSE POSITIVE RATE      0.0%
+recall on hostile       77.3%
+precision              100.0%
+F1                      87.2%
+attack-type accuracy    45.5%   (22 labelled, advisory)
+injection robustness    4/4
 
-Two caveats, stated because the corrected numbers have **not** been measured:
+  Safe         23/23  100.0%
+  Suspicious    0/4    0.0%
+  Dangerous    15/18   83.3%
+```
 
-- OpenRouter's free tier allows **50 requests/day**. The run completed 35 of 45
-  cases before returning 429, so the accuracy figures above cover a subset.
-- Correcting the mapping should remove most of those false positives, but
-  "should" is not a measurement. Re-run once the daily limit resets before quoting
-  accuracy for this model, and treat the subset result as a lower bound on quality
-  and an upper bound on false positives.
+**The false-positive fix is confirmed: 93.3% → 0.0%.** Mapping `low` below the
+suspicious threshold, rather than above it, is what did that.
 
-An earlier version of this harness also counted rate-limit errors as successful
-injection attacks, printing `0/4` when three of the four payloads had never been
-sent anywhere. Errored cases are now excluded from the denominator and reported
-separately.
+### What the numbers do not cover
+
+This model is **binary in practice**. It used `none` and `low` for every benign
+message and `high` for every obvious attack, and never once chose `medium` —
+which is why Suspicious scores 0/4. All the lost recall is the middle register:
+
+- `subtle-003` (a friend's name turned against the reader) came back **Safe**.
+- The four `Suspicious` cases are deliberately borderline, and all four came back
+  Safe.
+
+So the failure mode is now *under*-detection on subtle social engineering, not
+false alarms. For a classroom that is the safer direction — a student is never
+scared by a normal message — but it means a genuinely tricky message reads as
+harmless. Whether to accept that is a judgement call about the audience, not
+something the harness should quietly paper over.
+
+`attack-type` accuracy is 45.5% and advisory only: the model returns reasonable
+but generic categories, which does not affect the verdict the student sees.
+
+Neither number is a property of HARIS. Another model may use the middle band.
+NVIDIA Build also offers `kimi-k3`, `glm-5.3-flash`, `deepseek-v4.1-flash`,
+`nemotron-3-ultra` and others on the same key; measure with:
+
+```bash
+LLM_API_KEY=nvapi-... \
+LLM_BASE_URL=https://integrate.api.nvidia.com/v1 \
+LLM_MODEL=<candidate> \
+npm run eval:live
+```
+
+Re-running on OpenRouter is still useful for comparison, but its 50/day ceiling
+means a 45-case run cannot complete in one day.
