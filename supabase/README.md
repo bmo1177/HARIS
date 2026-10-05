@@ -25,7 +25,7 @@ for the full list. The essentials:
 | `LLM_MODEL` | no | Defaults to `google/gemini-3.5-flash` |
 | `LLM_TIMEOUT_MS` | no | Defaults to `20000` |
 | `LLM_MAX_TOKENS` | no | Defaults to `1200` |
-| `SUPABASE_SERVICE_ROLE_KEY` | yes | Used server-side for rate-limit counters |
+| `SUPABASE_SERVICE_ROLE_KEY` | yes | Used server-side for rate-limit counters. Privileged — bypasses RLS. |
 | `ALLOWED_ORIGINS` | no | Comma-separated browser origin allowlist |
 
 Apply the migration, then set the secrets:
@@ -92,6 +92,31 @@ LLM_MODEL=llama-3.3-70b-versatile
 - **PII retention.** Nothing is persisted. Pasted messages are not stored,
   logged in full, or sent anywhere except the configured LLM provider. If
   persistence is added later, do not store raw pasted message content.
+
+## Key handling
+
+Supabase issues two kinds of key and they are easy to confuse:
+
+| Key | Format | Where it may live |
+| --- | --- | --- |
+| Publishable | `sb_publishable_…` | Browser. Bundled into the client on purpose. |
+| Secret | `sb_secret_…` | Server only. **Bypasses RLS**, full project access. |
+
+The publishable key is safe in the browser *provided RLS is enabled on any table
+you add*. This app currently has no tables, so the question does not arise yet —
+but it is the condition that stops being true the moment someone adds one, and it
+belongs in the first migration rather than in a later audit.
+
+`SUPABASE_SERVICE_ROLE_KEY` is read from `Deno.env` inside the functions and is
+never bundled. If you ever find an `sb_secret_` string in `dist/`, something has
+gone wrong and it should be treated as compromised and rotated immediately:
+
+```bash
+grep -o 'sb_secret_[A-Za-z0-9_-]*' dist/assets/*.js   # must return nothing
+```
+
+Projects created before the new key format still use the legacy `eyJ…` JWT anon
+key for the publishable slot. Both work.
 
 ## Development
 
