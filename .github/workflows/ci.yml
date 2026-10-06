@@ -24,6 +24,10 @@ jobs:
       # `npm ci` requires package-lock.json to be in sync with package.json.
       - run: npm ci
 
+      # Deno resolves its config from the working directory upward and never
+      # descends into a subdirectory, so without an explicit --config these steps
+      # silently ignore supabase/functions/deno.json and then look for `npm:zod`
+      # in a node_modules folder that the Deno job never installs.
       - name: Typecheck
         run: npm run typecheck
 
@@ -77,24 +81,28 @@ jobs:
         with:
           deno-version: v2.x
 
+      # Deno resolves its config from the working directory upward and never
+      # descends into a subdirectory, so without an explicit --config these steps
+      # silently ignore supabase/functions/deno.json and then look for `npm:zod`
+      # in a node_modules folder that the Deno job never installs.
       - name: Typecheck
-        run: deno check supabase/functions/analyze-message/index.ts supabase/functions/scenario-feedback/index.ts supabase/functions/voice-debrief/index.ts
+        run: deno check --config supabase/functions/deno.json supabase/functions/analyze-message/index.ts supabase/functions/scenario-feedback/index.ts supabase/functions/voice-debrief/index.ts
 
       - name: Lint
-        run: deno lint supabase/functions
+        run: deno lint --config supabase/functions/deno.json supabase/functions
 
       - name: Format check
-        run: deno fmt --check supabase/functions
+        run: deno fmt --config supabase/functions/deno.json --check supabase/functions
 
       # Allow-env is required because config.ts reads Deno.env at request time.
       - name: Test
-        run: deno test --allow-env supabase/functions
+        run: deno test --config supabase/functions/deno.json --allow-env supabase/functions
 
       # Harness self-test: verifies the dataset parses, the metrics compute, and
       # the prompt-injection gate fires. Uses deterministic fixtures, so it needs
       # no API key and makes no network calls.
       - name: Evaluation harness (mock provider)
-        run: deno run --allow-env --allow-net eval/run.ts
+        run: deno run --config supabase/functions/deno.json --allow-env --allow-net eval/run.ts
 
       # Real accuracy numbers. Skipped unless a key is configured, so a fork does
       # not fail for lack of a secret.
@@ -104,7 +112,7 @@ jobs:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_MODEL: ${{ vars.LLM_MODEL }}
-        run: deno run --allow-env --allow-net eval/run.ts --provider=live --json > eval-results.json
+        run: deno run --config supabase/functions/deno.json --allow-env --allow-net eval/run.ts --provider=live --json > eval-results.json
 
       - uses: actions/upload-artifact@v4
         if: always() && env.HAS_LLM_KEY == 'true'
