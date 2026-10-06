@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { ShieldAlert, ShieldCheck, ShieldQuestion, Shield } from "lucide-react";
-import { useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/useI18n";
 import type { AnalysisResult } from "@/types/analysis";
 
 interface RiskBadgeProps {

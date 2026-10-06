@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/useI18n";
 import { blueBattery } from "@/sandbox/dataset";
 import { DEFAULT_GUARDRAILS, evaluateBattery } from "@/sandbox/engine";
 import type { BatteryReport, GuardrailConfig, GuardrailRuleId } from "@/sandbox/types";

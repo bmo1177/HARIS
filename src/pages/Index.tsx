@@ -4,9 +4,9 @@ import AnalysisWait from "@/components/AnalysisWait";
 import MessageAnalyzer from "@/components/MessageAnalyzer";
 import AnalysisResults from "@/components/AnalysisResults";
 import { errorMessage } from "@/lib/api";
-import { useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/useI18n";
 import { useHarisMutation } from "@/lib/useHarisMutation";
-import { useXP } from "@/lib/xpContext";
+import { useXP } from "@/lib/useXP";
 import { REWARDS } from "@/lib/xp";
 import { analysisResultSchema, type AnalysisResult } from "@/types/analysis";
 

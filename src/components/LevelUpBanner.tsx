@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Shield } from "lucide-react";
-import { useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/useI18n";
 
 interface LevelUpBannerProps {
   /** 1-based level index, used to look up the localized title. */

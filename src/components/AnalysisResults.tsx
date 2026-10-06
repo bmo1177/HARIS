@@ -5,8 +5,8 @@ import { AlertTriangle, RotateCcw } from "lucide-react";
 import RiskBadge from "./RiskBadge";
 import ClueCards from "./ClueCards";
 import GuessAttack from "./GuessAttack";
-import { useXP } from "@/lib/xpContext";
-import { useI18n } from "@/lib/i18n";
+import { useXP } from "@/lib/useXP";
+import { useI18n } from "@/lib/useI18n";
 import { REWARDS } from "@/lib/xp";
 import type { AnalysisResult } from "@/types/analysis";
 

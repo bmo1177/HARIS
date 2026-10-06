@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isGuessCorrect } from "@/components/GuessAttack";
+import { isGuessCorrect } from "@/lib/guess";
 
 describe("isGuessCorrect", () => {
   it("accepts the exact answer regardless of case or padding", () => {

@@ -1,5 +1,5 @@
 import { missingEnv } from "@/lib/env";
-import { useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/useI18n";
 
 /**
  * Shown instead of the app when the Supabase environment variables are absent.

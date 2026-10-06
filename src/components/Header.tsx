@@ -3,8 +3,8 @@ import { NavLink } from "@/components/NavLink";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LocaleSwitch } from "@/components/LocaleSwitch";
 import XPBar from "@/components/XPBar";
-import { useXP } from "@/lib/xpContext";
-import { useI18n } from "@/lib/i18n";
+import { useXP } from "@/lib/useXP";
+import { useI18n } from "@/lib/useI18n";
 import type { MessageKey } from "@/locales/en";
 
 const NAV_ITEMS = [

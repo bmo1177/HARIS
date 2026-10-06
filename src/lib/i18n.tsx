@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -9,6 +7,8 @@ import {
 } from "react";
 import { en, type MessageKey } from "@/locales/en";
 import { ar } from "@/locales/ar";
+import { I18nContext } from "@/lib/i18n-context";
+import { LOCALES, type I18nValue, type Locale } from "@/lib/locale";
 
 /**
  * Bilingual support for HARIS.
@@ -31,32 +31,12 @@ import { ar } from "@/locales/ar";
  * this rather than reach for a dependency.
  */
 
-export type Locale = "en" | "ar";
-
-export const LOCALES: Locale[] = ["en", "ar"];
-
 const MESSAGES: Record<Locale, Record<MessageKey, string>> = { en, ar };
 
 const STORAGE_KEY = "haris_locale";
 
 /** One key per entry in `LEVELS` in lib/xp.ts. Order must match. */
 const LEVEL_TITLE_KEYS = ["level.0", "level.1", "level.2", "level.3", "level.4"] as const satisfies readonly MessageKey[];
-
-interface I18nValue {
-  locale: Locale;
-  setLocale: (next: Locale) => void;
-  toggle: () => void;
-  /** "ltr" or "rtl". */
-  dir: "ltr" | "rtl";
-  isRtl: boolean;
-  t: (key: MessageKey, vars?: Record<string, string | number>) => string;
-  /** Localized title for a 1-based XP level. */
-  levelTitle: (level: number) => string;
-  /** Locale-aware number formatting, keeping Latin digits for readability. */
-  formatNumber: (value: number) => string;
-}
-
-const I18nContext = createContext<I18nValue | null>(null);
 
 const isLocale = (value: unknown): value is Locale =>
   typeof value === "string" && (LOCALES as string[]).includes(value);
@@ -156,10 +136,4 @@ export function I18nProvider({
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
-}
-
-export function useI18n(): I18nValue {
-  const ctx = useContext(I18nContext);
-  if (!ctx) throw new Error("useI18n must be used within I18nProvider");
-  return ctx;
 }

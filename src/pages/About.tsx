@@ -13,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { scenarios } from "@/data/scenarios";
-import { useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/useI18n";
 import type { MessageKey } from "@/locales/en";
 import { voiceCalls } from "@/data/voiceCalls";
 

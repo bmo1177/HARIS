@@ -3,7 +3,7 @@ import { RotateCcw, Send, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/useI18n";
 import { redChallenges } from "@/sandbox/dataset";
 import { simulateRedTurn, targetState } from "@/sandbox/engine";
 import { SANDBOX_MAX_INPUT_LENGTH, type RedChallengeId, type RedTurn } from "@/sandbox/types";

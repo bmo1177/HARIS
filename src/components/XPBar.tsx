@@ -1,7 +1,7 @@
 import { Shield } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { isMaxLevel, type XPState } from "@/lib/xp";
-import { useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/useI18n";
 
 interface XPBarProps {
   state: XPState;

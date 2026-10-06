@@ -1,7 +1,7 @@
 import { Suspense, lazy } from "react";
 import { ShieldAlert } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/useI18n";
 
 const RedSandbox = lazy(() => import("@/sandbox/RedSandbox"));
 const BlueWorkshop = lazy(() => import("@/sandbox/BlueWorkshop"));

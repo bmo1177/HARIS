@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Search, Gift, ShieldAlert, MessageSquare, Gamepad2 } from "lucide-react";
-import { useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/useI18n";
 import type { MessageKey } from "@/locales/en";
 
 const EXAMPLES: ReadonlyArray<{ key: MessageKey; icon: typeof Gift; message: string }> = [

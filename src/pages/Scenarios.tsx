@@ -7,8 +7,8 @@ import { AlertTriangle, Target, ChevronRight, RotateCcw, ArrowRight } from "luci
 import { scenarios, type Scenario } from "@/data/scenarios";
 import { errorMessage } from "@/lib/api";
 import { useHarisMutation } from "@/lib/useHarisMutation";
-import { useXP } from "@/lib/xpContext";
-import { useI18n } from "@/lib/i18n";
+import { useXP } from "@/lib/useXP";
+import { useI18n } from "@/lib/useI18n";
 import { difficultyClassName } from "@/lib/difficulty";
 import { scenarioMaxReward, scenarioReward } from "@/lib/xp";
 import { scenarioFeedbackSchema, type ScenarioFeedback } from "@/types/analysis";

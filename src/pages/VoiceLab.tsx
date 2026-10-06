@@ -7,8 +7,8 @@ import { Phone, PhoneOff, Flag, CheckCircle2, XCircle, ChevronRight, RotateCcw }
 import { voiceCalls, type VoiceCall } from "@/data/voiceCalls";
 import { errorMessage } from "@/lib/api";
 import { useHarisMutation } from "@/lib/useHarisMutation";
-import { useXP } from "@/lib/xpContext";
-import { useI18n } from "@/lib/i18n";
+import { useXP } from "@/lib/useXP";
+import { useI18n } from "@/lib/useI18n";
 import { difficultyClassName } from "@/lib/difficulty";
 import { voiceCallReward } from "@/lib/xp";
 import { voiceDebriefSchema, type VoiceDebrief } from "@/types/analysis";

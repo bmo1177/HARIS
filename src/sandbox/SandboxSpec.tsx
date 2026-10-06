@@ -1,4 +1,4 @@
-import { useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/useI18n";
 import { blueBattery, redChallenges } from "@/sandbox/dataset";
 
 /**

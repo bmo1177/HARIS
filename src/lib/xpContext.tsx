@@ -1,20 +1,8 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { useState, useCallback, type ReactNode } from "react";
+import { XPContext } from "@/lib/xp-context";
 import { addXP as addXPToStorage, getState, type XPState } from "@/lib/xp";
 import XPPill from "@/components/XPPill";
 import LevelUpBanner from "@/components/LevelUpBanner";
-
-interface XPContextValue {
-  state: XPState;
-  awardXP: (amount: number) => void;
-}
-
-const XPContext = createContext<XPContextValue | null>(null);
-
-export function useXP() {
-  const ctx = useContext(XPContext);
-  if (!ctx) throw new Error("useXP must be used within XPProvider");
-  return ctx;
-}
 
 export function XPProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<XPState>(getState);
