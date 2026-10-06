@@ -46,7 +46,12 @@ const RedSandbox = () => {
     [challengeId],
   );
   const state = targetState(failures, locked);
-  const canSubmit = input.trim().length > 0 && !locked && turns.length < challenge.maxAttempts * 2;
+  // `maxAttempts` is the designed budget for the challenge, currently advisory:
+  // the engine degrades the target after repeated failures instead of cutting the
+  // student off, because a lockout would punish curiosity rather than teach. The
+  // factor of two keeps the console bounded if someone hammers the submit button.
+  const canSubmit =
+    input.trim().length > 0 && !locked && turns.length < challenge.maxAttempts * 2;
   const hint = turns.length > 0 ? turns[turns.length - 1]!.turn.hintIndex : null;
   const lastTurn = turns.length > 0 ? turns[turns.length - 1]!.turn : null;
 
