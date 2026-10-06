@@ -124,7 +124,7 @@ function mockAnalyse(testCase: EvalCase): AnalysisResult {
   // block here is exactly how the harness ended up disagreeing with the server.
   const text = testCase.message.toLowerCase();
   const hostile =
-    /urgent|immediately|verify your account|click here|bit\.ly|claim your prize|send.*(qar|password|code)|free\b.*(ps5|v-bucks|followers)|suspended|deleted in|giveaway|selected to win|shared your (name|phone)|id number|passport number|otp|one-time code/
+    /urgent|immediately|verify your account|click here|bit\.ly|claim your prize|send.*(qar|password|code)|password|fake bank|entered your|log in now|free\b.*(ps5|v-bucks|followers)|suspended|deleted in|giveaway|selected to win|shared your (name|phone)|id number|passport number|otp|one-time code/
       .test(
         text,
       );
