@@ -17,6 +17,7 @@ import Index from "@/pages/Index.tsx";
  */
 const Scenarios = lazy(() => import("@/pages/Scenarios.tsx"));
 const VoiceLab = lazy(() => import("@/pages/VoiceLab.tsx"));
+const Sandbox = lazy(() => import("@/pages/Sandbox.tsx"));
 const About = lazy(() => import("@/pages/About.tsx"));
 const NotFound = lazy(() => import("@/pages/NotFound.tsx"));
 
@@ -55,6 +56,14 @@ const App = () => (
                     element={
                       <Suspense fallback={<RouteFallback />}>
                         <VoiceLab />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/sandbox"
+                    element={
+                      <Suspense fallback={<RouteFallback />}>
+                        <Sandbox />
                       </Suspense>
                     }
                   />

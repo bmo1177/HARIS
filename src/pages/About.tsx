@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Eye,
+  FlaskConical,
   Gamepad2,
   Gift,
   MessageSquare,
@@ -42,6 +43,11 @@ const PILLARS = [
     icon: Phone,
     titleKey: "about.voiceTitle",
     descKey: "about.voiceDesc",
+  },
+  {
+    icon: FlaskConical,
+    titleKey: "sandbox.title",
+    descKey: "sandbox.subtitle",
   },
 ] as const;
 
