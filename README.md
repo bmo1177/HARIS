@@ -65,6 +65,14 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<publishable key>
 If these are missing the app will tell you exactly which ones and how to fix it,
 rather than rendering a blank page.
 
+The production build needs the same two variables. Vercel does not read `.env`
+(which is gitignored), so set them in the Vercel dashboard under
+*Project → Settings → Environment Variables* for the Production environment,
+then redeploy. Without them the live site builds fine, deploys fine — and
+renders nothing but the setup screen. That is exactly what happened once;
+the `sb_publishable_` key is designed to ship in the browser bundle, so
+putting it in Vercel env is safe.
+
 The AI-backed features also need the backend deployed — see
 [`supabase/README.md`](supabase/README.md) for the full walkthrough, including
 how to point at a different model provider.
