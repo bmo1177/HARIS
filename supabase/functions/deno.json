@@ -1,11 +1,19 @@
 {
   "compilerOptions": {
     "strict": true,
-    "lib": ["deno.ns", "dom", "dom.iterable", "esnext"]
+    "lib": [
+      "deno.ns",
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "nodeModulesDir": "none"
   },
   "lint": {
     "rules": {
-      "tags": ["recommended"],
+      "tags": [
+        "recommended"
+      ],
       "exclude": [
         "no-control-regex"
       ]
@@ -13,6 +21,8 @@
   },
   "fmt": {
     "lineWidth": 100,
-    "exclude": ["../migrations"]
+    "exclude": [
+      "../migrations"
+    ]
   }
 }
