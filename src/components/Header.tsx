@@ -1,4 +1,3 @@
-import { Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -36,7 +35,19 @@ const Header = () => {
           className="flex shrink-0 items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <span className="flex w-9 h-9 items-center justify-center rounded-xl bg-primary">
-            <Shield className="w-5 h-5 text-primary-foreground" aria-hidden="true" />
+            {/* H lettermark: same geometry as public/favicon.svg. currentColor
+                so it follows primary-foreground across themes, like the Shield
+                it replaces. */}
+            <svg
+              viewBox="0 0 64 64"
+              className="h-5 w-5 text-primary-foreground"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <rect x="16" y="14" width="10" height="36" fill="currentColor" />
+              <rect x="38" y="14" width="10" height="36" fill="currentColor" />
+              <rect x="16" y="29" width="32" height="6" fill="currentColor" />
+            </svg>
           </span>
           {/* Visible at every width now that the nav has its own row. Previously
               `hidden sm:block`, which left mobile with no wordmark and no
