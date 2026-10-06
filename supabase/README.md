@@ -22,9 +22,9 @@ for the full list. The essentials:
 | --- | --- | --- |
 | `LLM_API_KEY` | yes | Key for any OpenAI-compatible provider |
 | `LLM_BASE_URL` | no | Defaults to `https://openrouter.ai/api/v1` |
-| `LLM_MODEL` | no | Defaults to `google/gemini-3.5-flash`. See [Free models](#free-models) — the only verified free option is `nvidia/nemotron-3-super-120b-a12b:free`. |
+| `LLM_MODEL` | no | See [Free models](#free-models). Deployed: `nvidia/nemotron-3-super-120b-a12b`. |
 | `LLM_TIMEOUT_MS` | no | Defaults to `20000` |
-| `LLM_MAX_TOKENS` | no | Defaults to `1200` |
+| `LLM_MAX_TOKENS` | no | Defaults to `1200`, **which truncates the Nemotron models mid-reasoning** and returns invalid JSON. Deployed at `4000`. |
 | `SUPABASE_URL` | injected | Supplied by the Edge Function runtime. |
 | `SUPABASE_SECRET_KEYS` | injected | JSON dict of secret keys, e.g. `{"default":"sb_secret_…"}`. Read for rate-limit bookkeeping. Privileged — bypasses RLS. |
 | `ALLOWED_ORIGINS` | no | Comma-separated browser origin allowlist |
@@ -59,7 +59,7 @@ with this schema. Every other `:free` model failed on one of three counts:
 
 | Model | Outcome |
 | --- | --- |
-| `nvidia/nemotron-3-super-120b-a12b:free` | works: full analysis, correct `risk_band`, Arabic, ~0.4-0.7s |
+| `nvidia/nemotron-3-super-120b-a12b` (NVIDIA Build) | **deployed**: ~4.4s direct, ~8-11s via the function, 4/4 injection, 0% false positives |
 | `google/gemma-4-31b-it:free`, `google/gemma-4-26b-a4b-it:free` | HTTP 429 — free tier unavailable |
 | `apodex/apodex-1.1-mini:free` | HTTP 400 — rejects the schema despite advertising `response_format` |
 | `openrouter/free` | meta-router; returned prose instead of JSON on the second call |
