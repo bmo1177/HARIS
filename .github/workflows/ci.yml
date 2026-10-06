@@ -52,6 +52,13 @@ jobs:
   edge-functions:
     name: Edge functions (Deno)
     runs-on: ubuntu-latest
+    # `secrets` is not an available context for a step-level `if`, so gating on it
+    # directly invalidates the entire workflow file — GitHub reports that as
+    # "likely failed because of a workflow file issue" and never runs a step. It
+    # has to be lifted into a job-level variable, which *is* reachable through the
+    # `env` context that step-level conditions do support.
+    env:
+      HAS_LLM_KEY: ${{ secrets.LLM_API_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -81,7 +88,7 @@ jobs:
       # Real accuracy numbers. Skipped unless a key is configured, so a fork does
       # not fail for lack of a secret.
       - name: Evaluation harness (live)
-        if: ${{ secrets.LLM_API_KEY != '' }}
+        if: env.HAS_LLM_KEY == 'true'
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
@@ -89,7 +96,7 @@ jobs:
         run: deno run --allow-env --allow-net eval/run.ts --provider=live --json > eval-results.json
 
       - uses: actions/upload-artifact@v4
-        if: always() && secrets.LLM_API_KEY != ''
+        if: always() && env.HAS_LLM_KEY == 'true'
         with:
           name: eval-results
           path: eval-results.json
