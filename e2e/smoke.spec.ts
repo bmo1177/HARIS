@@ -74,6 +74,32 @@ test("no route scrolls horizontally on a narrow phone", async ({ page }) => {
   }
 });
 
+test("the nav row fits without scrolling at 320px", async ({ page }) => {
+  // The fifth nav item pushed the row 26px past its container at 320px. The
+  // page-level overflow test cannot see it — the row has its own
+  // overflow-x-auto fallback — so a student would get a silently swipeable nav
+  // with no visible affordance instead.
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto("/");
+  const nav = await page.evaluate(() => {
+    const ul = document.querySelector("nav ul");
+    return ul ? { scrollWidth: ul.scrollWidth, clientWidth: ul.clientWidth } : null;
+  });
+  expect(nav).not.toBeNull();
+  expect(nav!.scrollWidth, "nav row scrolls at 320px").toBeLessThanOrEqual(nav!.clientWidth + 1);
+
+  // Arabic labels run longer, so the same row must be checked in RTL too.
+  await page.getByRole("button", { name: "Switch to Arabic" }).click();
+  const navAr = await page.evaluate(() => {
+    const ul = document.querySelector("nav ul");
+    return ul ? { scrollWidth: ul.scrollWidth, clientWidth: ul.clientWidth } : null;
+  });
+  expect(navAr).not.toBeNull();
+  expect(navAr!.scrollWidth, "nav row scrolls at 320px in Arabic").toBeLessThanOrEqual(
+    navAr!.clientWidth + 1,
+  );
+});
+
 test("the brand wordmark is visible on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto("/");
@@ -476,18 +502,27 @@ test.describe("prompt injection sandbox", () => {
     await page.goto("/sandbox");
     await page.getByRole("tab", { name: "Blue Team" }).click();
 
-    for (const name of [
-      "Strip control characters",
-      "Remove forged boundary tags",
-      "Neutralize override instructions",
-      "Require a closed boundary",
-      "Block restricted markers in output",
-    ]) {
-      await page.getByText(name).click();
-    }
+    await page.getByRole("button", { name: "Enable all defenses" }).click();
     await page.getByRole("button", { name: "Run evaluation" }).click();
 
     await expect(page.getByText("100%")).toHaveCount(2);
+  });
+
+  test("the example chip fills the attack box and succeeds", async ({ page }) => {
+    await page.goto("/sandbox");
+
+    const input = page.getByLabel("Your attack");
+    await expect(input).toHaveValue("");
+    await page.getByRole("button", { name: "Try an example:" }).click();
+    await expect(input).not.toHaveValue("");
+
+    await page.getByRole("button", { name: "Send attack" }).click();
+    // Pinned to the level-1 example by the engine test; the UI test proves the
+    // chip actually fills the box and the turn renders.
+    await expect(
+      page.getByText("MOCK-ADMIN-operator, MOCK-PASSWORD-sandbox-only-001", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("1 of 4 solved")).toBeVisible();
   });
 
   test("spec tab renders the deliverables", async ({ page }) => {

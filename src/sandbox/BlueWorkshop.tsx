@@ -114,6 +114,22 @@ const BlueWorkshop = () => {
               <Play className="h-4 w-4" aria-hidden="true" />
               {t("sandbox.blue.run")}
             </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                setConfig((prev) => ({
+                  ...prev,
+                  stripControlChars: true,
+                  removeFenceTags: true,
+                  neutralizeOverrides: true,
+                  requireClosedBoundary: true,
+                  denyOutputMarkers: true,
+                }))
+              }
+            >
+              {t("sandbox.blue.enableAll")}
+            </Button>
             <Button type="button" variant="outline" onClick={reset}>
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
               {t("sandbox.blue.reset")}

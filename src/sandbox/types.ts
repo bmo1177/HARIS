@@ -67,6 +67,8 @@ export const redChallengeSchema = z
     triggers: z.array(z.string().min(1).max(80)).min(1).max(24),
     flags: z.array(z.string().min(1).max(80)).min(1).max(4),
     requiredMatches: z.number().int().min(1).max(4),
+    /** Prefilled starter attack for students facing a blank box. Must trigger. */
+    exampleAttack: z.string().min(1).max(500),
     refusal: localizedTextSchema,
     /** Must contain `{flags}`, replaced with the matched markers. */
     successTemplate: localizedTextSchema,
