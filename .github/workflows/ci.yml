@@ -33,6 +33,17 @@ jobs:
       - name: Unit tests
         run: npm run test
 
+      # The app renders a configuration setup screen instead of the real UI when
+      # these are absent, so every page assertion fails on a clean checkout. The
+      # E2E suite intercepts every /functions/v1 call, so only the presence of the
+      # variables matters here — not their values. A placeholder keeps the workflow
+      # self-contained, so a fork does not need repository variables configured to
+      # get a green run, and no real credential is needed in the repository.
+      - name: Provide build-time env
+        run: |
+          cp .env.example .env
+          sed -i "s|^VITE_SUPABASE_PUBLISHABLE_KEY=.*|VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_ci_placeholder|" .env
+
       - name: Build
         run: npm run build
 
