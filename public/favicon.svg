@@ -1,16 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="HARIS">
   <!--
-    Favicon / app icon. Two flat colours and no gradients on purpose: anything
-    finer turns to mush at 16px in a browser tab.
+    Favicon / app icon: a bold H lettermark.
+
+    Three flat rects, two colours, no gradients or fine detail on purpose:
+    anything finer turns to mush at 16px in a browser tab. Stems are 10 units
+    wide on a 64 grid (~2.5px at tab size) so the letterform survives.
+    Green-on-dark keeps continuity with the previous shield mark.
   -->
   <rect width="64" height="64" rx="14" fill="#0b1220"/>
 
-  <!-- Shield silhouette -->
-  <path d="M32 9 L51 16.5 V32.5 C51 43.5 43 52.5 32 56 C21 52.5 13 43.5 13 32.5 V16.5 Z"
-        fill="#22c55e"/>
+  <!-- H stems -->
+  <rect x="16" y="14" width="10" height="36" fill="#22c55e"/>
+  <rect x="38" y="14" width="10" height="36" fill="#22c55e"/>
 
-  <!-- Check mark, knocked out of the shield -->
-  <path d="M23 32.5 L29.5 39 L42 26"
-        fill="none" stroke="#0b1220" stroke-width="6.5"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- H crossbar -->
+  <rect x="16" y="29" width="32" height="6" fill="#22c55e"/>
 </svg>

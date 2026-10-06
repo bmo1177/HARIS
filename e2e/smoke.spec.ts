@@ -540,3 +540,12 @@ test.describe("prompt injection sandbox", () => {
     await expect(page).toHaveURL("/sandbox");
   });
 });
+
+test("the header brand mark renders", async ({ page }) => {
+  await page.goto("/");
+  // The H lettermark replaced the Lucide shield. If the inline SVG ever fails
+  // to render, the brand tile is an empty box next to the wordmark.
+  const mark = page.locator('header a[href="/"] svg').first();
+  await expect(mark).toBeVisible();
+  await expect(mark).toHaveAttribute("viewBox", "0 0 64 64");
+});
