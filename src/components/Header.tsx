@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { to: "/", key: "nav.home" },
   { to: "/scenarios", key: "nav.scenarios" },
   { to: "/voice-lab", key: "nav.voiceLab" },
+  { to: "/sandbox", key: "nav.sandbox" },
   { to: "/about", key: "nav.about" },
 ] as const satisfies ReadonlyArray<{ to: string; key: MessageKey }>;
 
