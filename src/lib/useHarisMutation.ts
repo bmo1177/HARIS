@@ -13,6 +13,14 @@ export interface HarisMutation<TOutput extends z.ZodTypeAny> {
   /** Resolves with the validated response, or throws a `HarisError`. */
   mutateAsync: (body: Record<string, unknown>) => Promise<z.infer<TOutput>>;
   reset: () => void;
+  /**
+   * Aborts the in-flight request on the user's behalf.
+   *
+   * The controller is replaced as well as aborted. Aborting alone would leave the
+   * aborted signal on the ref, so the *next* `mutateAsync` would inherit a dead
+   * signal and fail instantly with no request ever sent.
+   */
+  cancel: () => void;
 }
 
 /**
@@ -107,5 +115,15 @@ export function useHarisMutation<TOutput extends z.ZodTypeAny>(
     setIsPending(false);
   }, []);
 
-  return { isPending, error, mutateAsync, reset };
+  const cancel = useCallback(() => {
+    controllerRef.current?.abort();
+    // Fresh controller, so the next request is not born aborted. See above.
+    controllerRef.current = new AbortController();
+    if (mountedRef.current) {
+      setIsPending(false);
+      setError(null);
+    }
+  }, []);
+
+  return { isPending, error, mutateAsync, reset, cancel };
 }
