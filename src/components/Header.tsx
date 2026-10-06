@@ -61,15 +61,16 @@ const Header = () => {
         >
           {/* `overflow-x-auto` is a deliberate fallback: Arabic labels run
               longer than English ones, and a future translation must never be
-              able to push the whole page sideways. At every width we ship, the
-              row fits and this never scrolls. */}
+              able to push the whole page sideways. The row itself must fit at
+              320px — the fifth item broke that once, and the e2e nav-fit test
+              pins it so it cannot regress silently. */}
           <ul className="flex items-center justify-between overflow-x-auto sm:justify-start sm:gap-0.5">
             {NAV_ITEMS.map((item) => (
               <li key={item.to} className="flex-1 sm:flex-none">
                 <NavLink
                   to={item.to}
                   end={item.to === "/"}
-                  className="block w-full whitespace-nowrap rounded-lg px-2 py-2 text-center text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3 sm:py-1.5 sm:text-sm"
+                  className="block w-full whitespace-nowrap rounded-lg px-1 py-2 text-center text-[12px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3 sm:py-1.5 sm:text-sm"
                   activeClassName="bg-accent font-medium text-foreground"
                 >
                   {t(item.key)}

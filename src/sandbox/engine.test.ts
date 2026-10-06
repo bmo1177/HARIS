@@ -38,6 +38,16 @@ describe("dataset contracts", () => {
     expect(redChallenges).toHaveLength(4);
   });
 
+  it("every example attack triggers its own challenge", () => {
+    // The UI offers each example as a starter. If an example ever stops
+    // triggering — after a trigger-list edit, say — the button becomes a lie,
+    // so the dataset and the engine are pinned together here.
+    for (const c of redChallenges) {
+      const turn = simulateRedTurn(c, c.exampleAttack, 0, false);
+      expect(turn.success, `${c.id} example no longer triggers`).toBe(true);
+    }
+  });
+
   it("no red context gives away its own flags", () => {
     // Showing the context is the teaching surface; if it contained the markers,
     // success would be copy-paste rather than an attack.

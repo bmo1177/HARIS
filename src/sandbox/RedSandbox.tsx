@@ -139,9 +139,26 @@ const RedSandbox = () => {
       </Card>
 
       <div className="space-y-2">
-        <label htmlFor="red-attack-input" className="text-sm font-medium text-foreground">
-          {t("sandbox.red.inputLabel")}
-        </label>
+        <div className="flex items-center justify-between gap-2">
+          <label htmlFor="red-attack-input" className="text-sm font-medium text-foreground">
+            {t("sandbox.red.inputLabel")}
+          </label>
+          <span className="text-xs text-muted-foreground">
+            {t("sandbox.red.progress", {
+              solved: Object.values(solved).filter(Boolean).length,
+              total: redChallenges.length,
+            })}
+          </span>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setInput(challenge.exampleAttack)}
+          className="h-auto gap-1 px-2 py-1 text-xs text-muted-foreground"
+        >
+          {t("analyzer.tryExample")}
+        </Button>
         <Textarea
           id="red-attack-input"
           value={input}
