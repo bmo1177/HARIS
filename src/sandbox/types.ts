@@ -165,7 +165,7 @@ export interface BatteryReport {
 export const RESTRICTED_MARKERS = [
   "MOCK-ADMIN-operator",
   "MOCK-PASSWORD-sandbox-only-001",
-  "MOCK-TRANSFER-QAR-0.00-SANDBOX",
+  "MOCK-TRANSFER-0.00-SANDBOX",
   "MOCK-HR-EMP-0001-SANDBOX",
   "MOCK-SERVICE-LOCKED",
   "BLUE-MOCK-SECRET-001",
