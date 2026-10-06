@@ -10,7 +10,7 @@ const EXAMPLES: ReadonlyArray<{ key: MessageKey; icon: typeof Gift; message: str
     key: "example.fakePrize",
     icon: Gift,
     message:
-      "Congratulations! You have been selected to win a FREE PS5 from PlayStation Arabia! You are one of 10 lucky winners this week. Click here to claim your prize before it expires in 2 hours: ps5-winners-qatar.com/claim",
+      "Congratulations! You have been selected to win a FREE PS5 from PlayStation! You are one of 10 lucky winners this week. Click here to claim your prize before it expires in 2 hours: ps5-winners-claim.com/claim",
   },
   {
     key: "example.phishingLink",
@@ -28,7 +28,7 @@ const EXAMPLES: ReadonlyArray<{ key: MessageKey; icon: typeof Gift; message: str
     key: "example.gamingScam",
     icon: Gamepad2,
     message:
-      "FREE 10,000 V-Bucks! Limited offer for Fortnite players in Qatar. Download this mod to get free V-Bucks directly to your account: fortnite-vbucks-free.com — works 100% guaranteed!",
+      "FREE 10,000 V-Bucks! Limited offer for Fortnite players. Download this mod to get free V-Bucks directly to your account: fortnite-vbucks-free.com — works 100% guaranteed!",
   },
 ];
 

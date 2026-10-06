@@ -93,7 +93,7 @@ const debrief = {
       isRedFlag: true,
       userFlagged: true,
     },
-    { lineNumber: 2, text: "Send 75 QAR", isRedFlag: true, userFlagged: true },
+    { lineNumber: 2, text: "Send $75", isRedFlag: true, userFlagged: true },
     {
       lineNumber: 3,
       text: "Do not tell anyone",
