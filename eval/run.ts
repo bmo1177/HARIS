@@ -49,10 +49,44 @@ for (const raw of Deno.args) {
   if (m) args.set(m[1], m[2] ?? "true");
 }
 
+/**
+ * Validate the knobs before any work happens.
+ *
+ * Both of these used to fail quietly in the worst possible direction:
+ *
+ *   --repeats=0     looped zero times, then reported "recall on hostile 100.0%"
+ *                   over an empty set and exited 0. A green run that measured
+ *                   nothing is exactly the failure this harness exists to catch
+ *                   elsewhere, so it must not be possible here.
+ *   --provider=liv  matched neither branch of `provider === "mock"`, so a typo
+ *                   silently selected the *live* path and started spending money
+ *                   against whatever LLM_API_KEY happened to be in the shell.
+ *
+ * Exiting 2 matches the existing `--filter` no-match behaviour: a usage error,
+ * distinct from 1, which means the harness ran and found a real failure.
+ */
 const provider = args.get("provider") ?? "mock";
 const filter = args.get("filter");
 const asJson = args.has("json");
-const repeats = Number.parseInt(args.get("repeats") ?? "1", 10);
+const rawRepeats = args.get("repeats") ?? "1";
+const repeats = Number.parseInt(rawRepeats, 10);
+
+if (provider !== "mock" && provider !== "live") {
+  console.error(
+    `--provider must be "mock" or "live", got ${JSON.stringify(provider)}. ` +
+      `Refusing to guess: an unrecognised value previously selected the live ` +
+      `provider and spent API credit.`,
+  );
+  Deno.exit(2);
+}
+
+if (!Number.isInteger(repeats) || repeats < 1) {
+  console.error(
+    `--repeats must be a positive integer, got ${JSON.stringify(rawRepeats)}. ` +
+      `A run with zero repeats measures nothing and must not report a score.`,
+  );
+  Deno.exit(2);
+}
 
 // ------------------------------------------------------------------- metrics
 
