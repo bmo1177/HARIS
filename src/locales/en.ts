@@ -204,6 +204,18 @@ export const en = {
   "sandbox.spec.redLevels": "Red challenges",
   "sandbox.spec.vectors": "Attack vectors",
   "sandbox.spec.benign": "Benign baseline",
+  // Architecture bullets. These were five English <li> elements on a page whose
+  // headings and data were already bilingual, so an Arabic reader got an Arabic
+  // section title above a paragraph of English.
+  "sandbox.arch.tabs": "Sandbox page: mode tabs — RedSandbox, BlueWorkshop, SandboxSpec.",
+  "sandbox.arch.red":
+    "RedSandbox: level picker, console, state badge, hint box; state only, verdicts from the engine.",
+  "sandbox.arch.blue":
+    "BlueWorkshop: defense editors, run button, metric bars, execution log.",
+  "sandbox.arch.engine":
+    "Engine: sanitize, boundary, simulate, evaluate — pure functions, fully unit-tested.",
+  "sandbox.arch.dataset":
+    "Dataset: four red challenges, ten fixed battery cases; mock markers only.",
 
   // About
   "about.title": "About HARIS",
@@ -259,8 +271,12 @@ export const en = {
   "setup.step2":
     "Fill in VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY from your Supabase project (Project Settings → API)",
   "setup.step3": "Restart the dev server",
+  "setup.fix": "To fix it:",
   "setup.backend":
     "The backend also needs LLM_API_KEY and SUPABASE_SERVICE_ROLE_KEY as edge function secrets. See supabase/README.md.",
+
+  // Route-level lazy-loading fallback
+  "route.loading": "Loading...",
 } as const;
 
 export type MessageKey = keyof typeof en;

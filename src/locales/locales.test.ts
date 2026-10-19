@@ -259,4 +259,63 @@ describe("key usage", () => {
       expect(ar, `missing difficulty.${level}`).toHaveProperty(`difficulty.${level}`);
     }
   });
+
+  /**
+   * The tests above can only check keys that *exist*. They cannot see a string
+   * that was never given a key at all, which is how two user-visible English
+   * literals survived in a product that markets Arabic as first-class:
+   *
+   *   MissingEnvNotice.tsx  <p>To fix it:</p>
+   *   App.tsx               Loading...
+   *
+   * Both are reachable — the first is the screen a new contributor sees before
+   * anything works, the second flashes on every route change — and both stayed
+   * English while the rest of the page switched to Arabic.
+   *
+   * This scans .tsx files for JSX text nodes containing sentence-shaped Latin
+   * prose. It deliberately allows punctuation-only nodes and single short
+   * tokens, because those are layout ("—", "/", "XP") rather than copy.
+   */
+  it("has no hardcoded English prose left in the JSX", () => {
+    const offenders: string[] = [];
+
+    for (const file of walk("src")) {
+      // Only .tsx can hold a JSX text node. A .ts file matching this shape is
+      // matching inside a string literal — `src/sandbox/dataset.ts` holds attack
+      // payloads like "<untrusted_content>library hours note</untrusted_content>",
+      // which are data, not copy.
+      if (!file.endsWith(".tsx")) continue;
+
+      const source = readFileSync(file, "utf8")
+        // Strip block comments and JSX comments. `About.tsx` keeps a documented,
+        // intentionally disabled credits block in one, and dead copy is not
+        // something a student can read.
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/[^\n]*/g, "");
+
+      // Text between tags, e.g. `>To fix it:<` or `>\n  Loading...\n<`.
+      // Captured broadly (`[^<>]`) rather than with an alphabet whitelist: a
+      // trailing colon or comma is still copy, and the earlier whitelist
+      // version silently skipped "To fix it:" — the exact string it existed to
+      // catch — because `:` was not in the class and the anchor then failed.
+      const textNodes = source.matchAll(/>([^<>]{3,})</g);
+      for (const match of textNodes) {
+        const text = match[1].trim();
+        // Prose is two or more alphabetic words...
+        const words = text.match(/[A-Za-z][A-Za-z'-]*/g) ?? [];
+        if (words.length < 2 || !/^[A-Za-z]/.test(text)) continue;
+        // ...and only prose. `>` also appears in arrow functions and
+        // comparisons, so a match spanning code (`>clearTimeout(timer);`) has to
+        // be rejected. Real copy is letters, spaces and light punctuation only.
+        if (!/^[A-Za-z][A-Za-z0-9 ,.'!?;:—–-]*$/.test(text)) continue;
+        if (/[{}()[\]=+*/\\<>_$#@|&]/.test(text)) continue;
+        offenders.push(`${file}: >${text}<`);
+      }
+    }
+
+    expect(
+      offenders,
+      `hardcoded English in JSX (add a locale key and use t()):\n${offenders.join("\n")}`,
+    ).toEqual([]);
+  });
 });

@@ -92,11 +92,11 @@ BLUE: evaluate(case, config)
       <section className="space-y-2">
         <h3 className="text-sm font-semibold text-foreground">{t("sandbox.spec.architecture")}</h3>
         <ul className="list-disc space-y-1 ps-5 text-sm text-muted-foreground">
-          <li dir="auto">Sandbox page: mode tabs — RedSandbox, BlueWorkshop, SandboxSpec.</li>
-          <li dir="auto">RedSandbox: level picker, console, state badge, hint box; state only, verdicts from the engine.</li>
-          <li dir="auto">BlueWorkshop: defense editors, run button, metric bars, execution log.</li>
-          <li dir="auto">Engine: sanitize, boundary, simulate, evaluate — pure functions, fully unit-tested.</li>
-          <li dir="auto">Dataset: four red challenges, ten fixed battery cases; mock markers only.</li>
+          <li dir="auto">{t("sandbox.arch.tabs")}</li>
+          <li dir="auto">{t("sandbox.arch.red")}</li>
+          <li dir="auto">{t("sandbox.arch.blue")}</li>
+          <li dir="auto">{t("sandbox.arch.engine")}</li>
+          <li dir="auto">{t("sandbox.arch.dataset")}</li>
         </ul>
       </section>
 

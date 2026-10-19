@@ -27,7 +27,7 @@ const MissingEnvNotice = () => {
         </ul>
 
         <div className="rounded-lg border border-border bg-card p-4 space-y-3 text-sm">
-          <p className="text-foreground">To fix it:</p>
+          <p className="text-foreground">{t("setup.fix")}</p>
           <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
             <li>{t("setup.step1")}</li>
             <li>{t("setup.step2")}</li>

@@ -5,6 +5,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Layout from "@/components/Layout";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { XPProvider } from "@/lib/xpContext";
+import { useI18n } from "@/lib/useI18n";
 import Index from "@/pages/Index.tsx";
 
 /*
@@ -21,14 +22,17 @@ const Sandbox = lazy(() => import("@/pages/Sandbox.tsx"));
 const About = lazy(() => import("@/pages/About.tsx"));
 const NotFound = lazy(() => import("@/pages/NotFound.tsx"));
 
-const RouteFallback = () => (
-  <div className="flex min-h-[40vh] items-center justify-center" role="status" aria-live="polite">
-    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-      <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      Loading...
+const RouteFallback = () => {
+  const { t } = useI18n();
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center" role="status" aria-live="polite">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        {t("route.loading")}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Only Sonner is mounted. The Radix `<Toaster/>` was mounted alongside it but
 // nothing ever called it, dragging in a second toast implementation

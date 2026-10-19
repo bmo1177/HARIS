@@ -195,6 +195,15 @@ export const ar: Record<MessageKey, string> = {
   "sandbox.spec.redLevels": "تحديات الفريق الأحمر",
   "sandbox.spec.vectors": "متجهات الهجوم",
   "sandbox.spec.benign": "الأساس السليم",
+  "sandbox.arch.tabs": "صفحة الصندوق: تبويبات الأوضاع — RedSandbox و BlueWorkshop و SandboxSpec.",
+  "sandbox.arch.red":
+    "RedSandbox: اختيار المستوى، الطرفية، شارة الحالة، صندوق التلميحات؛ الحالة فقط، والأحكام من المحرك.",
+  "sandbox.arch.blue":
+    "BlueWorkshop: محرّرات الدفاعات، زر التشغيل، أشرطة القياس، سجل التنفيذ.",
+  "sandbox.arch.engine":
+    "المحرك: sanitize و boundary و simulate و evaluate — دوال نقية، مغطاة باختبارات الوحدة كاملةً.",
+  "sandbox.arch.dataset":
+    "مجموعة البيانات: أربعة تحديات حمراء وعشر حالات ثابتة للحزمة؛ علامات وهمية فقط.",
 
   "about.title": "عن هاريس",
   "about.builtFor": "صُمّم للطلاب",
@@ -242,6 +251,9 @@ export const ar: Record<MessageKey, string> = {
   "setup.step2":
     "املأ VITE_SUPABASE_URL و VITE_SUPABASE_PUBLISHABLE_KEY من مشروع Supabase (إعدادات المشروع ← API)",
   "setup.step3": "أعد تشغيل خادم التطوير",
+  "setup.fix": "لإصلاح ذلك:",
   "setup.backend":
     "يحتاج الخادم أيضاً إلى LLM_API_KEY و SUPABASE_SERVICE_ROLE_KEY كأسرار لدوال الحافة. راجع supabase/README.md.",
+
+  "route.loading": "جارٍ التحميل...",
 };
