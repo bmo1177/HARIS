@@ -91,9 +91,9 @@ how to point at a different model provider.
 | `npm run e2e` | Playwright end-to-end tests (starts its own dev server) |
 | `npm run check:deno` | Typecheck + lint the Deno edge functions |
 | `npm run test:deno` | Run the edge function tests |
-| `npm run verify` | typecheck → lint → test → build |
 | `npm run eval` | Evaluation harness, mock provider (no API key needed) |
 | `npm run eval:live` | Real accuracy numbers. Needs `LLM_API_KEY`. See [`eval/README.md`](eval/README.md). |
+| `npm run verify` | typecheck → lint → test → eval → build |
 
 ---
 
