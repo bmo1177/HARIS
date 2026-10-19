@@ -68,7 +68,9 @@ const AnalysisWait = ({ onCancel }: AnalysisWaitProps) => {
             <span className="font-mono tabular-nums" aria-hidden="true">
               {t("analyzer.wait.elapsed", { seconds })}
             </span>
-            <span className="sr-only">{seconds} seconds elapsed</span>
+            <span className="sr-only">
+              {t("analyzer.wait.elapsedSr", { seconds })}
+            </span>
             {" · "}
             {slow ? t("analyzer.wait.slow") : t("analyzer.wait.typical")}
           </p>

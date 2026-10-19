@@ -52,6 +52,10 @@ export const en = {
   "analyzer.submitting": "HARIS is analyzing...",
   "analyzer.wait.headline": "Reading the message for red flags",
   "analyzer.wait.elapsed": "{seconds}s",
+  // Screen-reader-only equivalent of the visible timer. It has to be a separate
+  // key because "{seconds}s" narrated aloud is just "0 s"; the visible text is
+  // aria-hidden and this is the only thing assistive tech receives.
+  "analyzer.wait.elapsedSr": "Elapsed time: {seconds} seconds",
   "analyzer.wait.typical": "This usually takes 5-15 seconds.",
   "analyzer.wait.slow": "Taking longer than usual. Still working.",
   "analyzer.wait.cancel": "Cancel",
@@ -263,6 +267,18 @@ export const en = {
     "HARIS hit an unexpected error and stopped. Your XP is safe — it is stored on this device.",
   "error.retry": "Try again",
   "error.reload": "Reload the page",
+  // One key per HarisErrorCode, so an Arabic user gets an Arabic toast. These
+  // mirror the server's SAFE_MESSAGE map: the server returns a fixed English
+  // sentence per code, and the client previously rendered that sentence as-is
+  // in every locale.
+  "error.invalid_request": "That request could not be processed. Check the input and try again.",
+  "error.rate_limited": "Too many requests. Take a short break, then try again.",
+  "error.service_unavailable": "HARIS is briefly unavailable. Please try again in a moment.",
+  "error.upstream_error": "The analysis could not be completed. Please try again.",
+  "error.internal_error": "Something went wrong. Please try again.",
+  "error.network_error": "Could not reach HARIS. Check your connection and try again.",
+  "error.timeout": "HARIS took too long to respond. Please try again.",
+  "error.invalid_response": "HARIS sent back something unexpected. Please try again.",
 
   // Setup screen
   "setup.title": "HARIS needs its environment variables",

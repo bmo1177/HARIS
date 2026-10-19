@@ -51,6 +51,22 @@ describe("AnalysisWait", () => {
     expect(screen.getByText("5s")).toBeDefined();
   });
 
+  it("announces elapsed time in the active language", () => {
+    render(
+      <I18nProvider initialLocale="ar">
+        <AnalysisWait onCancel={vi.fn()} />
+      </I18nProvider>,
+    );
+
+    // The visible timer is aria-hidden, so this is the only elapsed-time
+    // announcement a screen reader receives. It used to be the hardcoded English
+    // "seconds elapsed" on every locale — invisible to sighted users, and to the
+    // hardcoded-prose test until that test learned to read text that follows a
+    // JSX expression.
+    expect(screen.getByText("الوقت المنقضي: 0 ثانية")).toBeDefined();
+    expect(screen.queryByText(/seconds elapsed/)).toBeNull();
+  });
+
   it("states an expected duration up front", () => {
     renderWait();
     // Without this, fifteen seconds reads as broken rather than normal.

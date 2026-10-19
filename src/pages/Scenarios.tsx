@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle, Target, ChevronRight, RotateCcw, ArrowRight } from "lucide-react";
 import { scenarios, type Scenario } from "@/data/scenarios";
-import { errorMessage } from "@/lib/api";
+import { useErrorMessage } from "@/lib/useErrorMessage";
 import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/useXP";
 import { useI18n } from "@/lib/useI18n";
@@ -24,6 +24,7 @@ const Scenarios = () => {
   const { awardXP } = useXP();
   const navigate = useNavigate();
   const { t, locale, formatNumber } = useI18n();
+  const errorText = useErrorMessage();
   const feedbackRequest = useHarisMutation("scenario-feedback", scenarioFeedbackSchema);
 
   /**
@@ -87,7 +88,7 @@ const Scenarios = () => {
     } catch (error) {
       // Say so rather than silently substituting a canned answer, which left
       // students unable to tell that HARIS had not actually responded.
-      toast.error(errorMessage(error));
+      toast.error(errorText(error));
 
       const fallbackFb: ScenarioFeedback = {
         safe: choice.type === "safe",

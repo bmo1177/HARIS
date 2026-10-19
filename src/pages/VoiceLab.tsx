@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Phone, PhoneOff, Flag, CheckCircle2, XCircle, ChevronRight, RotateCcw } from "lucide-react";
 import { voiceCalls, type VoiceCall } from "@/data/voiceCalls";
-import { errorMessage } from "@/lib/api";
+import { useErrorMessage } from "@/lib/useErrorMessage";
 import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/useXP";
 import { useI18n } from "@/lib/useI18n";
@@ -38,6 +38,7 @@ const VoiceLab = () => {
   const { awardXP } = useXP();
   const navigate = useNavigate();
   const { t, locale, formatNumber } = useI18n();
+  const errorText = useErrorMessage();
   const debriefRequest = useHarisMutation("voice-debrief", voiceDebriefSchema);
 
   const clearAdvanceTimer = useCallback(() => {
@@ -74,10 +75,10 @@ const VoiceLab = () => {
         setDebrief(result);
       } catch (error) {
         // Previously swallowed entirely, so a failed debrief was invisible.
-        toast.error(errorMessage(error));
+        toast.error(errorText(error));
       }
     },
-    [debriefRequest],
+    [debriefRequest, errorText],
   );
 
   const speakLine = useCallback((call: VoiceCall, lineIndex: number) => {

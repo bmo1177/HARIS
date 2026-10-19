@@ -374,7 +374,33 @@ test("a failed AI call shows an error rather than silently pretending", async ({
 
   // Previously the error was swallowed entirely, so the student could not
   // tell that HARIS had not actually responded.
-  await expect(page.getByText(/could not be completed|Taught|فشل|تعذّر/)).toBeVisible({ timeout: 15_000 });
+  //
+  // The toast is now chosen from the error *code* and rendered in the active
+  // locale, rather than echoing the server's English sentence — so the expected
+  // text is the localized `error.internal_error` copy, not the mock body.
+  await expect(page.getByText(/Something went wrong|حدث خطأ/)).toBeVisible({ timeout: 15_000 });
+});
+
+test("a failed AI call is reported in Arabic on an Arabic screen", async ({ page }) => {
+  await page.route("**/functions/v1/scenario-feedback", (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "The analysis could not be completed.", code: "internal_error" }),
+    }),
+  );
+  await page.goto("/scenarios");
+  await page.getByRole("button", { name: /العربية|arabic/i }).first().click();
+  // The English tests find the first scenario card by its "XP" text; that is
+  // translated away in Arabic. The card's role is locale-independent.
+  await page.locator('main [role="button"]').first().click();
+  await page.locator("button").filter({ hasText: /Reply|Check|Ask|Ignore|Block|Send|Stop/ }).first().click();
+
+  // The server's `error` string is always English. Rendering it verbatim put an
+  // English sentence above an Arabic interface; the toast now comes from the
+  // code and the active dictionary.
+  await expect(page.getByText("حدث خطأ ما. حاول مرة أخرى.")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("The analysis could not be completed.")).toHaveCount(0);
 });
 });
 
@@ -469,6 +495,10 @@ test("the waiting state is localised", async ({ page }) => {
   await page.getByRole("button", { name: /حلّل بهاريس/i }).click();
 
   await expect(page.getByRole("button", { name: /إلغاء/ })).toBeVisible();
+
+  // The visible timer is aria-hidden, so the screen-reader announcement is the
+  // only place elapsed time is spoken. It was hardcoded English on every locale.
+  await expect(page.getByRole("status").locator(".sr-only")).toHaveText(/الوقت المنقضي/);
 });
 
 test.describe("prompt injection sandbox", () => {

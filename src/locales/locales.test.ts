@@ -300,7 +300,16 @@ describe("key usage", () => {
       // catch — because `:` was not in the class and the anchor then failed.
       const textNodes = source.matchAll(/>([^<>]{3,})</g);
       for (const match of textNodes) {
-        const text = match[1].trim();
+        // JSX expressions are replaced with a space before the prose check, so
+        // `{seconds} seconds elapsed` is inspected as "seconds elapsed". Without
+        // this, any text immediately after an expression was skipped because the
+        // segment started with `{` and failed the "starts with a letter" test —
+        // which is exactly how the screen-reader-only "seconds elapsed" stayed
+        // English while every visible string was translated.
+        const text = match[1]
+          .replace(/\{[\s\S]*?\}/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
         // Prose is two or more alphabetic words...
         const words = text.match(/[A-Za-z][A-Za-z'-]*/g) ?? [];
         if (words.length < 2 || !/^[A-Za-z]/.test(text)) continue;

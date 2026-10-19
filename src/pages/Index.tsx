@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import AnalysisWait from "@/components/AnalysisWait";
 import MessageAnalyzer from "@/components/MessageAnalyzer";
 import AnalysisResults from "@/components/AnalysisResults";
-import { errorMessage } from "@/lib/api";
+import { useErrorMessage } from "@/lib/useErrorMessage";
 import { useI18n } from "@/lib/useI18n";
 import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/useXP";
@@ -14,6 +14,7 @@ const Index = () => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const { awardXP } = useXP();
   const { t } = useI18n();
+  const errorText = useErrorMessage();
 
   const analyze = useHarisMutation("analyze-message", analysisResultSchema);
 
@@ -34,7 +35,7 @@ const Index = () => {
         toast.info(t("analyzer.wait.cancelled"));
         return;
       }
-      toast.error(errorMessage(error));
+      toast.error(errorText(error));
     }
   };
 
