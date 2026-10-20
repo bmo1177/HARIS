@@ -18,6 +18,15 @@ deno run --allow-env --allow-net eval/run.ts --provider=live --json > results.js
 deno run --allow-env --allow-net eval/run.ts --provider=live --filter=benign
 ```
 
+`--provider` accepts only `mock` or `live`, and `--repeats` must be a positive
+integer. Invalid values exit `2` before any request is made: a misspelled
+provider used to fall through to the live path and spend API credit, and
+`--repeats=0` used to report 100% recall over an empty set and exit `0`.
+
+Exit codes are deliberate: `2` is a usage error, `1` means the harness ran and
+found a real failure (an unparseable verdict or a steered injection), and `0`
+means it ran and passed.
+
 ## What it measures
 
 | Metric                                      | Why it is here                                                                                                                                                                              |

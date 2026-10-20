@@ -25,13 +25,20 @@ Live: **https://haris-two-xi.vercel.app**
 including the explanations, attack names and red-flag reasons the model returns,
 which were previously generated on every request and thrown away.
 
+Failures are localized too. The edge functions return a stable error code and a
+fixed client-safe sentence; the client renders the code in the active language
+instead of echoing the server's English copy, so an Arabic student never gets an
+English error above an Arabic screen. The same applies to the screen-reader
+announcement on the analysis wait screen, which is a separate localized string
+rather than a hardcoded one.
+
 XP and five levels track progress, stored locally in the browser.
 
 ---
 
 ## Stack
 
-- **Frontend** — React 18, TypeScript (strict), Vite, Tailwind, shadcn/ui, React Router
+- **Frontend** — React 18, TypeScript (strict), Vite, Tailwind, shadcn/ui, React Router 7
 - **Backend** — Supabase Edge Functions (Deno) with Postgres for rate limiting
 - **AI** — any OpenAI-compatible provider (OpenRouter by default)
 - **Testing** — Vitest, Playwright, Deno test
@@ -119,6 +126,11 @@ The visual system is an **instrument**, not a consumer security app — see
 - The risk score is presented as a readout: tabular monospace figures over a
   segmented scale with its thresholds marked, so the value is legible rather than
   impressionistic.
+- **Accessibility is part of the instrument.** Async regions use `role="status"`
+  with `aria-live`; the visible elapsed timer is `aria-hidden` and paired with a
+  localized screen-reader announcement; the nav row fits at 320px in both
+  languages. These properties are pinned by unit and E2E tests rather than left
+  to review.
 
 ## Architecture
 
@@ -150,6 +162,29 @@ Shared edge-function code lives in `supabase/functions/_shared/`:
 
 ---
 
+## Testing
+
+Four layers, each guarding a failure mode the others cannot see:
+
+| Layer | Command | What it pins |
+| --- | --- | --- |
+| **Unit** (Vitest) | `npm run test` | XP and level arithmetic, the sandbox engine, the analysis wait timer, and the locale dictionaries. The locale suite also scans JSX for hardcoded English prose — including text that follows a JSX expression, which is how a screen-reader-only string once stayed English. |
+| **End-to-end** (Playwright) | `npm run e2e` | `smoke.spec.ts` covers routing, theming, RTL, XP persistence and the AI flows with intercepted responses. `router.spec.ts` covers active nav state, browser history and SPA transitions. `console.spec.ts` fails on any console error or warning, including React Router deprecations. `i18n.spec.ts` checks Arabic copy on a bilingual page. |
+| **Edge functions** (Deno) | `npm run test:deno` | Request validation, rate limiting, prompt fencing and the analysis reconciliation. |
+| **Evaluation** (Deno) | `npm run eval` | The harness itself: dataset parsing, metric arithmetic and the injection gate. `npm run eval:live` produces real accuracy numbers; see [`eval/README.md`](eval/README.md). |
+
+AI calls made by the suite are intercepted with `page.route`, so it runs
+offline and never spends API credit.
+
+Playwright's bundled Chromium needs system libraries that some distributions
+(NixOS, for example) do not provide. Point it at an installed browser instead:
+
+```bash
+CHROME_PATH=/run/current-system/sw/bin/google-chrome npm run e2e
+```
+
+---
+
 ## Security
 
 HARIS is a security tool, so its own posture is documented rather than implied.
@@ -164,8 +199,10 @@ is in [`supabase/README.md`](supabase/README.md). In short:
 - **Cost exhaustion.** The functions are public and billable. Per-client rate
   limits (minute + daily), request body caps, per-field length caps and
   `LLM_MAX_TOKENS` bound what one request can cost.
-- **Disclosure.** Errors return a fixed client-safe message plus a request id.
-  Internal causes are logged server-side only.
+- **Disclosure.** Errors return a fixed client-safe message, a stable code and a
+  request id. Internal causes are logged server-side only. The client renders the
+  code in the reader's language rather than echoing the English sentence, so the
+  error copy follows the interface.
 - **No authentication, on purpose.** The audience is students and a sign-up wall
   in front of the lesson is the wrong trade. That means rate limiting is a cost
   control, not an identity system — stated plainly rather than glossed over.
@@ -174,6 +211,27 @@ is in [`supabase/README.md`](supabase/README.md). In short:
   reporting false-positive rate on benign messages, recall on hostile ones, and
   robustness to prompt injection. The false-positive number is the one that
   matters: a tool that flags ordinary messages teaches students to ignore it.
+
+---
+
+## Known gaps
+
+Written down rather than implied, because a tool that hides its limits is not
+trustworthy about the parts it claims work.
+
+- **Scenario exercise content is English-only.** Scenario titles and descriptions
+  are bilingual, but the attacker messages, roles and choice labels in
+  [`src/data/scenarios.ts`](src/data/scenarios.ts) are not. An Arabic student
+  reads an Arabic card and then plays the scenario in English.
+- **Voice-call flag reasons are English-only.** The spoken lines are bilingual —
+  some calls deliberately mix Arabic and English — but `flagReason` is English in
+  the debrief, including for Arabic lines.
+- **E2E does not exercise a deployed backend.** Every edge-function call is
+  mocked, so the suite proves the UI contract, not the model or the database.
+  `npm run preflight:live` and `npm run eval:live` cover that, and need
+  credentials.
+- **Accuracy numbers are not in CI unless `LLM_API_KEY` is configured.** The mock
+  run verifies the harness, not the model.
 
 ---
 
@@ -204,6 +262,10 @@ so a green run never implies more than it checked.
 
 Issues and pull requests are welcome. Please run `npm run verify` before
 opening a PR; CI runs the same checks plus the Deno and Playwright suites.
+
+CI runs with least-privilege `contents: read` permissions and per-job timeouts.
+Every step only reads the repository; artifact upload does not use the workflow
+token, so no write scope is granted.
 
 If you touch the edge functions, also run:
 

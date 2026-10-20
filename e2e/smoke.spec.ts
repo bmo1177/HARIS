@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * Smoke tests for the parts of HARIS that work without the AI backend.
+ * Smoke tests for the whole UI surface.
  *
- * The analyzer, scenario feedback and voice debrief all call Supabase edge
- * functions, so they are not covered here: those need a deployed backend and
- * are better exercised by the eval harness than by E2E. What these tests guard
- * is the thing that actually broke in production — routing.
+ * AI-backed calls to the Supabase edge functions are intercepted with
+ * `page.route`, so the analyzer, scenario and voice-debrief flows run offline
+ * and deterministically — no deployed backend and no API credit. What is *not*
+ * covered here is the real model or database; `eval:live` and `preflight:live`
+ * are for that.
  */
 
 test.describe("navigation", () => {
