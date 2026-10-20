@@ -9,6 +9,7 @@ import { useErrorMessage } from "@/lib/useErrorMessage";
 import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/useXP";
 import { useI18n } from "@/lib/useI18n";
+import { localizedText } from "@/lib/localized";
 import { difficultyClassName } from "@/lib/difficulty";
 import { voiceCallReward } from "@/lib/xp";
 import { voiceDebriefSchema, type VoiceDebrief } from "@/types/analysis";
@@ -221,7 +222,13 @@ const VoiceLab = () => {
                         <p className={`text-xs mt-1 ${flagged ? "text-success" : "text-destructive"}`}>
                           {flagged
                             ? t("scenarios.caught")
-                            : t("scenarios.missed", { reason: line.flagReason ?? "" })}
+                            : t("scenarios.missed", {
+                                reason: localizedText(
+                                  line.flagReason ?? "",
+                                  line.flagReasonAr,
+                                  locale,
+                                ),
+                              })}
                         </p>
                       )}
                       {!line.isRedFlag && flagged && (

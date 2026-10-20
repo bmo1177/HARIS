@@ -59,6 +59,18 @@ export const ANALYSIS_SCHEMA = {
     },
     clue_2: { type: "string", description: "Second clue" },
     clue_3: { type: "string", description: "Third clue" },
+    clue_1_ar: {
+      type: "string",
+      description: "The same first clue, in Arabic",
+    },
+    clue_2_ar: {
+      type: "string",
+      description: "The same second clue, in Arabic",
+    },
+    clue_3_ar: {
+      type: "string",
+      description: "The same third clue, in Arabic",
+    },
     explanation: {
       type: "string",
       description: "2-3 plain-English sentences on what this is and how to stay safe",
@@ -75,6 +87,9 @@ export const ANALYSIS_SCHEMA = {
     "clue_1",
     "clue_2",
     "clue_3",
+    "clue_1_ar",
+    "clue_2_ar",
+    "clue_3_ar",
     "explanation",
     "explanation_ar",
   ],
@@ -112,6 +127,9 @@ export const MODEL_OUTPUT = z.object({
   clue_1: z.string(),
   clue_2: z.string(),
   clue_3: z.string(),
+  clue_1_ar: z.string(),
+  clue_2_ar: z.string(),
+  clue_3_ar: z.string(),
   explanation: z.string(),
   explanation_ar: z.string(),
 });
@@ -130,6 +148,14 @@ export interface AnalysisResult {
   clue_1: string;
   clue_2: string;
   clue_3: string;
+  /**
+   * Arabic versions of the clues. Empty when the model could not produce
+   * them, in which case the client shows the English clue — a missing
+   * translation must never blank the card.
+   */
+  clue_1_ar: string;
+  clue_2_ar: string;
+  clue_3_ar: string;
   explanation: string;
   explanation_ar: string;
 }
@@ -173,6 +199,12 @@ export function reconcile(raw: z.infer<typeof MODEL_OUTPUT>): AnalysisResult {
     clue_1: clampText(raw.clue_1, 300, FALLBACK_CLUE),
     clue_2: clampText(raw.clue_2, 300, FALLBACK_CLUE),
     clue_3: clampText(raw.clue_3, 300, FALLBACK_CLUE),
+    // No fallback: an empty Arabic clue means "not translated", and the client
+    // shows the English one. Inventing Arabic here would be worse than saying
+    // nothing.
+    clue_1_ar: clampText(raw.clue_1_ar, 300),
+    clue_2_ar: clampText(raw.clue_2_ar, 300),
+    clue_3_ar: clampText(raw.clue_3_ar, 300),
     explanation: clampText(
       raw.explanation,
       900,
@@ -200,6 +232,9 @@ How to respond:
   it low and say why.
 - Not every message is an attack. Reward the honest "Safe" answer when it is genuinely
   safe; do not inflate scores to seem useful.
+- Give every clue in Arabic as well as English (clue_1_ar, clue_2_ar, clue_3_ar), with
+  the same meaning. Half of the students this tool is built for read in Arabic, and a
+  translated clue that says something different from the English one is worse than none.
 
 ${UNTRUSTED_CONTENT_RULES}`;
 

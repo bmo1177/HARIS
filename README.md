@@ -25,6 +25,12 @@ Live: **https://haris-two-xi.vercel.app**
 including the explanations, attack names and red-flag reasons the model returns,
 which were previously generated on every request and thrown away.
 
+The exercise content is bilingual too, which it was not for a long time: the
+analyzer's clues, the scenario attacker messages and choices, and the voice
+call's red-flag reasons all have Arabic versions, and the model is sent
+whichever language the student is reading in so its coaching is about the text
+they actually saw.
+
 Failures are localized too. The edge functions return a stable error code and a
 fixed client-safe sentence; the client renders the code in the active language
 instead of echoing the server's English copy, so an Arabic student never gets an
@@ -169,7 +175,7 @@ Four layers, each guarding a failure mode the others cannot see:
 | Layer | Command | What it pins |
 | --- | --- | --- |
 | **Unit** (Vitest) | `npm run test` | XP and level arithmetic, the sandbox engine, the analysis wait timer, and the locale dictionaries. The locale suite also scans JSX for hardcoded English prose — including text that follows a JSX expression, which is how a screen-reader-only string once stayed English. |
-| **End-to-end** (Playwright) | `npm run e2e` | `smoke.spec.ts` covers routing, theming, RTL, XP persistence and the AI flows with intercepted responses. `router.spec.ts` covers active nav state, browser history and SPA transitions. `console.spec.ts` fails on any console error or warning, including React Router deprecations. `i18n.spec.ts` checks Arabic copy on a bilingual page. |
+| **End-to-end** (Playwright) | `npm run e2e` | `smoke.spec.ts` covers routing, theming, RTL, XP persistence and the AI flows with intercepted responses. `router.spec.ts` covers active nav state, browser history and SPA transitions. `console.spec.ts` fails on any console error or warning, including React Router deprecations. `i18n.spec.ts` checks that the exercise content — clues, scenario steps, sandbox copy — is actually Arabic in Arabic mode. |
 | **Edge functions** (Deno) | `npm run test:deno` | Request validation, rate limiting, prompt fencing and the analysis reconciliation. |
 | **Evaluation** (Deno) | `npm run eval` | The harness itself: dataset parsing, metric arithmetic and the injection gate. `npm run eval:live` produces real accuracy numbers; see [`eval/README.md`](eval/README.md). |
 
@@ -219,13 +225,15 @@ is in [`supabase/README.md`](supabase/README.md). In short:
 Written down rather than implied, because a tool that hides its limits is not
 trustworthy about the parts it claims work.
 
-- **Scenario exercise content is English-only.** Scenario titles and descriptions
-  are bilingual, but the attacker messages, roles and choice labels in
-  [`src/data/scenarios.ts`](src/data/scenarios.ts) are not. An Arabic student
-  reads an Arabic card and then plays the scenario in English.
-- **Voice-call flag reasons are English-only.** The spoken lines are bilingual —
-  some calls deliberately mix Arabic and English — but `flagReason` is English in
-  the debrief, including for Arabic lines.
+- **An Arabic translation is best-effort, and always falls back to English.** The
+  model's Arabic fields can come back empty, and the functions and the client
+  are deployed separately, so a client can briefly be newer than the functions
+  that produce them. When that happens the English text is shown rather than a
+  blank card — an English clue is useful, an empty one is not.
+- **The analyzer's example messages are English only.** They are samples of
+  incoming phishing, which is what a student will actually receive, so the
+  *content* is intentionally English even in Arabic mode. The chip labels around
+  them are translated.
 - **E2E does not exercise a deployed backend.** Every edge-function call is
   mocked, so the suite proves the UI contract, not the model or the database.
   `npm run preflight:live` and `npm run eval:live` cover that, and need

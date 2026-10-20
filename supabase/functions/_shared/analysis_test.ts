@@ -18,6 +18,9 @@ const base = {
   clue_1: "Lookalike domain",
   clue_2: "Countdown pressure",
   clue_3: "Asks for personal details",
+  clue_1_ar: "نطاق يشبه نطاقاً رسمياً",
+  clue_2_ar: "ضغط بالوقت",
+  clue_3_ar: "يطلب بيانات شخصية",
   explanation: "This is a phishing attempt.",
   explanation_ar: "هذه محاولة تصيّد.",
 };

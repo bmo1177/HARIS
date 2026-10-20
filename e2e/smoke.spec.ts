@@ -395,7 +395,9 @@ test("a failed AI call is reported in Arabic on an Arabic screen", async ({ page
   // The English tests find the first scenario card by its "XP" text; that is
   // translated away in Arabic. The card's role is locale-independent.
   await page.locator('main [role="button"]').first().click();
-  await page.locator("button").filter({ hasText: /Reply|Check|Ask|Ignore|Block|Send|Stop/ }).first().click();
+  // The choice labels are Arabic too, so the English word list the other
+  // tests use does not match here.
+  await page.locator("button").filter({ hasText: /أردّ|أتحقّق|أسأل|أرسل|أرفض|أنقر|أتابع/ }).first().click();
 
   // The server's `error` string is always English. Rendering it verbatim put an
   // English sentence above an Arabic interface; the toast now comes from the

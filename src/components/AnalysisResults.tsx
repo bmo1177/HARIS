@@ -7,6 +7,7 @@ import ClueCards from "./ClueCards";
 import GuessAttack from "./GuessAttack";
 import { useXP } from "@/lib/useXP";
 import { useI18n } from "@/lib/useI18n";
+import { localizedText } from "@/lib/localized";
 import { REWARDS } from "@/lib/xp";
 import type { AnalysisResult } from "@/types/analysis";
 
@@ -41,7 +42,11 @@ const AnalysisResults = ({ result, onReset }: AnalysisResultsProps) => {
       <div>
         <h3 className="mb-3 text-sm font-semibold text-foreground">{t("results.whyFlagged")}</h3>
         <ClueCards
-          clues={[result.clue_1, result.clue_2, result.clue_3]}
+          clues={[
+            localizedText(result.clue_1, result.clue_1_ar, locale),
+            localizedText(result.clue_2, result.clue_2_ar, locale),
+            localizedText(result.clue_3, result.clue_3_ar, locale),
+          ]}
           onAllRevealed={handleAllCluesRevealed}
         />
       </div>

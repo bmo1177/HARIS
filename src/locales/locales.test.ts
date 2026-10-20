@@ -147,10 +147,66 @@ describe("Arabic content in data files", () => {
         .filter((l) => l.lang.startsWith("ar"))
         .map((l, i) => ({ label: `voiceCalls/${c.id}/line[${i}]`, value: l.text })),
     ),
+    // The exercise content itself. These were English-only, so an Arabic
+    // student read an Arabic card and then played the scenario in English.
+    ...scenarios.flatMap((s) =>
+      s.steps.flatMap((step, i) => [
+        { label: `scenarios/${s.id}/step[${i}]/attackerAr`, value: step.attackerAr },
+        {
+          label: `scenarios/${s.id}/step[${i}]/attackerRoleAr`,
+          value: step.attackerRoleAr,
+        },
+        ...step.choices.map((choice, j) => ({
+          label: `scenarios/${s.id}/step[${i}]/choice[${j}]/labelAr`,
+          value: choice.labelAr,
+        })),
+      ]),
+    ),
+    ...voiceCalls.flatMap((c) =>
+      c.lines
+        .filter((l) => l.flagReasonAr !== undefined)
+        .map((l, i) => ({
+          label: `voiceCalls/${c.id}/line[${i}]/flagReasonAr`,
+          value: l.flagReasonAr ?? "",
+        })),
+    ),
   ];
 
   it("has Arabic fields to check", () => {
     expect(arabicFields.length).toBeGreaterThan(20);
+  });
+
+  it("gives every scenario step an Arabic attacker, role and choices", () => {
+    // A scenario is the part of the product a student actually plays. If the
+    // step content is English, the Arabic interface is decoration.
+    const missing: string[] = [];
+
+    for (const scenario of scenarios) {
+      scenario.steps.forEach((step, i) => {
+        if (step.attackerAr.trim().length === 0) {
+          missing.push(`scenarios/${scenario.id}/step[${i}]/attackerAr`);
+        }
+        if (step.attackerRoleAr.trim().length === 0) {
+          missing.push(`scenarios/${scenario.id}/step[${i}]/attackerRoleAr`);
+        }
+        step.choices.forEach((choice, j) => {
+          if (choice.labelAr.trim().length === 0) {
+            missing.push(`scenarios/${scenario.id}/step[${i}]/choice[${j}]/labelAr`);
+          }
+        });
+      });
+    }
+
+    expect(missing, `untranslated scenario content: ${missing.join(", ")}`).toEqual([]);
+  });
+
+  it("gives every flagged voice line an Arabic reason", () => {
+    const missing = voiceCalls
+      .flatMap((c) => c.lines)
+      .filter((l) => l.flagReason !== undefined && !l.flagReasonAr)
+      .map((l) => l.flagReason);
+
+    expect(missing, `missing flagReasonAr: ${missing.join(", ")}`).toEqual([]);
   });
 
   it("contains no characters from another script", () => {

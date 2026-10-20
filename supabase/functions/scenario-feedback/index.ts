@@ -26,8 +26,13 @@ const FEEDBACK_SCHEMA = {
       description:
         "The red flag present in the attacker's message that the student should watch for. Empty string if there is none.",
     },
+    red_flag_ar: {
+      type: "string",
+      description:
+        "The same red flag in Arabic. Empty string if there is none, exactly as for red_flag.",
+    },
   },
-  required: ["safe", "feedback", "feedback_ar", "red_flag"],
+  required: ["safe", "feedback", "feedback_ar", "red_flag", "red_flag_ar"],
   additionalProperties: false,
 } as const;
 
@@ -36,6 +41,7 @@ const MODEL_OUTPUT = z.object({
   feedback: z.string(),
   feedback_ar: z.string(),
   red_flag: z.string(),
+  red_flag_ar: z.string(),
 });
 
 const SYSTEM_PROMPT =
@@ -52,6 +58,9 @@ How to respond:
   repeat that reasoning next time.
 - red_flag describes what was wrong with the *attacker's* message, not the student's reply.
   Leave it empty only when the attacker genuinely showed no warning sign.
+- red_flag_ar is the same warning in Arabic, with the same meaning. Leave it empty in exactly
+  the same cases as red_flag. The student may be reading in Arabic, and a red flag they
+  cannot read is a red flag they will not notice.
 
 ${UNTRUSTED_CONTENT_RULES}`;
 
@@ -94,7 +103,7 @@ Deno.serve(
       );
     }
 
-    const { safe, feedback, feedback_ar, red_flag } = parsed.data;
+    const { safe, feedback, feedback_ar, red_flag, red_flag_ar } = parsed.data;
 
     return jsonResponse(req, 200, {
       safe,
@@ -107,6 +116,9 @@ Deno.serve(
       // than as an empty bordered box.
       feedback_ar: clampText(feedback_ar.trim(), 600, ""),
       red_flag: clampText(red_flag.trim(), 300, ""),
+      // The Arabic flag is optional in the same way: an empty value means the
+      // client falls back to the English one rather than showing a blank.
+      red_flag_ar: clampText(red_flag_ar.trim(), 300, ""),
     });
   }),
 );

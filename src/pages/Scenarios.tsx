@@ -9,6 +9,7 @@ import { useErrorMessage } from "@/lib/useErrorMessage";
 import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/useXP";
 import { useI18n } from "@/lib/useI18n";
+import { localizedText } from "@/lib/localized";
 import { difficultyClassName } from "@/lib/difficulty";
 import { scenarioMaxReward, scenarioReward } from "@/lib/xp";
 import { scenarioFeedbackSchema, type ScenarioFeedback } from "@/types/analysis";
@@ -17,7 +18,12 @@ const Scenarios = () => {
   const [selected, setSelected] = useState<Scenario | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [safeCount, setSafeCount] = useState(0);
-  const [redFlags, setRedFlags] = useState<string[]>([]);
+  /**
+   * Red flags keep both languages: the model returns an English flag and an
+   * Arabic one, and which is shown depends on the interface language at the
+   * moment it is read.
+   */
+  const [redFlags, setRedFlags] = useState<{ en: string; ar?: string }[]>([]);
   const [feedback, setFeedback] = useState<ScenarioFeedback | null>(null);
   const [chatHistory, setChatHistory] = useState<{ role: "attacker" | "user"; text: string; feedbackData?: ScenarioFeedback }[]>([]);
   const [isComplete, setIsComplete] = useState(false);
@@ -56,10 +62,16 @@ const Scenarios = () => {
     const step = selected.steps[stepIndex];
     const choice = step.choices[choiceIndex];
 
+    // The model is sent exactly what the student read. Asking it to judge an
+    // English message while the student answered an Arabic one produced
+    // coaching about text the student had never seen.
+    const attackerText = locale === "ar" ? step.attackerAr : step.attacker;
+    const choiceText = locale === "ar" ? choice.labelAr : choice.label;
+
     setChatHistory((prev) => [
       ...prev,
-      { role: "attacker", text: step.attacker },
-      { role: "user", text: choice.label },
+      { role: "attacker", text: attackerText },
+      { role: "user", text: choiceText },
     ]);
 
     setFeedback(null);
@@ -69,16 +81,18 @@ const Scenarios = () => {
       // the model as "this is a safe choice", so the AI was narrating an answer
       // the client already held rather than judging the reply.
       const fb = await feedbackRequest.mutateAsync({
-        scenarioTitle: selected.title,
+        scenarioTitle: locale === "ar" ? selected.titleAr : selected.title,
         stepNumber: stepIndex + 1,
-        attackerMessage: step.attacker,
-        userChoice: choice.label,
+        attackerMessage: attackerText,
+        userChoice: choiceText,
       });
 
       setFeedback(fb);
 
       if (choice.type === "safe") setSafeCount((c) => c + 1);
-      if (fb.red_flag) setRedFlags((prev) => [...prev, fb.red_flag]);
+      if (fb.red_flag) {
+        setRedFlags((prev) => [...prev, { en: fb.red_flag, ar: fb.red_flag_ar }]);
+      }
 
       setChatHistory((prev) => {
         const updated = [...prev];
@@ -90,20 +104,25 @@ const Scenarios = () => {
       // students unable to tell that HARIS had not actually responded.
       toast.error(errorText(error));
 
+      // The canned copy was hardcoded English, so an Arabic student whose
+      // request failed was told what went wrong in the one language they can
+      // read least well.
       const fallbackFb: ScenarioFeedback = {
         safe: choice.type === "safe",
         feedback:
           choice.type === "safe"
-            ? "Smart move! You spotted the red flag."
+            ? t("scenarios.fallback.safe")
             : choice.type === "unsafe"
-              ? "Be careful — this could put your personal information at risk."
-              : "Not the worst choice, but there's a safer option.",
+              ? t("scenarios.fallback.unsafe")
+              : t("scenarios.fallback.neutral"),
         feedback_ar: "",
-        red_flag: choice.type !== "safe" ? "Watch for this pattern in real life." : "",
+        red_flag: choice.type !== "safe" ? t("scenarios.fallback.redFlag") : "",
       };
       setFeedback(fallbackFb);
       if (choice.type === "safe") setSafeCount((c) => c + 1);
-      if (fallbackFb.red_flag) setRedFlags((prev) => [...prev, fallbackFb.red_flag]);
+      if (fallbackFb.red_flag) {
+        setRedFlags((prev) => [...prev, { en: fallbackFb.red_flag }]);
+      }
     }
   };
 
@@ -153,7 +172,9 @@ const Scenarios = () => {
             {redFlags.map((flag, i) => (
               <div key={i} className="flex items-start gap-2 p-3 rounded-lg border border-destructive/20 bg-destructive/5">
                 <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-                <p className="text-sm text-foreground">{flag}</p>
+                <p className="text-sm text-foreground">
+                  {localizedText(flag.en, flag.ar, locale)}
+                </p>
               </div>
             ))}
           </div>
@@ -238,8 +259,12 @@ const Scenarios = () => {
                   <AlertTriangle className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div className="rounded-lg border border-border bg-card p-3 max-w-[85%]">
-                  <p className="text-xs text-muted-foreground mb-1">{step.attackerRole}</p>
-                  <p className="text-sm text-foreground">{step.attacker}</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {locale === "ar" ? step.attackerRoleAr : step.attackerRole}
+                  </p>
+                  <p className="text-sm text-foreground">
+                    {locale === "ar" ? step.attackerAr : step.attacker}
+                  </p>
                 </div>
               </div>
             )}
@@ -270,7 +295,9 @@ const Scenarios = () => {
                   className="w-full text-left justify-start h-auto py-3 px-4"
                   onClick={() => handleChoice(i)}
                 >
-                  <span className="text-sm">{choice.label}</span>
+                  <span className="text-sm">
+                    {locale === "ar" ? choice.labelAr : choice.label}
+                  </span>
                 </Button>
               ))}
             </div>

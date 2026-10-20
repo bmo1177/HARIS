@@ -111,6 +111,14 @@ export const en = {
   "scenarios.nextStep": "Next step",
   "scenarios.evaluating": "HARIS is evaluating...",
   "scenarios.redFlags": "Red flags to remember:",
+  // Shown when the AI call fails and the app falls back to canned coaching.
+  // These were hardcoded English inside the page, so an Arabic student whose
+  // request failed was coached in the language they read least well.
+  "scenarios.fallback.safe": "Smart move! You spotted the red flag.",
+  "scenarios.fallback.unsafe":
+    "Be careful — this could put your personal information at risk.",
+  "scenarios.fallback.neutral": "Not the worst choice, but there's a safer option.",
+  "scenarios.fallback.redFlag": "Watch for this pattern in real life.",
   "scenarios.tryAnother": "Try another scenario",
   "scenarios.testReal": "Test a real message",
   "scenarios.caught": "You caught this!",

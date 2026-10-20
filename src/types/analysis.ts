@@ -19,6 +19,16 @@ export const analysisResultSchema = z.object({
   clue_1: z.string(),
   clue_2: z.string(),
   clue_3: z.string(),
+  /**
+   * Arabic versions of the clues.
+   *
+   * Optional on purpose: the functions and the client are deployed separately,
+   * so a client that arrives before the functions would otherwise reject every
+   * response. The UI falls back to the English clue when they are missing.
+   */
+  clue_1_ar: z.string().optional(),
+  clue_2_ar: z.string().optional(),
+  clue_3_ar: z.string().optional(),
   explanation: z.string(),
   explanation_ar: z.string(),
 });
@@ -30,6 +40,8 @@ export const scenarioFeedbackSchema = z.object({
   feedback: z.string(),
   feedback_ar: z.string(),
   red_flag: z.string(),
+  /** Optional for the same deployment-ordering reason as the Arabic clues. */
+  red_flag_ar: z.string().optional(),
 });
 
 export type ScenarioFeedback = z.infer<typeof scenarioFeedbackSchema>;
