@@ -9,6 +9,16 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // Fixed values, so the suite behaves the same on every machine and in CI.
+    //
+    // `import.meta.env` is built from the `.env` file, which is gitignored:
+    // a developer with one and CI without it ran different branches, and the
+    // coverage numbers — and therefore the thresholds — moved with it. The
+    // values below are placeholders; nothing here reaches a real API.
+    env: {
+      VITE_SUPABASE_URL: "https://placeholder.supabase.co",
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_placeholder",
+    },
     coverage: {
       provider: "v8",
       // Only the browser app. The edge functions are Deno, tested by
