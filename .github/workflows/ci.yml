@@ -61,6 +61,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      # The audience is a student on a school phone. The bundle size is a
+      # decision, not an accident, and this is what stops it becoming one by
+      # accident. Raising the budget is allowed; raising it silently is not.
+      - name: Bundle size budget
+        run: npm run size
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 

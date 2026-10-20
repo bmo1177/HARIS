@@ -100,13 +100,14 @@ how to point at a different model provider.
 | `npm run build` | Typecheck, then build to `dist/` |
 | `npm run typecheck` | `tsc -b --noEmit` across app, node and e2e projects |
 | `npm run lint` | ESLint over app, config and edge functions |
-| `npm run test` | Vitest unit tests |
+| `npm run test` | Vitest unit tests, with coverage thresholds enforced |
 | `npm run e2e` | Playwright end-to-end tests (starts its own dev server) |
 | `npm run check:deno` | Typecheck + lint the Deno edge functions |
 | `npm run test:deno` | Run the edge function tests |
+| `npm run size` | Bundle size budget against the built `dist/` |
 | `npm run eval` | Evaluation harness, mock provider (no API key needed) |
 | `npm run eval:live` | Real accuracy numbers. Needs `LLM_API_KEY`. See [`eval/README.md`](eval/README.md). |
-| `npm run verify` | typecheck → lint → test → eval → build |
+| `npm run verify` | typecheck → lint → test → eval → build → size |
 
 ---
 
@@ -174,10 +175,12 @@ Four layers, each guarding a failure mode the others cannot see:
 
 | Layer | Command | What it pins |
 | --- | --- | --- |
-| **Unit** (Vitest) | `npm run test` | XP and level arithmetic, the sandbox engine, the analysis wait timer, and the locale dictionaries. The locale suite also scans JSX for hardcoded English prose — including text that follows a JSX expression, which is how a screen-reader-only string once stayed English. |
+| **Unit** (Vitest) | `npm run test` | XP and level arithmetic, the sandbox engine, the analysis wait timer, and the locale dictionaries. The locale suite also scans JSX for hardcoded English prose — including text that follows a JSX expression, which is how a screen-reader-only string once stayed English. Coverage thresholds run with the suite and fail the build if coverage drops. |
 | **End-to-end** (Playwright) | `npm run e2e` | `smoke.spec.ts` covers routing, theming, RTL, XP persistence and the AI flows with intercepted responses. `router.spec.ts` covers active nav state, browser history and SPA transitions. `console.spec.ts` fails on any console error or warning, including React Router deprecations. `i18n.spec.ts` checks that the exercise content — clues, scenario steps, sandbox copy — is actually Arabic in Arabic mode. |
 | **Edge functions** (Deno) | `npm run test:deno` | Request validation, rate limiting, prompt fencing and the analysis reconciliation. |
 | **Evaluation** (Deno) | `npm run eval` | The harness itself: dataset parsing, metric arithmetic and the injection gate. `npm run eval:live` produces real accuracy numbers; see [`eval/README.md`](eval/README.md). |
+| **Accessibility** (axe) | `npm run e2e` | `accessibility.spec.ts` scans every route in both languages and fails on serious or critical violations. |
+| **Bundle size** | `npm run size` | The gzipped entry chunk, total JavaScript and CSS against a budget. The audience is on a school phone, so the payload is a product decision, not an accident. |
 
 AI calls made by the suite are intercepted with `page.route`, so it runs
 offline and never spends API credit.
@@ -274,6 +277,16 @@ opening a PR; CI runs the same checks plus the Deno and Playwright suites.
 CI runs with least-privilege `contents: read` permissions and per-job timeouts.
 Every step only reads the repository; artifact upload does not use the workflow
 token, so no write scope is granted.
+
+Three of the gates are thresholds rather than tests, and all three are
+ratcheted: they fail when a number *drops*, and are raised in the same commit
+that improves them.
+
+| Gate | What it protects |
+| --- | --- |
+| Unit coverage | A file added without tests, or a branch quietly rewritten. `src/lib/**` — where the logic lives — is held to a much higher bar than the UI, which Playwright covers instead. |
+| Bundle size | A dependency that pulls in more than it gives. The budgets are in [`scripts/check-bundle-size.mjs`](scripts/check-bundle-size.mjs) and raising one is allowed; raising it silently is not. |
+| Accessibility | The mechanical faults a review misses: an unlabelled control, a name that omits visible text, a heading that is not a heading. |
 
 If you touch the edge functions, also run:
 
