@@ -14,9 +14,11 @@ Deno.test("secondsUntilWindowReset returns the time left in the current window",
 });
 
 Deno.test("a rate limit says how long to wait, in a Retry-After header", async () => {
-  const handler = createHandler(async () => {
-    throw new RequestError("rate_limited", "per-minute quota exhausted", 42);
-  });
+  // `Promise.reject` rather than an `async` function that only throws: the
+  // lint rule `require-await` rejects an async callback with no await.
+  const handler = createHandler(() =>
+    Promise.reject(new RequestError("rate_limited", "per-minute quota exhausted", 42))
+  );
 
   const response = await handler(
     new Request("https://example.com", { method: "POST", body: "{}" }),
@@ -27,9 +29,7 @@ Deno.test("a rate limit says how long to wait, in a Retry-After header", async (
 });
 
 Deno.test("an error with no known wait sends no Retry-After header", async () => {
-  const handler = createHandler(async () => {
-    throw new RequestError("internal_error", "boom");
-  });
+  const handler = createHandler(() => Promise.reject(new RequestError("internal_error", "boom")));
 
   const response = await handler(
     new Request("https://example.com", { method: "POST", body: "{}" }),
