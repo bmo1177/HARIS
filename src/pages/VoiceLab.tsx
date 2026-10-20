@@ -399,7 +399,9 @@ const VoiceLab = () => {
               key={call.id}
               role="button"
               tabIndex={0}
-              aria-label={`${locale === "ar" ? call.titleAr : call.title}. ${t(`difficulty.${call.difficulty}` as const)}.`}
+              // No aria-label: the card's own text is its name, for the same
+              // reason as the scenario cards. The description says what the
+              // call is about, and it should be part of the name.
               className="cursor-pointer hover:shadow-md transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               onClick={() => handleStart(call)}
               onKeyDown={(event) => {

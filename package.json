@@ -9,17 +9,18 @@
     "lint": "eslint .",
     "typecheck": "tsc -b --noEmit",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:watch": "vitest",
     "test:deno": "deno test --allow-env --config supabase/functions/deno.json supabase/functions",
     "check:deno": "deno check supabase/functions/analyze-message/index.ts supabase/functions/scenario-feedback/index.ts supabase/functions/voice-debrief/index.ts && deno lint supabase/functions",
     "e2e": "playwright test",
     "eval": "deno run --allow-env --allow-net eval/run.ts",
     "eval:live": "deno run --allow-env --allow-net eval/run.ts --provider=live",
-    "verify": "npm run typecheck && npm run lint && npm run test && npm run eval && npm run build",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run eval && npm run build && npm run size",
     "preflight": "node scripts/preflight.mjs",
     "preflight:live": "node scripts/preflight.mjs --live",
-    "probe:provider": "node scripts/probe-provider.mjs"
+    "probe:provider": "node scripts/probe-provider.mjs",
+    "size": "node scripts/check-bundle-size.mjs"
   },
   "dependencies": {
     "@fontsource-variable/ibm-plex-sans": "^5.3.0",
@@ -40,6 +41,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.6.0",
@@ -48,6 +50,7 @@
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
+    "@vitest/coverage-v8": "^3.2.7",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",

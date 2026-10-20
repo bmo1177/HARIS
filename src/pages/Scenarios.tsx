@@ -325,7 +325,13 @@ const Scenarios = () => {
               key={s.id}
               role="button"
               tabIndex={0}
-              aria-label={`${locale === "ar" ? s.titleAr : s.title}. ${t(`difficulty.${s.difficulty}` as const)}. ${t("scenarios.upToXp", { xp: formatNumber(scenarioMaxReward(s.steps.length)) })}.`}
+              // No aria-label. The card's own text is its name, which is both
+              // what a voice-control user can see and what a screen reader
+              // should hear — the old label named the card "Title. Difficulty.
+              // up to 40 XP." while the description, the part that says what the
+              // scenario is, was visible but not in the name. An author-supplied
+              // name that omits visible text also breaks WCAG 2.5.3 (Label in
+              // Name), which is what the accessibility gate flags.
               className="cursor-pointer hover:shadow-md transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               onClick={() => handleStart(s)}
               onKeyDown={(event) => {
