@@ -485,6 +485,37 @@ test("cancel returns the student to a usable form", async ({ page }) => {
   );
 });
 
+test("a rate limit says when to come back, and holds the button until then", async ({ page }) => {
+  await page.route("**/functions/v1/analyze-message", (route) =>
+    route.fulfill({
+      status: 429,
+      contentType: "application/json",
+      // The real server exposes these headers; without the expose header the
+      // browser hides them from `fetch` and the client never sees the wait.
+      headers: {
+        "Retry-After": "20",
+        "Access-Control-Expose-Headers": "Retry-After, X-Request-Id",
+      },
+      body: JSON.stringify({ error: "Too many requests.", code: "rate_limited" }),
+    }),
+  );
+
+  await page.goto("/");
+  await page.getByLabel(/suspicious message|رسالة مشبوهة/i).fill("free gift cards");
+  await page.getByRole("button", { name: /analyze with haris|حلّل بهاريس/i }).click();
+
+  // The server knows exactly when its window rolls over and says so in
+  // `Retry-After`. Previously the client dropped the header, so a student was
+  // told "too many requests" with no idea whether to wait a second or give up.
+  const submit = page.getByRole("button", { name: /rate limit reached/i });
+  await expect(submit).toBeVisible();
+  await expect(submit).toBeDisabled();
+  await expect(submit).toContainText(/20s/);
+
+  // And the toast says the same thing in words.
+  await expect(page.getByText(/try again in 20 seconds/i)).toBeVisible();
+});
+
 test("the waiting state is localised", async ({ page }) => {
   await page.route("**/functions/v1/analyze-message", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 4000));

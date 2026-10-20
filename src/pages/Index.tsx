@@ -6,6 +6,7 @@ import AnalysisResults from "@/components/AnalysisResults";
 import { useErrorMessage } from "@/lib/useErrorMessage";
 import { useI18n } from "@/lib/useI18n";
 import { useHarisMutation } from "@/lib/useHarisMutation";
+import { useRateLimitWait } from "@/lib/useRateLimitWait";
 import { useXP } from "@/lib/useXP";
 import { REWARDS } from "@/lib/xp";
 import { analysisResultSchema, type AnalysisResult } from "@/types/analysis";
@@ -17,6 +18,9 @@ const Index = () => {
   const errorText = useErrorMessage();
 
   const analyze = useHarisMutation("analyze-message", analysisResultSchema);
+  // Counts down the server's rate limit, so the submit button is disabled for
+  // exactly as long as the limit lasts.
+  const waitSeconds = useRateLimitWait(analyze.error);
 
   // Distinguishes a user cancel from a genuine failure, so cancelling does not
   // surface as a red error toast — nothing went wrong, they chose to stop.
@@ -80,6 +84,7 @@ const Index = () => {
             <MessageAnalyzer
               onAnalyze={handleAnalyze}
               isLoading={analyze.isPending}
+              waitSeconds={waitSeconds}
             />
             {analyze.isPending && <AnalysisWait onCancel={handleCancel} />}
           </div>

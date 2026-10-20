@@ -39,13 +39,20 @@ const MAX_MESSAGE_LENGTH = 2_000;
 interface MessageAnalyzerProps {
   onAnalyze: (message: string) => void;
   isLoading: boolean;
+  /**
+   * Seconds left on a server rate limit, if one is in force. The button is
+   * disabled while it counts down, so a student is not told to wait and then
+   * offered a button that fails.
+   */
+  waitSeconds?: number;
 }
 
-const MessageAnalyzer = ({ onAnalyze, isLoading }: MessageAnalyzerProps) => {
+const MessageAnalyzer = ({ onAnalyze, isLoading, waitSeconds = 0 }: MessageAnalyzerProps) => {
   const [message, setMessage] = useState("");
   const { t, formatNumber } = useI18n();
   const overLimit = message.length > MAX_MESSAGE_LENGTH;
-  const canSubmit = message.trim().length > 0 && !overLimit && !isLoading;
+  const rateLimited = waitSeconds > 0;
+  const canSubmit = message.trim().length > 0 && !overLimit && !isLoading && !rateLimited;
 
   return (
     <div className="space-y-6">
@@ -113,6 +120,11 @@ const MessageAnalyzer = ({ onAnalyze, isLoading }: MessageAnalyzerProps) => {
           <>
             <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
             {t("analyzer.submitting")}
+          </>
+        ) : rateLimited ? (
+          <>
+            <ShieldAlert className="w-5 h-5" aria-hidden="true" />
+            {t("analyzer.rateLimited", { seconds: formatNumber(waitSeconds) })}
           </>
         ) : (
           <>

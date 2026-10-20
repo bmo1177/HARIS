@@ -93,7 +93,15 @@ export function useHarisMutation<TOutput extends z.ZodTypeAny>(
           if (signal?.aborted) throw normalised;
 
           lastError = normalised;
-          const canRetry = normalised.isTransient && attempt < MAX_ATTEMPTS;
+          // A rate limit that says when it lifts must not be retried into. The
+          // server asked us to wait, and a retry inside that window spends the
+          // quota the student is waiting out — and turns a 20-second wait into
+          // three failures and a 20-second wait.
+          const respectsWait =
+            normalised.code === "rate_limited" &&
+            normalised.retryAfterSeconds !== undefined;
+          const canRetry =
+            normalised.isTransient && !respectsWait && attempt < MAX_ATTEMPTS;
           if (!canRetry) break;
 
           await sleep(BASE_BACKOFF_MS * 2 ** (attempt - 1));

@@ -83,7 +83,17 @@ export function errorResponse(
 }
 
 export class RequestError extends Error {
-  constructor(readonly code: ErrorCode, message?: string) {
+  constructor(
+    readonly code: ErrorCode,
+    message?: string,
+    /**
+     * Seconds until the caller may retry. Sent to the client as `Retry-After`
+     * so it can say "try again in 20 seconds" instead of a bare "too many
+     * requests", which is the difference between a student waiting and a
+     * student giving up.
+     */
+    readonly retryAfterSeconds?: number,
+  ) {
     super(message ?? code);
     this.name = "RequestError";
   }
@@ -142,7 +152,9 @@ export function createHandler(handler: Handler) {
       return await handler({ req, requestId, body });
     } catch (error) {
       if (error instanceof RequestError) {
-        return errorResponse(req, error.code, requestId);
+        return errorResponse(req, error.code, requestId, {
+          retryAfterSeconds: error.retryAfterSeconds,
+        });
       }
 
       if (error instanceof MissingConfigError) {

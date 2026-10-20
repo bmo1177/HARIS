@@ -50,6 +50,7 @@ export const en = {
   "analyzer.tryExample": "Try an example:",
   "analyzer.submit": "Analyze with HARIS",
   "analyzer.submitting": "HARIS is analyzing...",
+  "analyzer.rateLimited": "Rate limit reached — you can try again in {seconds}s.",
   "analyzer.wait.headline": "Reading the message for red flags",
   "analyzer.wait.elapsed": "{seconds}s",
   // Screen-reader-only equivalent of the visible timer. It has to be a separate
@@ -273,6 +274,7 @@ export const en = {
   // in every locale.
   "error.invalid_request": "That request could not be processed. Check the input and try again.",
   "error.rate_limited": "Too many requests. Take a short break, then try again.",
+  "error.rate_limited_wait": "Too many requests. Try again in {seconds} seconds.",
   "error.service_unavailable": "HARIS is briefly unavailable. Please try again in a moment.",
   "error.upstream_error": "The analysis could not be completed. Please try again.",
   "error.internal_error": "Something went wrong. Please try again.",

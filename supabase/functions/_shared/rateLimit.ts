@@ -70,6 +70,18 @@ async function bump(
 }
 
 /**
+ * Seconds until the current fixed window rolls over.
+ *
+ * The bucket key is aligned to multiples of `window_seconds` since the epoch
+ * (see `bump_rate_limit` in the migration), so the remaining time is the
+ * remainder of the current window — not a guess, and not the full window.
+ */
+export function secondsUntilWindowReset(windowSeconds: number): number {
+  const now = Math.floor(Date.now() / 1000);
+  return Math.max(1, windowSeconds - (now % windowSeconds));
+}
+
+/**
  * Enforces both a short and a long window. The minute window smooths bursts;
  * the daily window is the real ceiling on cost per client.
  */
@@ -87,7 +99,11 @@ export async function enforceRateLimit(
     config.dailyRateLimit.windowSeconds,
   );
   if (dailyCount !== null && dailyCount > config.dailyRateLimit.max) {
-    throw new RequestError("rate_limited", "daily quota exhausted");
+    throw new RequestError(
+      "rate_limited",
+      "daily quota exhausted",
+      secondsUntilWindowReset(config.dailyRateLimit.windowSeconds),
+    );
   }
 
   const minuteCount = await bump(
@@ -95,7 +111,11 @@ export async function enforceRateLimit(
     minuteLimit.windowSeconds,
   );
   if (minuteCount !== null && minuteCount > minuteLimit.max) {
-    throw new RequestError("rate_limited", "per-minute quota exhausted");
+    throw new RequestError(
+      "rate_limited",
+      "per-minute quota exhausted",
+      secondsUntilWindowReset(minuteLimit.windowSeconds),
+    );
   }
 
   // Amortised cleanup so the bucket table cannot grow without bound. One

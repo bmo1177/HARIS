@@ -30,11 +30,18 @@ const KEY_BY_CODE: Record<HarisErrorCode, MessageKey> = {
  * still use `errorMessage` directly.
  */
 export function useErrorMessage(): (error: unknown) => string {
-  const { t } = useI18n();
+  const { t, formatNumber } = useI18n();
 
   return useCallback(
     (error: unknown) => {
       if (error instanceof HarisError) {
+        // A rate limit knows exactly when it lifts. Saying "try again in 20
+        // seconds" tells a student to wait; "try again" tells them to give up.
+        if (error.code === "rate_limited" && error.retryAfterSeconds) {
+          return t("error.rate_limited_wait", {
+            seconds: formatNumber(error.retryAfterSeconds),
+          });
+        }
         return t(KEY_BY_CODE[error.code]);
       }
       // Anything else is a programming mistake rather than a modelled failure.
@@ -44,6 +51,6 @@ export function useErrorMessage(): (error: unknown) => string {
       console.error("Unexpected error surfaced to the user:", error);
       return t("error.internal_error");
     },
-    [t],
+    [t, formatNumber],
   );
 }
