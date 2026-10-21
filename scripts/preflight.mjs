@@ -67,6 +67,34 @@ if (!existsSync(envPath)) {
     env[key] ? pass(`${key} is set`) : fail(`${key} is not set`);
   }
 
+  // The provider key.
+  //
+  // This was not checked at all, which is how an *empty* LLM_API_KEY survived
+  // unnoticed: the variable was present, so every "is it set?" question about
+  // the environment said yes, and the failure only appeared much later as
+  // "Missing required environment variable: LLM_API_KEY" from a function that
+  // was never called. Present and empty are different faults and get different
+  // advice.
+  if (env.LLM_API_KEY === undefined) {
+    fail("LLM_API_KEY is not set — every AI-backed feature returns service_unavailable");
+    info("fix: put your provider key in .env, then `supabase secrets set LLM_API_KEY=…`");
+  } else if (env.LLM_API_KEY.length === 0) {
+    fail("LLM_API_KEY is present but EMPTY — the key was blanked, not omitted");
+    info("fix: put your provider key in .env, then `supabase secrets set LLM_API_KEY=…`");
+  } else if (/^(your|changeme|placeholder|example|todo)/i.test(env.LLM_API_KEY)) {
+    fail("LLM_API_KEY looks like a placeholder, not a real key");
+  } else {
+    pass(`LLM_API_KEY is set (${env.LLM_API_KEY.length} chars)`);
+  }
+
+  for (const key of ["LLM_BASE_URL", "LLM_MODEL"]) {
+    if (env[key] === undefined) {
+      warn(`${key} is not set — the default will be used`);
+    } else {
+      pass(`${key} is set (${env[key]})`);
+    }
+  }
+
   const key = env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
   if (key) {
     if (key.startsWith("sb_publishable_")) {
@@ -209,12 +237,36 @@ if (!LIVE) {
       }
 
       if (!address) {
-        // Deliberately inconclusive. Exit 0 here, because a fork on CI or a
-        // sandbox without egress would otherwise always fail — but the summary
-        // below says so, rather than letting "passed" imply the deploy is fine.
-        warn(`${new URL(base).host} does not resolve from here — live check INCONCLUSIVE`);
-        info("if this is your machine, the project may be paused — reactivate it in the dashboard");
-        info("if this is CI or a sandbox, it is likely an egress restriction, not a project fault");
+        // A project host that does not exist and a sandbox with no DNS look
+        // identical from here: "could not resolve". They are different problems
+        // with different fixes, so a control host is checked before concluding
+        // anything.
+        //
+        // A paused or deleted Supabase project stops resolving entirely — the
+        // host is removed from the edge — so NXDOMAIN for the project while
+        // the apex still resolves is the project, not the network.
+        let controlResolved = false;
+        try {
+          controlResolved = (await dnsPromises.lookup("supabase.co")).address !== undefined;
+        } catch {
+          controlResolved = false;
+        }
+
+        if (controlResolved) {
+          // DNS works here, and this host does not exist. That is a fact about
+          // the project, not about the machine.
+          fail(`${new URL(base).host} does not exist — the project is paused or deleted`);
+          info("fix: reactivate the project in the Supabase dashboard, or correct the project ref");
+          info("a paused free-tier project stops resolving entirely, which looks exactly like this");
+          liveProbed = true;
+        } else {
+          // Deliberately inconclusive. Exit 0 here, because a fork on CI or a
+          // sandbox without egress would otherwise always fail — but the summary
+          // below says so, rather than letting "passed" imply the deploy is fine.
+          warn(`${new URL(base).host} does not resolve from here — live check INCONCLUSIVE`);
+          info("if this is your machine, the project may be paused — reactivate it in the dashboard");
+          info("if this is CI or a sandbox, it is likely an egress restriction, not a project fault");
+        }
       } else {
         info(`resolved ${new URL(base).host} -> ${address}`);
         liveProbed = true;
@@ -241,6 +293,12 @@ if (!LIVE) {
         } else if (res.status === 401 || res.status === 403) {
           fail(`${res.status} from the gateway — the publishable key is not accepted`);
           info("check the key format, and that verify_jwt was disabled at deploy (--no-verify-jwt)");
+        } else if (text.includes("provider_unauthorized")) {
+          // The provider answered 401/403. The key is wrong, expired, or for
+          // the wrong account — nothing about the student's message.
+          fail("the AI provider rejected our key (401/403 from the provider)");
+          info("fix: check LLM_API_KEY in the Supabase secrets, and LLM_BASE_URL for the provider it belongs to");
+          info("     supabase secrets list");
         } else if (text.includes("rate_limited")) {
           fail("rate_limited — the rate-limit migration has not been pushed");
           info("fix: supabase db push");

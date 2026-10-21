@@ -269,6 +269,40 @@ that fixes it.
 If DNS fails it reports the live check as **inconclusive** rather than passing,
 so a green run never implies more than it checked.
 
+## When the AI features stop working
+
+The backend is a separate deployment with its own secrets, so it fails on its
+own schedule: a free-tier project pauses after a week of inactivity, a secret
+is never set, a key is blanked. Each failure looks like "the app is broken"
+from the browser, and the browser cannot tell you which one it is.
+
+`npm run preflight:live` answers it, and each of these has its own fix:
+
+| What you see | What it means | Fix |
+| --- | --- | --- |
+| `LLM_API_KEY is present but EMPTY` | The key was blanked in `.env`. Every AI call returns `service_unavailable`. | Put the key in `.env`, then `supabase secrets set LLM_API_KEY=…` |
+| `LLM_API_KEY is not set` | Same fault, from a template. | As above |
+| `…supabase.co does not exist — the project is paused or deleted` | The project host stopped resolving. The functions and the database are both gone, so the key is beside the point until the project is back. | Reactivate the project in the Supabase dashboard |
+| `service_unavailable` from the live probe | The functions are running but a secret is missing. | `supabase secrets set --env-file supabase/functions/.env.local` |
+| `the AI provider rejected our key (401/403)` | The functions reached the provider and it refused the key — wrong, expired, or for another account. | `supabase secrets list`, then `supabase secrets set LLM_API_KEY=…` |
+| `rate_limited` from the live probe | The rate-limit migration is missing. | `supabase db push` |
+| `401` / `403` from the gateway | The publishable key is not accepted, or `verify_jwt` is on. | Redeploy with `--no-verify-jwt` |
+
+A **paused** Supabase project stops resolving entirely — the host is removed
+from the edge — so it looks exactly like a network problem. The preflight
+checks a control host to tell the two apart: if DNS works and the project host
+does not exist, the project is the problem.
+
+To check the provider itself, separately from the deployment:
+
+```bash
+LLM_API_KEY=… LLM_BASE_URL=… LLM_MODEL=… npm run probe:provider
+```
+
+It reads the app's real analysis schema out of the edge function source, so it
+cannot drift from what the app sends, and it refuses to report success when it
+measured nothing.
+
 ## Contributing
 
 Issues and pull requests are welcome. Please run `npm run verify` before

@@ -72,6 +72,27 @@ The `live` job is gated behind a repository secret and only runs when `LLM_API_K
   run: deno run --allow-env --allow-net eval/run.ts --provider=live
 ```
 
+**A skipped live job is not a passing one.** When the secret is absent the step
+is skipped silently, and the run is still green — so a repository can go for
+months reporting "CI passed" while nothing has ever measured the real model.
+Check whether it has ever run:
+
+```bash
+gh secret list                 # is LLM_API_KEY set at all?
+gh run list --workflow CI       # the "Evaluation harness (live)" step shows as skipped
+```
+
+Set it with:
+
+```bash
+gh secret set LLM_API_KEY --body "$(cat ~/.openrouter-key)"
+gh variable set LLM_MODEL --body google/gemini-3.5-flash
+```
+
+The model matters as much as the key: the schema is strict, so a model that
+answers with prose instead of JSON fails every case. `npm run probe:provider`
+checks one model against the app's real schema before it is wired into CI.
+
 ## Why it does not gate on accuracy
 
 Accuracy moves with the model and the prompt, and a hard threshold turns a routine model upgrade

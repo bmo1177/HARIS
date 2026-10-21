@@ -18,6 +18,8 @@
  *   LLM_API_KEY=... LLM_BASE_URL=... LLM_MODEL=... node scripts/probe-provider.mjs
  */
 
+import { execFileSync } from "node:child_process";
+
 const KEY = process.env.LLM_API_KEY;
 const BASE = (process.env.LLM_BASE_URL ?? "https://openrouter.ai/api/v1").replace(/\/+$/, "");
 const MODEL = process.env.LLM_MODEL;
@@ -27,29 +29,44 @@ if (!KEY || !MODEL) {
   process.exit(2);
 }
 
-// Kept in sync with supabase/functions/_shared/analysis.ts by hand. If you change
-// one, change both — a probe that tests a different schema proves nothing.
-const RISK_BANDS = ["none", "low", "medium", "high"];
-const SCHEMA = {
-  type: "object",
-  properties: {
-    risk_band: {
-      type: "string",
-      enum: RISK_BANDS,
-      description:
-        "Overall danger. 'none' = an ordinary, safe message. 'low' = worth a second look but no clear attack. 'medium' = likely an attack. 'high' = an unmistakable, dangerous attack. Judge only what is visible in the message.",
-    },
-    attack_type: { type: "string", description: "Attack category, or 'Safe'" },
-    attack_type_ar: { type: "string", description: "The same category in Arabic" },
-    clue_1: { type: "string", description: "First concrete clue in the message" },
-    clue_2: { type: "string", description: "Second clue" },
-    clue_3: { type: "string", description: "Third clue" },
-    explanation: { type: "string", description: "2-3 plain-English sentences" },
-    explanation_ar: { type: "string", description: "Arabic translation of the explanation" },
-  },
-  required: ["risk_band", "attack_type", "attack_type_ar", "clue_1", "clue_2", "clue_3", "explanation", "explanation_ar"],
-  additionalProperties: false,
-};
+/**
+ * The schema the app actually sends, read from the source of truth.
+ *
+ * This used to be a hand-written copy, with a comment saying it had to be kept
+ * in sync by hand. It was not: the analysis schema grew three required Arabic
+ * clue fields and the copy did not, so the probe went on testing a laxer
+ * schema than the app — and a model that could not produce the Arabic clues
+ * would have passed here while the app rejected every response. A probe that
+ * tests a different schema proves nothing, which is what the comment warned
+ * about and what the copy then did.
+ *
+ * So there is no copy. Deno reads the real one out of the module the edge
+ * function imports, which cannot drift from it.
+ */
+function readAppSchema() {
+  const script = `
+    import { ANALYSIS_SCHEMA } from "./supabase/functions/_shared/analysis.ts";
+    console.log(JSON.stringify(ANALYSIS_SCHEMA));
+  `;
+
+  try {
+    const out = execFileSync(
+      "deno",
+      ["eval", "--config", "supabase/functions/deno.json", "--quiet", script],
+      { encoding: "utf8" },
+    );
+    return JSON.parse(out);
+  } catch (error) {
+    console.error("Could not read the analysis schema from supabase/functions/_shared/analysis.ts.");
+    console.error("Deno is required: the probe reads the app's real schema rather than a copy of it.");
+    const detail = String(error.stderr || error.message || "").split("\n").slice(0, 4).join("\n");
+    if (detail.trim()) console.error(detail);
+    process.exit(2);
+  }
+}
+
+const SCHEMA = readAppSchema();
+const RISK_BANDS = SCHEMA.properties.risk_band.enum;
 
 const SYSTEM =
   "You are HARIS, a cybersecurity educator for high school students. Analyse the message and report your verdict using the JSON schema provided. Base every clue on something concretely visible in the message. Be honest about uncertainty — do not inflate scores.";
@@ -134,14 +151,28 @@ for (const testCase of CASES) {
     const bandExpected = testCase.band.includes(band);
     const arabic = /[؀-ۿ]/.test(String(parsed.explanation_ar ?? ""));
 
+    // The Arabic clues are required by the schema, so a model that returns them
+    // empty is producing a response the app can only show in English. That is
+    // a usable fallback, but it is not what the app asks for, so it is worth
+    // reporting separately from the English narrative.
+    const arabicClues = ["clue_1_ar", "clue_2_ar", "clue_3_ar"]
+      .map((k) => String(parsed[k] ?? "").trim())
+      .filter((v) => v.length > 0).length;
+    const arabicCluesEmpty = arabicClues === 0;
+
     if (narrativeEmpty || !bandValid) {
       verdict = narrativeEmpty ? "EMPTY NARRATIVE" : `bad band ${JSON.stringify(band)}`;
       hardFailures++;
     } else if (!bandExpected) {
       verdict = `misclassified (wanted ${testCase.band.join("/")})`;
       softFailures++;
+    } else if (arabicCluesEmpty) {
+      verdict = "ok, but every Arabic clue is empty";
+      softFailures++;
     } else {
-      verdict = arabic ? "ok, Arabic present" : "ok, but Arabic explanation empty";
+      verdict = arabic
+        ? `ok, Arabic present (${arabicClues}/3 Arabic clues)`
+        : "ok, but Arabic explanation empty";
       if (!arabic) softFailures++;
     }
 

@@ -52,6 +52,61 @@ supabase functions deploy analyze-message scenario-feedback voice-debrief --no-v
 npm run preflight:live
 ```
 
+### Recovery
+
+The backend fails on its own schedule, and from the browser every failure looks
+the same: the analysis button spins and then reports a generic error. These are
+the faults that actually happen, in the order they are worth checking.
+
+**The project host does not resolve.** A free-tier Supabase project pauses
+after a week of inactivity, and a paused project stops resolving *entirely* —
+the host is removed from the edge — so it looks exactly like a network problem
+on your machine. Check it from outside your network before assuming:
+
+```bash
+curl -s 'https://dns.google/resolve?name=<project-ref>.supabase.co&type=A'
+```
+
+`"Status":3` is NXDOMAIN: the project does not exist, and no amount of key
+rotation will help. Reactivate it in the dashboard, or fix the project ref.
+
+**A secret is missing.** The functions are running but cannot call the model,
+so every request returns `service_unavailable`:
+
+```bash
+supabase secrets list          # what is actually set
+supabase secrets set --env-file supabase/functions/.env.local
+```
+
+`LLM_API_KEY` is the one that matters. A secret that is *present but empty* is
+the same fault as a missing one, and `npm run preflight` now says which it
+found.
+
+**The provider rejected the key.** The functions ran, reached the provider, and
+the provider said 401 or 403. That is the key being wrong, expired, or for
+another account — and it is reported as its own error code
+(`provider_unauthorized`), so it is distinguishable from a model failure and
+from a missing secret. The client does not retry it, because a wrong key fails
+identically every time.
+
+```bash
+supabase secrets list                                  # what is set
+supabase secrets set LLM_API_KEY=…                     # the fix
+```
+
+Check the base URL too: a key for one provider against another's endpoint is
+the same 401 from the outside.
+
+**The rate-limit table is missing.** The limiter fails closed by design, so a
+missing migration looks like a quota problem rather than a deployment one:
+`supabase db push`.
+
+**The provider is fine but the schema is not.** Some providers advertise
+`response_format` and then reject the request, or answer with prose instead of
+the JSON the schema demands. `npm run probe:provider` checks the provider
+against the app's real schema and refuses to report success when it measured
+nothing.
+
 ### Free models
 
 `nvidia/nemotron-3-super-120b-a12b:free` is the only free model measured to work
