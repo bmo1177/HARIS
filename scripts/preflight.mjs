@@ -95,6 +95,50 @@ if (!existsSync(envPath)) {
     }
   }
 
+  // The local model and the deployed model are two different things, and only
+  // the deployed one is what a student meets.
+  //
+  // The backend README records what is deployed. If the local .env names a
+  // different model, then `npm run eval:live` measures something else
+  // entirely and its numbers say nothing about the live site — which is the
+  // worst kind of wrong, because they look like real measurements.
+  const backendReadme = "supabase/README.md";
+  if (existsSync(backendReadme)) {
+    const documented = /`LLM_MODEL`[^\n]*Deployed:\s*`([^`]+)`/.exec(
+      readFileSync(backendReadme, "utf8"),
+    )?.[1];
+
+    if (documented && env.LLM_MODEL && env.LLM_MODEL !== documented) {
+      warn(
+        `local .env measures ${env.LLM_MODEL}, but the backend README records ${documented} as deployed`,
+      );
+      info("the live numbers will not describe the live site until these agree");
+      info("if the deployment changed, update the `Deployed:` line in supabase/README.md");
+    } else if (documented && env.LLM_MODEL) {
+      pass(`local model matches the deployed model (${documented})`);
+    }
+
+    // The token ceiling is a documented trap: 1200 truncates the Nemotron
+    // models mid-reasoning and returns invalid JSON, so every case fails for a
+    // reason that has nothing to do with the model.
+    const documentedTokens = Number.parseInt(
+      /`LLM_MAX_TOKENS`[^\n]*Deployed at `(\d+)`/.exec(readFileSync(backendReadme, "utf8"))?.[1] ?? "",
+      10,
+    );
+    const localTokens = Number.parseInt(env.LLM_MAX_TOKENS ?? "", 10);
+    if (Number.isFinite(documentedTokens) && Number.isFinite(localTokens)) {
+      if (localTokens < documentedTokens && env.LLM_MODEL === documented) {
+        fail(
+          `LLM_MAX_TOKENS is ${localTokens}, but ${documented} needs ${documentedTokens} — ` +
+            `it truncates the model mid-reasoning and returns invalid JSON`,
+        );
+        info(`fix: LLM_MAX_TOKENS=${documentedTokens} in .env`);
+      } else {
+        pass(`LLM_MAX_TOKENS is ${localTokens}`);
+      }
+    }
+  }
+
   const key = env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
   if (key) {
     if (key.startsWith("sb_publishable_")) {
