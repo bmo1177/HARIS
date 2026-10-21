@@ -29,6 +29,7 @@ export type HarisErrorCode =
   | "invalid_request"
   | "rate_limited"
   | "service_unavailable"
+  | "provider_unauthorized"
   | "upstream_error"
   | "internal_error"
   | "network_error"
@@ -74,6 +75,8 @@ const FALLBACK_MESSAGES: Record<HarisErrorCode, string> = {
   invalid_request: "That request could not be processed.",
   rate_limited: "Too many requests. Take a short break, then try again.",
   service_unavailable: "HARIS is briefly unavailable. Please try again in a moment.",
+  provider_unauthorized:
+    "HARIS cannot reach the AI provider right now. Please try again in a moment.",
   upstream_error: "The analysis could not be completed. Please try again.",
   internal_error: "Something went wrong. Please try again.",
   network_error: "Could not reach HARIS. Check your connection and try again.",

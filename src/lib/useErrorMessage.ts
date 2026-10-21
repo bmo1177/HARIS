@@ -17,6 +17,7 @@ const KEY_BY_CODE: Record<HarisErrorCode, MessageKey> = {
   invalid_request: "error.invalid_request",
   rate_limited: "error.rate_limited",
   service_unavailable: "error.service_unavailable",
+  provider_unauthorized: "error.provider_unauthorized",
   upstream_error: "error.upstream_error",
   internal_error: "error.internal_error",
   network_error: "error.network_error",

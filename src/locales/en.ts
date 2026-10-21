@@ -284,6 +284,8 @@ export const en = {
   "error.rate_limited": "Too many requests. Take a short break, then try again.",
   "error.rate_limited_wait": "Too many requests. Try again in {seconds} seconds.",
   "error.service_unavailable": "HARIS is briefly unavailable. Please try again in a moment.",
+  "error.provider_unauthorized":
+    "HARIS cannot reach the AI provider right now. Please try again in a moment.",
   "error.upstream_error": "The analysis could not be completed. Please try again.",
   "error.internal_error": "Something went wrong. Please try again.",
   "error.network_error": "Could not reach HARIS. Check your connection and try again.",

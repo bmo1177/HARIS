@@ -254,6 +254,8 @@ export const ar: Record<MessageKey, string> = {
   "error.rate_limited": "طلبات كثيرة جداً. خذ استراحة قصيرة ثم حاول مجدداً.",
   "error.rate_limited_wait": "طلبات كثيرة جداً. حاول مجدداً بعد {seconds} ثانية.",
   "error.service_unavailable": "هاريس غير متاح مؤقتاً. حاول بعد قليل.",
+  "error.provider_unauthorized":
+    "لا يستطيع هاريس الوصول إلى مزوّد الذكاء الاصطناعي الآن. حاول بعد قليل.",
   "error.upstream_error": "تعذّر إكمال التحليل. حاول مرة أخرى.",
   "error.internal_error": "حدث خطأ ما. حاول مرة أخرى.",
   "error.network_error": "تعذّر الوصول إلى هاريس. تحقّق من اتصالك وحاول مجدداً.",

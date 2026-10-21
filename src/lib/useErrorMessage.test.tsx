@@ -50,6 +50,26 @@ describe("useErrorMessage", () => {
     );
   });
 
+  it("distinguishes a rejected provider key from a model failure", () => {
+    const { result } = renderHook(() => useErrorMessage(), { wrapper: wrapperFor("en") });
+
+    const message = result.current(
+      new HarisError("HARIS could not reach the AI provider.", "provider_unauthorized"),
+    );
+
+    // Not "the analysis could not be completed": nothing about the student's
+    // message failed, our own credentials did.
+    expect(message).toContain("cannot reach the AI provider");
+    expect(message).not.toContain("could not be completed");
+  });
+
+  it("does not treat a rejected provider key as worth retrying", () => {
+    // A wrong key fails identically every time, so retrying only wastes the
+    // student's time behind a spinner.
+    const error = new HarisError("nope", "provider_unauthorized");
+    expect(error.isTransient).toBe(false);
+  });
+
   it("keeps a non-API error's detail out of the UI and localizes the fallback", () => {
     const { result } = renderHook(() => useErrorMessage(), { wrapper: wrapperFor("ar") });
 

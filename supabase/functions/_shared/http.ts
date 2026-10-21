@@ -19,6 +19,7 @@ export type ErrorCode =
   | "invalid_request"
   | "rate_limited"
   | "service_unavailable"
+  | "provider_unauthorized"
   | "upstream_error"
   | "internal_error";
 
@@ -26,6 +27,7 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   invalid_request: 400,
   rate_limited: 429,
   service_unavailable: 503,
+  provider_unauthorized: 503,
   upstream_error: 502,
   internal_error: 500,
 };
@@ -38,6 +40,8 @@ const SAFE_MESSAGE: Record<ErrorCode, string> = {
   invalid_request: "That request could not be processed. Check the input and try again.",
   rate_limited: "Too many requests. Take a short break, then try again.",
   service_unavailable: "HARIS is briefly unavailable. Please try again in a moment.",
+  provider_unauthorized:
+    "HARIS cannot reach the AI provider right now. Please try again in a moment.",
   upstream_error: "The analysis could not be completed. Please try again.",
   internal_error: "Something went wrong. Please try again.",
 };
@@ -168,6 +172,20 @@ export function createHandler(handler: Handler) {
           `[${requestId}] upstream failure status=${error.status}:`,
           error.message,
         );
+
+        // The provider rejected our credentials. This is our configuration
+        // being wrong — a rotated, expired or mistyped key, or a key for the
+        // wrong account — and it is permanent, not a model failure.
+        //
+        // It used to be reported as `upstream_error`, which told the student
+        // "the analysis could not be completed" and told the operator nothing
+        // at all beyond a log line. It now has its own code, so the client can
+        // say something true and can decline to retry a failure that will
+        // never succeed.
+        if (error.status === 401 || error.status === 403) {
+          return errorResponse(req, "provider_unauthorized", requestId);
+        }
+
         return errorResponse(
           req,
           error.status === 429 ? "rate_limited" : "upstream_error",
