@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
+  # A weekly accuracy measurement. Accuracy drifts with the model and the
+  # provider, not only with the code, and a drift nobody looks at is a drift
+  # nobody notices.
+  schedule:
+    - cron: "17 6 * * 1"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -123,21 +128,40 @@ jobs:
       - name: Evaluation harness (mock provider)
         run: deno run --config supabase/functions/deno.json --allow-env --allow-net eval/run.ts
 
-      # Real accuracy numbers. Skipped unless a key is configured, so a fork does
-      # not fail for lack of a secret.
-      #
-      # `continue-on-error` because this is a measurement, not a gate: the
-      # harness deliberately does not gate on accuracy, and a contended free
-      # provider must not turn every push red. The step still reports its
-      # result, and the numbers are uploaded either way.
+  # Real accuracy numbers, measured against the live provider.
+  #
+  # This is its own job because it is a measurement, not a gate. The harness
+  # deliberately does not gate on accuracy, and 45 real model calls against a
+  # free endpoint take minutes — sometimes a long time when the endpoint is
+  # contended. Living inside the Deno job it would either blow that job's
+  # timeout or make every push red for a reason that has nothing to do with
+  # the change being pushed.
+  #
+  # `continue-on-error` at the job level is what makes it safe: the job reports
+  # its result, and the workflow is green either way.
+  live-eval:
+    name: Evaluation harness (live)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 60
+    needs: edge-functions
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    env:
+      HAS_LLM_KEY: ${{ secrets.LLM_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - name: Evaluation harness (live)
-        continue-on-error: true
         if: env.HAS_LLM_KEY == 'true'
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_MODEL: ${{ vars.LLM_MODEL }}
-          # The same list the deployment uses, so CI measures the configuration
+          # The same list the deployment uses, so this measures the configuration
           # that actually serves students rather than one lucky model.
           LLM_FALLBACK_MODELS: ${{ vars.LLM_FALLBACK_MODELS }}
         run: deno run --config supabase/functions/deno.json --allow-env --allow-net eval/run.ts --provider=live --json > eval-results.json

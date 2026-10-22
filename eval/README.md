@@ -64,12 +64,22 @@ first place to look when the false-positive rate moves.
 `.github/workflows/ci.yml` runs the mock provider on every push, which verifies the harness itself:
 that the dataset parses, that the metrics compute, and that the injection gate fires when it should.
 
-The `live` job is gated behind a repository secret and only runs when `LLM_API_KEY` is present:
+The live evaluation is a **separate job**, `live-eval`, and it is
+`continue-on-error` at the job level. It is a measurement, not a gate: the
+harness deliberately does not gate on accuracy, and 45 real model calls against
+a free endpoint take minutes, so living inside the Deno job it would either
+blow that job's timeout or make every push red for a reason that has nothing
+to do with the change being pushed. The job reports its result and the
+workflow is green either way.
+
+It runs on pushes to `main` and on a **weekly schedule** (Mondays, 06:17 UTC),
+because accuracy drifts with the model and the provider, not only with the code.
 
 ```yaml
-- name: Live evaluation
-  if: ${{ secrets.LLM_API_KEY != '' }}
-  run: deno run --allow-env --allow-net eval/run.ts --provider=live
+live-eval:
+  continue-on-error: true
+  timeout-minutes: 60
+  needs: edge-functions
 ```
 
 **A skipped live job is not a passing one.** When the secret is absent the step
@@ -79,19 +89,23 @@ Check whether it has ever run:
 
 ```bash
 gh secret list                 # is LLM_API_KEY set at all?
-gh run list --workflow CI       # the "Evaluation harness (live)" step shows as skipped
+gh run list --workflow CI       # the "live-eval" job shows as skipped
 ```
 
 Set it with:
 
 ```bash
-gh secret set LLM_API_KEY --body "$(cat ~/.openrouter-key)"
-gh variable set LLM_MODEL --body google/gemini-3.5-flash
+gh secret set LLM_API_KEY < ~/.openrouter-key
+gh secret set LLM_BASE_URL --body https://integrate.api.nvidia.com/v1
+gh variable set LLM_MODEL --body nvidia/nemotron-3.5-super-vl-120b-a12b
+gh variable set LLM_FALLBACK_MODELS --body nvidia/nemotron-3-ultra-550b-a55b
 ```
 
 The model matters as much as the key: the schema is strict, so a model that
 answers with prose instead of JSON fails every case. `npm run probe:provider`
-checks one model against the app's real schema before it is wired into CI.
+checks one model against the app's real schema before it is wired into CI, and
+the live job uses the same fallback list the deployment does, so it measures
+the configuration that actually serves students.
 
 ## Why it does not gate on accuracy
 
