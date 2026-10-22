@@ -45,8 +45,33 @@ function positiveInt(name: string, fallback: number): number {
 export interface LlmConfig {
   apiKey: string;
   baseUrl: string;
+  /**
+   * The primary model.
+   *
+   * Kept as its own field because it is what the app has always configured, and
+   * because it is the one the rest of the system names.
+   */
   model: string;
+  /**
+   * Every model to try, in order, starting with the primary.
+   *
+   * A provider is a moving target: a free endpoint can be withdrawn for an
+   * account, a model can start answering in prose instead of JSON, a worker can
+   * be rate limited. Any of those looks the same from the browser — one generic
+   * error — so the backend tries the next model rather than failing the
+   * student.
+   */
+  models: string[];
+  /** Per-attempt timeout. */
   timeoutMs: number;
+  /**
+   * Ceiling on the time spent across *all* models for one request.
+   *
+   * Without it, a list of N models each timing out at `timeoutMs` would hold a
+   * student behind the spinner for N times as long. The fallback is there to
+   * cover a failure, not to spend the whole wait failing over.
+   */
+  totalTimeoutMs: number;
   maxTokens: number;
 }
 
@@ -111,14 +136,27 @@ export function getConfig(): AppConfig {
     : DEFAULT_ORIGINS;
 
   const config = {
-    llm: {
-      apiKey: required("LLM_API_KEY"),
-      baseUrl: (optional("LLM_BASE_URL") ?? "https://openrouter.ai/api/v1")
-        .replace(/\/+$/, ""),
-      model: optional("LLM_MODEL") ?? "google/gemini-3.5-flash",
-      timeoutMs: positiveInt("LLM_TIMEOUT_MS", 20_000),
-      maxTokens: positiveInt("LLM_MAX_TOKENS", 1_200),
-    },
+    llm: (() => {
+      const model = optional("LLM_MODEL") ?? "google/gemini-3.5-flash";
+      const fallbacks = (optional("LLM_FALLBACK_MODELS") ?? "")
+        .split(",")
+        .map((m) => m.trim())
+        .filter((m) => m.length > 0 && m !== model);
+      const timeoutMs = positiveInt("LLM_TIMEOUT_MS", 20_000);
+
+      return {
+        apiKey: required("LLM_API_KEY"),
+        baseUrl: (optional("LLM_BASE_URL") ?? "https://openrouter.ai/api/v1")
+          .replace(/\/+$/, ""),
+        model,
+        models: [model, ...fallbacks],
+        timeoutMs,
+        // The total budget defaults to two attempts' worth of one model, so the
+        // fallback list cannot turn a 20-second wait into a two-minute one.
+        totalTimeoutMs: positiveInt("LLM_TOTAL_TIMEOUT_MS", timeoutMs * 3),
+        maxTokens: positiveInt("LLM_MAX_TOKENS", 1_200),
+      };
+    })(),
     allowedOrigins: origins,
     rateLimit: {
       max: positiveInt("RATE_LIMIT_MAX", 10),

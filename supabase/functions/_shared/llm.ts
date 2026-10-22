@@ -32,6 +32,20 @@ interface ChatCompletionResponse {
 
 const RETRYABLE_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
 
+/**
+ * Statuses that mean no other model will do better.
+ *
+ * 401 and 403 are the provider refusing *our* credentials. Trying the next
+ * model would send the same bad key to the same provider and turn one clear
+ * error into N confusing ones.
+ *
+ * Everything else is worth another model: 404 because a free endpoint is
+ * provisioned per account and the model may simply not be available to this
+ * key; 400 because a model that rejects the strict schema cannot serve this
+ * app at all; 5xx and timeouts because they are usually one model's problem.
+ */
+const TERMINAL_STATUSES = new Set([401, 403]);
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -45,6 +59,7 @@ function retryAfterMs(response: Response): number {
 
 async function requestCompletion(
   body: Record<string, unknown>,
+  timeoutMs: number,
 ): Promise<Response> {
   const { llm } = getConfig();
 
@@ -58,25 +73,20 @@ async function requestCompletion(
       "X-Title": "HARIS",
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(llm.timeoutMs),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 }
 
-/**
- * Calls the model and returns the raw parsed JSON object.
- *
- * Throws `UpstreamError` for every failure mode; callers should not attempt to
- * distinguish provider-specific codes.
- */
-export async function generateStructured(
+/** The request body, for a specific model. */
+function buildBody(
   call: StructuredCall,
-): Promise<unknown> {
-  const { llm } = getConfig();
-
-  const body: Record<string, unknown> = {
-    model: llm.model,
+  model: string,
+  maxTokens: number,
+): Record<string, unknown> {
+  return {
+    model,
     temperature: 0.2,
-    max_tokens: call.maxTokens ?? llm.maxTokens,
+    max_tokens: maxTokens,
     messages: [
       { role: "system", content: call.system },
       { role: "user", content: call.user },
@@ -90,32 +100,56 @@ export async function generateStructured(
       },
     },
   };
+}
+
+/**
+ * One attempt at one model.
+ *
+ * `allowRetry` is true only for the last model in the list. The single retry
+ * for transient upstream failures existed because there was one model and a
+ * blip should not fail the student. With a list, the *next model* is the
+ * better retry: it is a different server, and waiting on the same one twice
+ * spends the budget the fallback needed.
+ *
+ * Returns the parsed JSON object.
+ */
+async function callOneModel(
+  call: StructuredCall,
+  model: string,
+  maxTokens: number,
+  timeoutMs: number,
+  allowRetry: boolean,
+): Promise<unknown> {
+  const body = buildBody(call, model, maxTokens);
 
   let response: Response | null = null;
 
-  // One retry for transient upstream failures. Not more: a student staring at
-  // a spinner for 40 seconds is a worse outcome than an error message.
-  for (let attempt = 0; attempt < 2; attempt++) {
+  const attempts = allowRetry ? 2 : 1;
+  for (let attempt = 0; attempt < attempts; attempt++) {
     try {
-      response = await requestCompletion(body);
+      response = await requestCompletion(body, timeoutMs);
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       const timedOut = error instanceof DOMException &&
         error.name === "TimeoutError";
-      if (attempt === 0) {
+      if (attempt === 0 && attempts > 1) {
         console.warn(
-          `llm request failed (${timedOut ? "timeout" : "network"}), retrying:`,
+          `llm request to ${model} failed (${timedOut ? "timeout" : "network"}), retrying:`,
           reason,
         );
         await sleep(600);
         continue;
       }
-      throw new UpstreamError(`llm transport failure: ${reason}`, 504, true);
+      throw new UpstreamError(
+        `llm transport failure for ${model}: ${reason}`,
+        504,
+        true,
+      );
     }
 
     if (response.ok) break;
 
-    if (RETRYABLE_STATUSES.has(response.status) && attempt === 0) {
+    if (RETRYABLE_STATUSES.has(response.status) && attempt === 0 && attempts > 1) {
       await sleep(retryAfterMs(response));
       continue;
     }
@@ -124,26 +158,26 @@ export async function generateStructured(
     // upstream error bodies can echo back the prompt.
     const detail = (await response.text()).slice(0, 500);
     throw new UpstreamError(
-      `llm responded ${response.status}: ${detail}`,
+      `llm responded ${response.status} for ${model}: ${detail}`,
       response.status,
       RETRYABLE_STATUSES.has(response.status),
     );
   }
 
   if (response === null) {
-    throw new UpstreamError("llm produced no response", 504, true);
+    throw new UpstreamError(`llm produced no response for ${model}`, 504, true);
   }
 
   let payload: ChatCompletionResponse;
   try {
     payload = (await response.json()) as ChatCompletionResponse;
   } catch {
-    throw new UpstreamError("llm returned a non-JSON body", 502, false);
+    throw new UpstreamError(`llm returned a non-JSON body for ${model}`, 502, false);
   }
 
   if (payload.error) {
     throw new UpstreamError(
-      `llm error: ${payload.error.message ?? "unknown"}`,
+      `llm error for ${model}: ${payload.error.message ?? "unknown"}`,
       502,
       false,
     );
@@ -151,12 +185,77 @@ export async function generateStructured(
 
   const content = payload.choices?.[0]?.message?.content;
   if (typeof content !== "string" || content.trim() === "") {
-    throw new UpstreamError("llm returned no content", 502, false);
+    // A model that answers with nothing is not usable, and the failure is the
+    // model's rather than the student's.
+    throw new UpstreamError(`llm returned no content for ${model}`, 502, false);
   }
 
   try {
     return JSON.parse(content);
   } catch {
-    throw new UpstreamError("llm content was not valid JSON", 502, false);
+    throw new UpstreamError(
+      `llm content was not valid JSON for ${model}`,
+      502,
+      false,
+    );
   }
+}
+
+/**
+ * Calls the model and returns the raw parsed JSON object.
+ *
+ * Tries each configured model in turn and returns the first usable answer. A
+ * model is skipped when it is unavailable to this account, when it rejects the
+ * schema, when it times out, or when it answers with something that is not the
+ * requested JSON. The last failure is thrown if every model fails.
+ *
+ * Two rules keep the failover from making things worse:
+ *
+ *   - A rejected credential (401/403) is not retried on another model. The key
+ *     is the problem, and every model is behind the same key.
+ *   - The whole list shares one time budget, so a list of slow models cannot
+ *     hold a student behind a spinner for longer than one model would have.
+ */
+export async function generateStructured(
+  call: StructuredCall,
+): Promise<unknown> {
+  const { llm } = getConfig();
+  const maxTokens = call.maxTokens ?? llm.maxTokens;
+  const deadline = Date.now() + llm.totalTimeoutMs;
+
+  let lastError: UpstreamError | null = null;
+
+  for (let i = 0; i < llm.models.length; i++) {
+    const model = llm.models[i];
+    const remaining = deadline - Date.now();
+
+    if (remaining <= 0) {
+      console.warn(
+        `llm total budget of ${llm.totalTimeoutMs}ms exhausted before trying ${model}`,
+      );
+      break;
+    }
+
+    // The last model gets whatever is left, so a slow first model cannot make
+    // the fallback impossible.
+    const isLast = i === llm.models.length - 1;
+    const timeoutMs = isLast ? remaining : Math.min(llm.timeoutMs, remaining);
+
+    try {
+      return await callOneModel(call, model, maxTokens, timeoutMs, isLast);
+    } catch (error) {
+      if (!(error instanceof UpstreamError)) throw error;
+
+      // The provider refused our credentials. No other model will do better.
+      if (TERMINAL_STATUSES.has(error.status)) throw error;
+
+      lastError = error;
+      console.warn(
+        `llm model ${model} failed (${error.message.slice(0, 160)}), ` +
+          (isLast ? "no fallback left" : `trying ${llm.models[i + 1]}`),
+      );
+    }
+  }
+
+  throw lastError ?? new UpstreamError("no model configured", 502, false);
 }
