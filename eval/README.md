@@ -107,10 +107,31 @@ and diff between runs. Do that before adding a gate.
 
 ## Measured results
 
-All 45 cases, `exit 0`, zero errors. NVIDIA Build has no daily cap, so the whole suite runs in one
-pass — unlike OpenRouter's 50/day ceiling, which stopped the first attempt after 35 cases.
+NVIDIA Build has no daily cap, so the whole suite runs in one pass — unlike OpenRouter's
+50/day ceiling, which stopped the first attempt after 35 cases.
 
-### `nvidia/nemotron-3-super-120b-a12b` — deployed
+### `nvidia/nemotron-3.5-super-vl-120b-a12b` — primary
+
+Measured on 2026-10-22 against the live provider, with the fallback list active. The run
+happened while the free endpoint was also serving a CI run, so four cases ran out of time
+and are reported as errors rather than as wrong answers.
+
+```
+overall accuracy        84.4%
+FALSE POSITIVE RATE      0.0%
+recall on hostile      100.0%
+precision              100.0%
+F1                     100.0%
+attack-type accuracy    61.9%   (advisory, never gating)
+injection robustness    0/4 steered   (4/4 measured)
+errors                     4         (timeouts under contention)
+```
+
+**The false-positive rate is the number that matters**, and it is 0%: a tool that flags
+ordinary messages teaches students to ignore it. The injection defence held on every case
+that answered.
+
+### `nvidia/nemotron-3-super-120b-a12b` — the previous deployment
 
 ```
 overall accuracy        86.7%
