@@ -445,7 +445,9 @@ async function slowAnalysis(page: import("@playwright/test").Page, delayMs = 300
 test("shows an honest waiting state instead of a bare spinner", async ({ page }) => {
   await slowAnalysis(page);
   // States the expected duration up front, so a slow response is not alarming.
-  await expect(page.getByText(/5-15 seconds|5-15/)).toBeVisible();
+  // The figure matches the models the app can actually use: the fastest one
+  // that produces a usable verdict answers in about 16 seconds.
+  await expect(page.getByText(/15-30 seconds|15-30/)).toBeVisible();
   // Scoped by the attribute, not by role: sonner also renders a status region,
   // so getByRole("status") matched two elements.
   await expect(page.locator('[aria-busy="true"]')).toBeVisible();

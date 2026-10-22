@@ -69,8 +69,8 @@ describe("AnalysisWait", () => {
 
   it("states an expected duration up front", () => {
     renderWait();
-    // Without this, fifteen seconds reads as broken rather than normal.
-    expect(screen.getByText(/5-15 seconds/)).toBeDefined();
+    // Without this, half a minute reads as broken rather than normal.
+    expect(screen.getByText(/15-30 seconds/)).toBeDefined();
   });
 
   it("switches to a slow-state reassurance only after the usual window", () => {
@@ -78,12 +78,12 @@ describe("AnalysisWait", () => {
     expect(screen.queryByText(/longer than usual/)).toBeNull();
 
     act(() => {
-      vi.advanceTimersByTime(12_000);
+      vi.advanceTimersByTime(20_000);
     });
     expect(screen.getByText(/longer than usual/)).toBeDefined();
     // The normal expectation is replaced rather than stacked, so the line does
     // not grow into a paragraph.
-    expect(screen.queryByText(/5-15 seconds/)).toBeNull();
+    expect(screen.queryByText(/15-30 seconds/)).toBeNull();
   });
 
   it("offers a cancel that the caller can act on", () => {

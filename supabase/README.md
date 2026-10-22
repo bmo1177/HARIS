@@ -22,8 +22,10 @@ for the full list. The essentials:
 | --- | --- | --- |
 | `LLM_API_KEY` | yes | Key for any OpenAI-compatible provider |
 | `LLM_BASE_URL` | no | Defaults to `https://openrouter.ai/api/v1` |
-| `LLM_MODEL` | no | See [Free models](#free-models). Deployed: `nvidia/nemotron-3-super-120b-a12b`. |
-| `LLM_TIMEOUT_MS` | no | Defaults to `20000` |
+| `LLM_MODEL` | no | The primary model. See [Choosing a model](#choosing-a-model). Deployed: `nvidia/nemotron-3.5-super-vl-120b-a12b`. |
+| `LLM_FALLBACK_MODELS` | no | Comma-separated models to try in order when the primary fails. Deployed: `nvidia/nemotron-3-ultra-550b-a55b,z-ai/glm-5.3-flash`. |
+| `LLM_TIMEOUT_MS` | no | Per attempt. Defaults to `20000`, deployed at `30000`. |
+| `LLM_TOTAL_TIMEOUT_MS` | no | Ceiling across every model for one request. Defaults to three attempts' worth; deployed at `75000`. The browser waits this long, so the two must agree. |
 | `LLM_MAX_TOKENS` | no | Defaults to `1200`, **which truncates the Nemotron models mid-reasoning** and returns invalid JSON. Deployed at `4000`. |
 | `SUPABASE_URL` | injected | Supplied by the Edge Function runtime. |
 | `SUPABASE_SECRET_KEYS` | injected | JSON dict of secret keys, e.g. `{"default":"sb_secret_…"}`. Read for rate-limit bookkeeping. Privileged — bypasses RLS. |
@@ -107,19 +109,77 @@ the JSON the schema demands. `npm run probe:provider` checks the provider
 against the app's real schema and refuses to report success when it measured
 nothing.
 
-### Free models
+### Choosing a model
 
-`nvidia/nemotron-3-super-120b-a12b:free` is the only free model measured to work
-with this schema. Every other `:free` model failed on one of three counts:
+A model is only usable if it honours the strict JSON schema — that schema is
+the injection defence, not a formatting nicety — and if it answers in the
+student's language. Both are measured, not assumed.
+
+Every model below was tested against **the app's real analysis schema**, on the
+real provider, on four cases: a phishing message, an ordinary English message,
+an ordinary Arabic message, and a prompt-injection attempt. "Arabic" counts how
+many of the five Arabic fields came back with Arabic script in them, because a
+model that answers in English is unusable for half the audience no matter how
+good its verdict is.
+
+| Rank | Model | Verdict | Median | Notes |
+| --- | --- | --- | --- | --- |
+| **1** | `nvidia/nemotron-3.5-super-vl-120b-a12b` | **usable** | ~16s | 4/4 bands right, 5/5 Arabic fields every time |
+| **2** | `nvidia/nemotron-3-ultra-550b-a55b` | **usable** | ~18s | 4/4 bands, 5/5 Arabic — the fallback |
+| 3 | `z-ai/glm-5.3-flash` | usable | ~79s | Correct, but far too slow to be a fallback |
+| 4 | `nvidia/nemotron-3.5-lightning-30b-a3b` | **not usable** | ~19-31s | Fast to start, but answers in English: 0-1 of 5 Arabic fields, even with 8000 tokens |
+| 5 | `meta/muse-glimmer-30b` | not usable | ~74s | 1/4 bands correct, no Arabic |
+| 6 | `stepfun-ai/step-5-preview` | not usable | — | Never returned valid JSON |
+| 7 | `deepseek-ai/deepseek-v4.1-flash` | not usable | ~112s | Returned empty content every time |
+| 8 | `openai/gpt-oss-20b` | not usable | ~88s | No Arabic, and timed out on 2 of 4 cases |
+| 9 | `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` | not usable | ~13s | Free worker exhausted (503) on 3 of 4; no Arabic on the fourth |
+
+`nvidia/nemotron-3-super-120b-a12b` — the model this project was deployed with —
+now answers **404 "Function not found for account"**. It is in the catalogue
+but not provisioned for the account, which is the failure the failover exists
+for.
+
+#### Failover
+
+The list is configured, not hardcoded:
+
+```bash
+supabase secrets set LLM_API_KEY=nvapi-... \
+  LLM_BASE_URL=https://integrate.api.nvidia.com/v1 \
+  LLM_MODEL=nvidia/nemotron-3.5-super-vl-120b-a12b \
+  LLM_FALLBACK_MODELS=nvidia/nemotron-3-ultra-550b-a55b,z-ai/glm-5.3-flash
+```
+
+A model is skipped when it is unavailable to the account, rejects the schema,
+times out, or answers with something that is not JSON, and the next one is
+tried. Two rules keep that from making things worse:
+
+- **A rejected credential is not retried on another model.** 401 and 403 mean
+  the key is the problem, and every model is behind the same key. Trying the
+  rest would turn one clear error into several confusing ones.
+- **The whole list shares one time budget** (`LLM_TOTAL_TIMEOUT_MS`). Without
+  it, N models each timing out would hold a student behind the spinner for N
+  times as long. The fallback is there to cover a failure, not to spend the
+  whole wait failing over.
+
+For the same reason, a model that is not the last one is **not** retried in
+place: the next model is the better retry, because it is a different server.
+The last model keeps the single retry that existed before failover did, so a
+transient blip on a one-model setup still succeeds.
+
+#### Older measurements
+
+`nvidia/nemotron-3-super-120b-a12b:free` was the only free model measured to
+work with this schema. Every other `:free` model failed on one of three counts:
 
 | Model | Outcome |
 | --- | --- |
-| `nvidia/nemotron-3-super-120b-a12b` (NVIDIA Build) | **deployed**: ~4.4s direct, ~8-11s via the function, 4/4 injection, 0% false positives |
+| `nvidia/nemotron-3-super-120b-a12b` (NVIDIA Build) | was deployed: ~4.4s direct, ~8-11s via the function, 4/4 injection, 0% false positives. **Now 404 for this account.** |
 | `google/gemma-4-31b-it:free`, `google/gemma-4-26b-a4b-it:free` | HTTP 429 — free tier unavailable |
 | `apodex/apodex-1.1-mini:free` | HTTP 400 — rejects the schema despite advertising `response_format` |
 | `openrouter/free` | meta-router; returned prose instead of JSON on the second call |
 | `thinkingmachines/inkling`, `inkling-small` | no `response_format` support |
-| `nvidia/nemotron-3-ultra`, `3.5-lightning`, `nemotron-3-nano-omni` | no `response_format` support |
+| `nvidia/nemotron-3-ultra`, `3.5-lightning`, `nemotron-3-nano-omni` | no `response_format` support (superseded by the measurements above) |
 | `cohere/north-mini-code`, `poolside/laguna-*`, `inclusionai/ling-*` | no `response_format`, or coding/medical domain |
 
 **Read this before using a free model in production.** OpenRouter's free tier
@@ -141,13 +201,24 @@ more usable than OpenRouter's: roughly **40 requests/minute** and up to
 instead of hitting a daily cliff. OpenRouter's 50/day is not viable for a
 classroom.
 
-It also lists `nvidia/nemotron-3-super-120b-a12b` — the same model verified above,
-so no prompt or schema changes are needed. Configuration only:
+It also lists the Nemotron models — the same family verified above, so no
+prompt or schema changes are needed. Configuration only:
 
 ```bash
 supabase secrets set LLM_API_KEY=nvapi-... \
   LLM_BASE_URL=https://integrate.api.nvidia.com/v1 \
-  LLM_MODEL=nvidia/nemotron-3-super-120b-a12b
+  LLM_MODEL=nvidia/nemotron-3.5-super-vl-120b-a12b \
+  LLM_FALLBACK_MODELS=nvidia/nemotron-3-ultra-550b-a55b
+```
+
+**Availability is per account, not per catalogue.** Of the 83 models the API
+lists, most answer 404 "Function not found for account" — they are in the
+catalogue but not provisioned for your key. Check what you actually have before
+choosing:
+
+```bash
+curl -s -H "Authorization: Bearer $LLM_API_KEY" \
+  https://integrate.api.nvidia.com/v1/models | jq -r '.data[].id'
 ```
 
 Caveats:

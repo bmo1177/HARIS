@@ -57,7 +57,7 @@ export const en = {
   // key because "{seconds}s" narrated aloud is just "0 s"; the visible text is
   // aria-hidden and this is the only thing assistive tech receives.
   "analyzer.wait.elapsedSr": "Elapsed time: {seconds} seconds",
-  "analyzer.wait.typical": "This usually takes 5-15 seconds.",
+  "analyzer.wait.typical": "This usually takes 15-30 seconds.",
   "analyzer.wait.slow": "Taking longer than usual. Still working.",
   "analyzer.wait.cancel": "Cancel",
   "analyzer.wait.cancelled": "Analysis cancelled.",

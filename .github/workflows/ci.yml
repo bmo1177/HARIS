@@ -129,6 +129,9 @@ jobs:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_MODEL: ${{ vars.LLM_MODEL }}
+          # The same list the deployment uses, so CI measures the configuration
+          # that actually serves students rather than one lucky model.
+          LLM_FALLBACK_MODELS: ${{ vars.LLM_FALLBACK_MODELS }}
         run: deno run --config supabase/functions/deno.json --allow-env --allow-net eval/run.ts --provider=live --json > eval-results.json
 
       - uses: actions/upload-artifact@v7

@@ -151,6 +151,7 @@ Supabase Edge Functions  ── analyze-message   pasted message   → risk verd
                           ── voice-debrief      a finished call  → debrief
   │
   ├── OpenAI-compatible LLM   (LLM_API_KEY / LLM_BASE_URL / LLM_MODEL)
+  │                            tried in order, with LLM_FALLBACK_MODELS
   └── Postgres                rate limit counters  (service role, RLS-locked)
 ```
 
@@ -216,6 +217,14 @@ is in [`supabase/README.md`](supabase/README.md). In short:
   in front of the lesson is the wrong trade. That means rate limiting is a cost
   control, not an identity system — stated plainly rather than glossed over.
 - **Nothing is persisted.** Pasted messages are not stored or logged.
+- **A model is a dependency, so it fails over.** The backend tries
+  `LLM_MODEL` and then each model in `LLM_FALLBACK_MODELS`, skipping any that
+  is unavailable to the account, rejects the strict schema, times out, or
+  answers with something that is not JSON. A rejected credential is *not*
+  retried on another model — the key is the problem — and the whole list shares
+  one time budget, so a slow model cannot make the fallback impossible. The
+  ranking of models is measured, not assumed; see
+  [`supabase/README.md`](supabase/README.md).
 - **Measured, not asserted.** [`eval/`](eval/) holds a labelled set and a harness
   reporting false-positive rate on benign messages, recall on hostile ones, and
   robustness to prompt injection. The false-positive number is the one that

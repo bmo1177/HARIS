@@ -3,8 +3,14 @@ import { Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/useI18n";
 
-/** Below this many seconds, "still working" would be alarming rather than honest. */
-const SLOW_AFTER_SECONDS = 12;
+/**
+ * Below this many seconds, "still working" would be alarming rather than honest.
+ *
+ * Measured against the models this app can actually use: the fastest one that
+ * produces a usable verdict answers in about 16 seconds, so 20 is where a
+ * student should start to wonder, not 12.
+ */
+const SLOW_AFTER_SECONDS = 20;
 
 /**
  * The waiting state for an analysis.

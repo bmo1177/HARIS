@@ -84,8 +84,16 @@ const FALLBACK_MESSAGES: Record<HarisErrorCode, string> = {
   invalid_response: "HARIS sent back something unexpected. Please try again.",
 };
 
-/** Slightly longer than the server's `LLM_TIMEOUT_MS` so the server wins the race. */
-const REQUEST_TIMEOUT_MS = 30_000;
+/**
+ * Longer than the server's whole budget, so the server wins the race.
+ *
+ * The server may try several models in turn, and the client has to wait for
+ * all of them: giving up while the server is still working would abort a
+ * request that was about to succeed, and waste the provider's tokens. The
+ * server's budget is `LLM_TOTAL_TIMEOUT_MS` (75s by default), so this is a
+ * little longer than that.
+ */
+const REQUEST_TIMEOUT_MS = 80_000;
 
 /**
  * A request signal that is aborted by our timeout or by the caller's

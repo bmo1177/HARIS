@@ -53,7 +53,7 @@ export const ar: Record<MessageKey, string> = {
   "analyzer.wait.headline": "يقرأ الرسالة بحثاً عن العلامات الحمراء",
   "analyzer.wait.elapsed": "{seconds} ثانية",
   "analyzer.wait.elapsedSr": "الوقت المنقضي: {seconds} ثانية",
-  "analyzer.wait.typical": "يستغرق هذا عادةً من 5 إلى 15 ثانية.",
+  "analyzer.wait.typical": "يستغرق هذا عادةً من 15 إلى 30 ثانية.",
   "analyzer.wait.slow": "يستغرق وقتاً أطول من المعتاد. ما زال يعمل.",
   "analyzer.wait.cancel": "إلغاء",
   "analyzer.wait.cancelled": "تم إلغاء التحليل.",
