@@ -23,9 +23,9 @@ for the full list. The essentials:
 | `LLM_API_KEY` | yes | Key for any OpenAI-compatible provider |
 | `LLM_BASE_URL` | no | Defaults to `https://openrouter.ai/api/v1` |
 | `LLM_MODEL` | no | The primary model. See [Choosing a model](#choosing-a-model). Deployed: `nvidia/nemotron-3.5-super-vl-120b-a12b`. |
-| `LLM_FALLBACK_MODELS` | no | Comma-separated models to try in order when the primary fails. Deployed: `nvidia/nemotron-3-ultra-550b-a55b,z-ai/glm-5.3-flash`. |
-| `LLM_TIMEOUT_MS` | no | Per attempt. Defaults to `20000`, deployed at `30000`. |
-| `LLM_TOTAL_TIMEOUT_MS` | no | Ceiling across every model for one request. Defaults to three attempts' worth; deployed at `75000`. The browser waits this long, so the two must agree. |
+| `LLM_FALLBACK_MODELS` | no | Comma-separated models to try in order when the primary fails. Deployed: `nvidia/nemotron-3-ultra-550b-a55b`. |
+| `LLM_TIMEOUT_MS` | no | Per attempt. Defaults to `20000`, deployed at `45000`. |
+| `LLM_TOTAL_TIMEOUT_MS` | no | Ceiling across every model for one request. Defaults to three attempts' worth; deployed at `90000`. The browser waits this long, so the two must agree. |
 | `LLM_MAX_TOKENS` | no | Defaults to `1200`, **which truncates the Nemotron models mid-reasoning** and returns invalid JSON. Deployed at `4000`. |
 | `SUPABASE_URL` | injected | Supplied by the Edge Function runtime. |
 | `SUPABASE_SECRET_KEYS` | injected | JSON dict of secret keys, e.g. `{"default":"sb_secret_…"}`. Read for rate-limit bookkeeping. Privileged — bypasses RLS. |
@@ -126,7 +126,7 @@ good its verdict is.
 | --- | --- | --- | --- | --- |
 | **1** | `nvidia/nemotron-3.5-super-vl-120b-a12b` | **usable** | ~16s | 4/4 bands right, 5/5 Arabic fields every time |
 | **2** | `nvidia/nemotron-3-ultra-550b-a55b` | **usable** | ~18s | 4/4 bands, 5/5 Arabic — the fallback |
-| 3 | `z-ai/glm-5.3-flash` | usable | ~79s | Correct, but far too slow to be a fallback |
+| 3 | `z-ai/glm-5.3-flash` | usable | ~79s | Correct, but slower than the entire time budget, so it can never be a fallback |
 | 4 | `nvidia/nemotron-3.5-lightning-30b-a3b` | **not usable** | ~19-31s | Fast to start, but answers in English: 0-1 of 5 Arabic fields, even with 8000 tokens |
 | 5 | `meta/muse-glimmer-30b` | not usable | ~74s | 1/4 bands correct, no Arabic |
 | 6 | `stepfun-ai/step-5-preview` | not usable | — | Never returned valid JSON |
@@ -147,7 +147,7 @@ The list is configured, not hardcoded:
 supabase secrets set LLM_API_KEY=nvapi-... \
   LLM_BASE_URL=https://integrate.api.nvidia.com/v1 \
   LLM_MODEL=nvidia/nemotron-3.5-super-vl-120b-a12b \
-  LLM_FALLBACK_MODELS=nvidia/nemotron-3-ultra-550b-a55b,z-ai/glm-5.3-flash
+  LLM_FALLBACK_MODELS=nvidia/nemotron-3-ultra-550b-a55b
 ```
 
 A model is skipped when it is unavailable to the account, rejects the schema,

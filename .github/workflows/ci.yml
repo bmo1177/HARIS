@@ -83,7 +83,9 @@ jobs:
   edge-functions:
     name: Edge functions (Deno)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The live evaluation is 45 real model calls, which takes minutes even when
+    # the provider is quick. This is the ceiling for a hung run, not a target.
+    timeout-minutes: 30
     # `secrets` is not an available context for a step-level `if`, so gating on it
     # directly invalidates the entire workflow file — GitHub reports that as
     # "likely failed because of a workflow file issue" and never runs a step. It
@@ -123,7 +125,13 @@ jobs:
 
       # Real accuracy numbers. Skipped unless a key is configured, so a fork does
       # not fail for lack of a secret.
+      #
+      # `continue-on-error` because this is a measurement, not a gate: the
+      # harness deliberately does not gate on accuracy, and a contended free
+      # provider must not turn every push red. The step still reports its
+      # result, and the numbers are uploaded either way.
       - name: Evaluation harness (live)
+        continue-on-error: true
         if: env.HAS_LLM_KEY == 'true'
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}

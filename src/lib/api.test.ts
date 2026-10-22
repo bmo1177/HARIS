@@ -107,7 +107,7 @@ describe("invokeHarisFunction", () => {
     // The client must wait longer than the server's whole budget, so that the
     // server wins the race rather than the browser abandoning a request that
     // was about to succeed.
-    await vi.advanceTimersByTimeAsync(80_001);
+    await vi.advanceTimersByTimeAsync(95_001);
     const error = await pending;
 
     expect((error as HarisError).code).toBe("timeout");
