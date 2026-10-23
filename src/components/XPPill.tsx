@@ -31,7 +31,7 @@ const XPPill = ({ amount, onDone }: XPPillProps) => {
   if (!visible) return null;
 
   return (
-    <div className="fixed end-6 top-20 z-[100] animate-fade-in">
+    <div className="fixed bottom-6 end-6 z-[100] animate-fade-in sm:bottom-auto sm:top-20">
       <div className="rounded-full bg-success px-4 py-2 text-sm font-bold text-success-foreground shadow-lg">
         {t("xp.earned", { amount: formatNumber(amount) })}
       </div>

@@ -41,8 +41,11 @@ are the game, and they are unchanged.
    dark surfaces, one accent, semantic status colour carrying real meaning. No
    scanlines, no glitch, no neon glow — those read as costume and this audience
    will notice.
-2. **The score is the hero.** Risk scoring is the thing being communicated.
-   Typography, spacing and colour all defer to it.
+2. **The verdict is the hero — the band, not a number.** The model answers with
+   one of three outcomes, so a percentage would invent a precision the system
+   does not have. Typography, spacing and colour defer to the verdict word and
+   the band it sits in. The evidence sits directly beneath it, because a verdict
+   a student cannot check is a verdict they have to take on faith.
 3. **Monospace means data.** Reserved for measurements, counts, scores and
    identifiers. Never as decoration. This is the line between "instrument" and
    "hacker aesthetic", and it is not negotiable.
@@ -69,7 +72,7 @@ These are not aesthetic preferences and must not be traded away for a look.
 - Keyboard reachable throughout; visible focus rings everywhere.
 - RTL must not overflow at 320px in either language.
 - The bundle is a budget. Fonts are self-hosted via `@fontsource`, subset
-  woff2, no external CDN request — a school network and a privacy consideration
+  woff2, no external CDN request — a campus network and a privacy consideration
   both argue against a third-party font host.
 
 ## What this is not

@@ -50,7 +50,7 @@ test("an unknown route renders the not-found page", async ({ page }) => {
   await expect(page.getByText("404")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
   await expect(page.getByRole("main")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Analyse a message" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Analyze a message" })).toHaveAttribute(
     "href",
     "/",
   );
@@ -101,11 +101,15 @@ test("the nav row fits without scrolling at 320px", async ({ page }) => {
   );
 });
 
-test("the brand wordmark is visible on mobile", async ({ page }) => {
+test("the page heading is visible on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto("/");
-  // Was `hidden sm:block`, so mobile had no wordmark and no <h1> anywhere.
-  await expect(page.getByRole("heading", { level: 1, name: /HARIS/ })).toBeVisible();
+  // The wordmark used to be the <h1> on every route, so this now asserts the
+  // page's own heading — the thing a screen reader lands on.
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Got a suspicious message?" }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: /HARIS/ })).toBeVisible();
 });
 });
 
@@ -154,7 +158,7 @@ test("the example chips fill the textarea", async ({ page }) => {
   await page.goto("/");
 
   const input = page.getByLabel("Paste a suspicious message");
-  await page.getByRole("button", { name: "Fake prize" }).click();
+  await page.getByRole("button", { name: "Free conference pass" }).click();
 
   await expect(input).not.toHaveValue("");
 });
@@ -273,7 +277,7 @@ test("shows Arabic example chips", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Switch to Arabic" }).click();
   // These were English-only labels sitting inside an otherwise Arabic page.
-  await expect(page.getByRole("button", { name: /جائزة وهمية/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /تصريح مؤتمر مجاني/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /رابط تصيّد/ })).toBeVisible();
 });
 
@@ -469,10 +473,13 @@ test("counts up so a frozen spinner cannot read as a hang", async ({ page }) => 
 test("the result replaces the waiting state when it arrives", async ({ page }) => {
   await slowAnalysis(page, 1500);
   await expect(page.locator('[aria-busy="true"]')).toBeVisible();
-  await expect(page.getByText("Phishing", { exact: false }).first()).toBeVisible({
-    timeout: 10_000,
-  });
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Dangerous" }),
+  ).toBeVisible({ timeout: 10_000 });
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+  // The result is about the message, so the message stays on screen. It used to
+  // unmount with the form and leave the student matching clues from memory.
+  await expect(page.getByText("Free gift cards, click now")).toBeVisible();
 });
 
 test("cancel returns the student to a usable form", async ({ page }) => {

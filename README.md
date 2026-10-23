@@ -1,13 +1,12 @@
 # HARIS
 
 **Human-Aware Risk Intelligence Shield** — cybersecurity awareness training for
-high school students (K11–K12).
+master's students in security.
 
-Teenagers meet phishing, smishing, vishing and social engineering every day,
-mostly with no adult in the loop. HARIS does not lecture them about it. It makes
-them work through it: paste a real message and hunt for the warning signs one
-clue at a time, then make the call yourself in a scenario or on a simulated
-scam call.
+A lecture can explain what phishing is. It cannot train the part that decides
+the outcome: reading a live message under time pressure and deciding whether to
+trust it. HARIS trains that. Paste a message and get a verdict with its evidence
+attached, then make the call yourself in a scenario or on a simulated scam call.
 
 Live: **https://haris-two-xi.vercel.app**
 
@@ -17,7 +16,7 @@ Live: **https://haris-two-xi.vercel.app**
 
 | Module | Route | What happens |
 | --- | --- | --- |
-| **Message Analyzer** | `/` | Paste any message (Arabic or English). HARIS returns a risk score, then reveals one clue at a time so the student forms their own verdict before seeing the answer — then names the attack type to guess. |
+| **Message Analyzer** | `/` | Paste any message (Arabic or English). HARIS returns a band verdict, then reveals the evidence one clue at a time and asks the student to name the attack — with the message they are judging still on screen. |
 | **Scenario Simulator** | `/scenarios` | Five branching social-engineering scenarios. Every choice gets AI feedback explaining what it would have cost in the real world. |
 | **Voice Lab** | `/voice-lab` | Three simulated scam calls in Arabic and English, read aloud via the Web Speech API. Flag the red flags in real time, then get a debrief on what you missed. |
 
@@ -120,24 +119,40 @@ The visual system is an **instrument**, not a consumer security app — see
   cyan accent, and hairline borders instead of floating shadows.
 - **Colour means status, never decoration.** Green / amber / red only ever mean
   safe / suspicious / dangerous. Every value was solved numerically against the
-  surface it sits on; all 20 text and fill combinations clear 4.5:1 in both
-  themes.
+  surface it sits on, the status pairs used as text clear 4.5:1 in both themes,
+  and a result-wide axe scan in both palettes keeps that true.
 - **IBM Plex across Latin, Arabic and mono**, self-hosted via `@fontsource`.
   One superfamily is what makes the bilingual case work — Plex Sans Arabic is
   designed to sit beside Plex Sans rather than being an unrelated face. No
-  third-party font request, which matters for both school networks and privacy.
+  third-party font request, which matters for both campus networks and privacy.
   Only 2 files load for an English visitor; Arabic weights load on demand.
 - **Monospace means data** — measurements, counts, scores, identifiers. Never as
   decoration. That line is the difference between an instrument and a hacker
   aesthetic.
-- The risk score is presented as a readout: tabular monospace figures over a
-  segmented scale with its thresholds marked, so the value is legible rather than
-  impressionistic.
-- **Accessibility is part of the instrument.** Async regions use `role="status"`
-  with `aria-live`; the visible elapsed timer is `aria-hidden` and paired with a
-  localized screen-reader announcement; the nav row fits at 320px in both
-  languages. These properties are pinned by unit and E2E tests rather than left
-  to review.
+- **A verdict is a band, not a measurement.** The model answers with one of
+  three outcomes and the server derives a representative score from it, so a
+  percentage gauge would claim a precision the system does not have. The result
+  states the band in words, draws the three bands at their true widths
+  (25 / 40 / 35) and marks only the current one — no count-up, no segment that
+  implies a value it cannot produce.
+- **The result is an evidence workspace, not a score card.** The exact message
+  being judged never leaves the screen: it is pinned beside the evidence on
+  desktop and sits above it on mobile. Clues arrive one at a time, then the
+  attack-type guess, the explanation and the next steps. The previous version
+  unmounted the form — and the message with it — so a student was asked to match
+  three clues against text they had to remember.
+- **The reading language is a real control.** A per-result EN / AR switch
+  re-renders the clues, the attack name and the explanation. The quoted message
+  stays verbatim in whatever language it arrived in.
+- **Difficulty is rank, not risk.** Three neutral bars and a word. Green / amber
+  / red stay reserved for the verdict, and nothing depends on colour alone.
+- **Accessibility is part of the instrument.** One `h1` per route, a skip link,
+  44px navigation targets, focus moved to the verdict when the form is replaced,
+  and the result screen itself scanned by axe in both languages and both
+  palettes. Async regions use `role="status"` with `aria-live`; the visible
+  elapsed timer is `aria-hidden` and paired with a localized screen-reader
+  announcement; the nav row fits at 320px in both languages. These properties
+  are pinned by unit and E2E tests rather than left to review.
 
 ## Architecture
 
@@ -180,8 +195,8 @@ Four layers, each guarding a failure mode the others cannot see:
 | **End-to-end** (Playwright) | `npm run e2e` | `smoke.spec.ts` covers routing, theming, RTL, XP persistence and the AI flows with intercepted responses. `router.spec.ts` covers active nav state, browser history and SPA transitions. `console.spec.ts` fails on any console error or warning, including React Router deprecations. `i18n.spec.ts` checks that the exercise content — clues, scenario steps, sandbox copy — is actually Arabic in Arabic mode. |
 | **Edge functions** (Deno) | `npm run test:deno` | Request validation, rate limiting, prompt fencing and the analysis reconciliation. |
 | **Evaluation** (Deno) | `npm run eval` | The harness itself: dataset parsing, metric arithmetic and the injection gate. `npm run eval:live` produces real accuracy numbers; see [`eval/README.md`](eval/README.md). |
-| **Accessibility** (axe) | `npm run e2e` | `accessibility.spec.ts` scans every route in both languages and fails on serious or critical violations. |
-| **Bundle size** | `npm run size` | The gzipped entry chunk, total JavaScript and CSS against a budget. The audience is on a school phone, so the payload is a product decision, not an accident. |
+| **Accessibility** (axe) | `npm run e2e` | `accessibility.spec.ts` scans every route in both languages, plus the analysis result in both palettes, and fails on serious or critical violations. |
+| **Bundle size** | `npm run size` | The gzipped entry chunk, total JavaScript and CSS against a budget. The audience is a master's student on a laptop and a phone, so the payload is a product decision, not an accident. |
 
 AI calls made by the suite are intercepted with `page.route`, so it runs
 offline and never spends API credit.
@@ -246,6 +261,11 @@ trustworthy about the parts it claims work.
   incoming phishing, which is what a student will actually receive, so the
   *content* is intentionally English even in Arabic mode. The chip labels around
   them are translated.
+- **The scenario dataset still carries school-age framing.** The About page, the
+  analyzer examples and the school IT call were retargeted to a master's
+  audience; two of the five scenarios (a games-console giveaway and a V-Bucks
+  download) have not been rewritten yet. The mechanics are sound — the copy is
+  the work that remains.
 - **E2E does not exercise a deployed backend.** Every edge-function call is
   mocked, so the suite proves the UI contract, not the model or the database.
   `npm run preflight:live` and `npm run eval:live` cover that, and need

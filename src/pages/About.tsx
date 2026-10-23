@@ -1,5 +1,4 @@
 import {
-  BookOpen,
   Eye,
   FlaskConical,
   Gamepad2,
@@ -51,87 +50,86 @@ const PILLARS = [
   },
 ] as const;
 
+/**
+ * About was eight bordered cards in a column, each with the same weight, so
+ * nothing on the page read as more important than anything else. It is now an
+ * argument: who this is for, how it teaches, what it covers.
+ */
 const About = () => {
-  const { t } = useI18n();
+  const { t, formatNumber } = useI18n();
   return (
-    <div className="space-y-8">
-        <h2 className="text-2xl font-bold text-foreground">{t("about.title")}</h2>
+    <div className="space-y-10">
+      <header className="space-y-3">
+        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">{t("about.title")}</h1>
+        <p className="max-w-[64ch] text-base leading-relaxed text-muted-foreground">
+          {t("about.body")}
+        </p>
+      </header>
 
-        <div className="rounded-lg border border-border bg-card p-5">
-          <h3 className="mb-2 font-semibold text-foreground">{t("about.builtFor")}</h3>
-          <p className="prose-measure text-sm leading-relaxed text-muted-foreground">
-            {t("about.body")}
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold text-foreground">{t("about.threeWays")}</h2>
+        {/* One chassis with hairline dividers rather than four cards inside a
+            page of cards. */}
+        <div className="grid overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2">
+          {PILLARS.map((item) => (
+            <div key={item.titleKey} className="bg-card p-4">
+              <div className="flex items-center gap-2">
+                <item.icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                <h3 className="text-sm font-medium text-foreground">{t(item.titleKey)}</h3>
+              </div>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                {t(item.descKey)}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="font-mono text-xs text-muted-foreground">
+          {t("scenarios.available", {
+            count: formatNumber(scenarios.length),
+            calls: formatNumber(voiceCalls.length),
+          })}
+        </p>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold text-foreground">{t("about.howItTeaches")}</h2>
+        <div className="max-w-[65ch] space-y-3 text-sm leading-relaxed text-muted-foreground">
+          <p>{t("about.teachesBody1")}</p>
+          <p className="border-l-2 border-primary/40 pl-4 text-foreground">
+            {t("about.teachesBody2")}
           </p>
         </div>
+      </section>
 
-        <div>
-          <h3 className="mb-3 text-lg font-bold text-foreground">{t("about.threeWays")}</h3>
-          <div className="space-y-3">
-            {PILLARS.map((item) => (
-              <div
-                key={item.titleKey}
-                className="flex items-start gap-3 p-4 rounded-lg border border-border bg-card"
-              >
-                <item.icon
-                  className="w-5 h-5 text-primary mt-0.5 shrink-0"
-                  aria-hidden="true"
-                />
-                <div>
-                  <p className="text-sm font-medium text-foreground">{t(item.titleKey)}</p>
-                  <p className="text-sm text-muted-foreground">{t(item.descKey)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            {t("scenarios.available", { count: scenarios.length, calls: voiceCalls.length })}
-          </p>
-        </div>
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold text-foreground">{t("about.threatTypes")}</h2>
+        <ul className="flex flex-wrap gap-x-5 gap-y-2">
+          {THREAT_TYPES.map((threat) => (
+            <li
+              key={threat.name}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground"
+            >
+              <threat.icon className="h-3.5 w-3.5 shrink-0 text-primary/70" aria-hidden="true" />
+              {t(threat.key)}
+            </li>
+          ))}
+        </ul>
+      </section>
 
-        <div>
-          <h3 className="text-lg font-bold text-foreground mb-2">
-            <BookOpen className="w-5 h-5 inline mr-2" aria-hidden="true" />
-            {t("about.howItTeaches")}
-          </h3>
-          <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-            <p className="prose-measure text-sm leading-relaxed text-muted-foreground">
-              {t("about.teachesBody1")}
-            </p>
-            <p className="prose-measure text-sm leading-relaxed text-muted-foreground">
-              {t("about.teachesBody2")}
-            </p>
-          </div>
-        </div>
+      {/* Credits are intentionally not rendered.
 
-        <div>
-          <h3 className="mb-3 text-lg font-bold text-foreground">{t("about.threatTypes")}</h3>
-          <ul className="grid grid-cols-2 sm:grid-cols-4 gap-2 list-none p-0 m-0">
-            {THREAT_TYPES.map((threat) => (
-              <li
-                key={threat.name}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-card text-sm text-foreground"
-              >
-                <threat.icon className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
-                {t(threat.key)}
-              </li>
-            ))}
-          </ul>
-        </div>
+          They previously named a specific competition, university and
+          supervisors, and the competition field was still an unfilled
+          placeholder ("----- AI Security Comp 2026") that shipped to
+          production. The surrounding content also mixed Algerian and Qatari
+          details. Restore this block once those facts are settled:
 
-        {/* Credits are intentionally not rendered.
-
-            They previously named a specific competition, university and
-            supervisors, and the competition field was still an unfilled
-            placeholder ("----- AI Security Comp 2026") that shipped to
-            production. The surrounding content also mixed Algerian and Qatari
-            details. Restore this block once those facts are settled:
-
-              <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-5 ...">
-                <Award ... />
-                <p>HARIS was built for the <strong>{competitionName} {competitionYear}</strong></p>
-                <p>By {supervisors} — {institution}</p>
-              </div>
-        */}
+            <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-5 ...">
+              <Award ... />
+              <p>HARIS was built for the <strong>{competitionName} {competitionYear}</strong></p>
+              <p>By {supervisors} — {institution}</p>
+            </div>
+      */}
     </div>
   );
 };

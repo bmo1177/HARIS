@@ -13,6 +13,14 @@ import { analysisResultSchema, type AnalysisResult } from "@/types/analysis";
 
 const Index = () => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  /**
+   * The text that produced the current result.
+   *
+   * It lives here rather than in `MessageAnalyzer` because that component
+   * unmounts when the result arrives, and the result is about this text — the
+   * student has to be able to read the evidence against it.
+   */
+  const [submitted, setSubmitted] = useState("");
   const { awardXP } = useXP();
   const { t } = useI18n();
   const errorText = useErrorMessage();
@@ -28,6 +36,7 @@ const Index = () => {
 
   const handleAnalyze = async (message: string) => {
     setResult(null);
+    setSubmitted(message);
     cancelledRef.current = false;
 
     try {
@@ -50,6 +59,7 @@ const Index = () => {
 
   const handleReset = () => {
     setResult(null);
+    setSubmitted("");
     analyze.reset();
   };
 
@@ -60,10 +70,10 @@ const Index = () => {
     <div className="flex h-full flex-col">
       <div className="my-auto">
         {!result && (
-          <div className="mb-8 space-y-2 text-center">
-            <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
+          <div className="mx-auto mb-8 max-w-2xl space-y-2 text-center">
+            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
               {t("analyzer.title")}
-            </h2>
+            </h1>
             <p className="text-muted-foreground">
               {t("analyzer.subtitle")}
             </p>
@@ -80,7 +90,7 @@ const Index = () => {
           // returned an empty box and the student had to retype. Keeping it
           // visible also shows them what the analysis is actually about, which is
           // most of what makes the wait bearable.
-          <div className="space-y-6">
+          <div className="mx-auto max-w-2xl space-y-6">
             <MessageAnalyzer
               onAnalyze={handleAnalyze}
               isLoading={analyze.isPending}
@@ -89,7 +99,7 @@ const Index = () => {
             {analyze.isPending && <AnalysisWait onCancel={handleCancel} />}
           </div>
         ) : (
-          <AnalysisResults result={result} onReset={handleReset} />
+          <AnalysisResults result={result} message={submitted} onReset={handleReset} />
         )}
       </div>
     </div>

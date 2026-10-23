@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { RotateCcw, Send, ShieldAlert } from "lucide-react";
+import { RotateCcw, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -98,7 +98,7 @@ const RedSandbox = () => {
               variant={c.id === challengeId ? "default" : "outline"}
               size="sm"
               onClick={() => switchChallenge(c.id)}
-              className="h-auto flex-col items-start gap-0.5 px-3 py-2 text-start"
+              className="h-auto min-h-[4.25rem] flex-col items-start justify-start gap-0.5 whitespace-normal px-3 py-2 text-start leading-tight"
             >
               <span className="text-xs font-bold">
                 {t("sandbox.red.level", { level: c.level })}
@@ -236,10 +236,9 @@ const RedSandbox = () => {
         </div>
       )}
 
-      <p className="flex items-start gap-2 text-xs text-muted-foreground">
-        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        {t("sandbox.safety")}
-      </p>
+      {/* The safety note is on the page header, above the tabs. It used to be
+          printed a second time here, which is 107 characters of 12px text that
+          said nothing new. */}
     </div>
   );
 };

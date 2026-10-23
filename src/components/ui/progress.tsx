@@ -13,8 +13,11 @@ const Progress = React.forwardRef<
     {...props}
   >
     <ProgressPrimitive.Indicator
-      className="h-full w-full flex-1 bg-primary transition-all"
-      style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+      className="h-full bg-primary transition-[width]"
+      // Width, not a translateX offset. The offset was physical, so in an RTL
+      // document the fill still grew from the left while the label sat on the
+      // right. A block child starts at the inline start, whichever that is.
+      style={{ width: `${Math.min(100, Math.max(0, value || 0))}%` }}
     />
   </ProgressPrimitive.Root>
 ));

@@ -16,9 +16,9 @@ const NotFound = () => {
 
         <div className="space-y-2">
           <p className="text-4xl font-bold tracking-tight text-foreground">404</p>
-          <h2 className="text-xl font-semibold text-foreground">
+          <h1 className="text-xl font-semibold text-foreground">
             {t("notFound.title")}
-          </h2>
+          </h1>
           <p className="mx-auto max-w-sm text-muted-foreground">
             {t("notFound.body")}
           </p>

@@ -29,7 +29,7 @@ const Header = () => {
         viewport, so the entire page scrolled sideways, "0 XP" was clipped off
         the right edge and "Voice Lab" wrapped onto two lines.
       */}
-      <div className="container mx-auto flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+      <div className="container mx-auto flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-2 sm:py-3">
         <Link
           to="/"
           className="flex shrink-0 items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -49,15 +49,16 @@ const Header = () => {
               <rect x="16" y="29" width="32" height="6" fill="currentColor" />
             </svg>
           </span>
-          {/* Visible at every width now that the nav has its own row. Previously
-              `hidden sm:block`, which left mobile with no wordmark and no
-              <h1> on any page. */}
-          <h1 className="text-lg font-bold leading-none tracking-tight text-foreground">
+          {/* The wordmark is not a heading. It was an <h1> on every route, so
+              five of six pages began their document outline with "HARIS" and
+              the actual page title was an <h2>. Each page owns its own <h1>
+              now, and this is a link like any other. */}
+          <span className="text-lg font-bold leading-none tracking-tight text-foreground">
             HARIS{" "}
-            <span dir="rtl" lang="ar" className="text-sm font-normal text-muted-foreground">
+            <span dir="rtl" lang="ar" className="hidden text-sm font-normal text-muted-foreground sm:inline">
               هاريس
             </span>
-          </h1>
+          </span>
         </Link>
 
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
@@ -81,7 +82,7 @@ const Header = () => {
                 <NavLink
                   to={item.to}
                   end={item.to === "/"}
-                  className="block w-full whitespace-nowrap rounded-lg px-1 py-2 text-center text-[12px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3 sm:py-1.5 sm:text-sm"
+                  className="flex min-h-[44px] w-full items-center justify-center whitespace-nowrap rounded-lg px-1 text-center text-[12px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0 sm:px-3 sm:py-1.5 sm:text-sm"
                   activeClassName="bg-accent font-medium text-foreground"
                 >
                   {t(item.key)}

@@ -10,7 +10,7 @@ import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/useXP";
 import { useI18n } from "@/lib/useI18n";
 import { localizedText } from "@/lib/localized";
-import { difficultyClassName } from "@/lib/difficulty";
+import DifficultyMeter from "@/components/DifficultyMeter";
 import { scenarioMaxReward, scenarioReward } from "@/lib/xp";
 import { scenarioFeedbackSchema, type ScenarioFeedback } from "@/types/analysis";
 
@@ -154,12 +154,12 @@ const Scenarios = () => {
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
             <Target className="w-8 h-8 text-primary" aria-hidden="true" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground">
+          <h1 className="text-2xl font-bold text-foreground">
             {t("scenarios.scoreTitle", {
               safe: formatNumber(safeCount),
               total: formatNumber(total),
             })}
-          </h2>
+          </h1>
           <p className="text-muted-foreground">{message}</p>
           <p className="text-sm font-semibold text-primary">
             {t("scenarios.scoreXp", { xp: formatNumber(scenarioReward(safeCount, total)) })}
@@ -186,7 +186,7 @@ const Scenarios = () => {
             {t("scenarios.tryAnother")}
           </Button>
           <Button onClick={() => navigate("/")} className="flex-1 gap-2">
-            <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            <ArrowRight className="w-4 h-4 rtl:rotate-180" aria-hidden="true" />
             {t("scenarios.testReal")}
           </Button>
         </div>
@@ -210,7 +210,7 @@ const Scenarios = () => {
             </span>
           </div>
 
-          <h2 className="text-lg font-bold text-foreground">{locale === "ar" ? selected.titleAr : selected.title}</h2>
+          <h1 className="text-2xl font-bold text-foreground">{locale === "ar" ? selected.titleAr : selected.title}</h1>
 
           <div className="space-y-3">
             {chatHistory.map((msg, i) => (
@@ -283,7 +283,7 @@ const Scenarios = () => {
                 {stepIndex + 1 >= selected.steps.length
                   ? t("scenarios.seeResults")
                   : t("scenarios.nextStep")}
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4 rtl:rotate-180" />
               </Button>
             </div>
           ) : (
@@ -315,7 +315,7 @@ const Scenarios = () => {
   return (
     <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">{t("scenarios.title")}</h2>
+          <h1 className="text-2xl font-bold text-foreground">{t("scenarios.title")}</h1>
           <p className="mt-1 text-muted-foreground">{t("scenarios.subtitle")}</p>
         </div>
 
@@ -350,11 +350,7 @@ const Scenarios = () => {
                     <h3 className="font-semibold text-foreground">
                       {locale === "ar" ? s.titleAr : s.title}
                     </h3>
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-xs ${difficultyClassName(s.difficulty)}`}
-                    >
-                      {t(`difficulty.${s.difficulty}` as const)}
-                    </span>
+                    <DifficultyMeter difficulty={s.difficulty} />
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {locale === "ar" ? s.descriptionAr : s.description}
@@ -369,7 +365,7 @@ const Scenarios = () => {
                     })}
                   </span>
                   <ChevronRight
-                    className="h-4 w-4 text-muted-foreground"
+                    className="h-4 w-4 text-muted-foreground rtl:rotate-180"
                     aria-hidden="true"
                   />
                 </div>

@@ -10,7 +10,7 @@ import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/useXP";
 import { useI18n } from "@/lib/useI18n";
 import { localizedText } from "@/lib/localized";
-import { difficultyClassName } from "@/lib/difficulty";
+import DifficultyMeter from "@/components/DifficultyMeter";
 import { voiceCallReward } from "@/lib/xp";
 import { voiceDebriefSchema, type VoiceDebrief } from "@/types/analysis";
 
@@ -188,7 +188,7 @@ const VoiceLab = () => {
 
     return (
       <div className="space-y-6">
-          <h2 className="text-xl font-bold text-foreground">{t("voice.debrief")}</h2>
+          <h1 className="text-xl font-bold text-foreground">{t("voice.debrief")}</h1>
           <p className="text-muted-foreground">
             {t("voice.caught", {
               caught: formatNumber(caught),
@@ -269,7 +269,7 @@ const VoiceLab = () => {
               <RotateCcw className="w-4 h-4" aria-hidden="true" /> {t("voice.tryAnother")}
             </Button>
             <Button onClick={() => navigate("/scenarios")} className="flex-1 gap-2">
-              {t("voice.goToScenarios")} <ChevronRight className="w-4 h-4" aria-hidden="true" />
+              {t("voice.goToScenarios")} <ChevronRight className="w-4 h-4 rtl:rotate-180" aria-hidden="true" />
             </Button>
           </div>
       </div>
@@ -280,6 +280,9 @@ const VoiceLab = () => {
     const line = selected.lines[currentLine];
     return (
       <div className="flex h-full flex-col">
+          {/* The call screen has no visible page title; the caller's name is the
+              subject. Give assistive tech the scenario name as the outline. */}
+          <h1 className="sr-only">{locale === "ar" ? selected.titleAr : selected.title}</h1>
           <div className="my-auto space-y-6">
             <div className="flex items-center justify-between">
               <Button variant="ghost" size="sm" onClick={resetToCallList}>
@@ -366,7 +369,6 @@ const VoiceLab = () => {
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
                     <Button
-                      variant="destructive"
                       onClick={handleFlag}
                       disabled={userFlags.has(currentLine)}
                       className="gap-2"
@@ -389,7 +391,7 @@ const VoiceLab = () => {
   return (
     <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">{t("voice.title")}</h2>
+          <h1 className="text-2xl font-bold text-foreground">{t("voice.title")}</h1>
           <p className="mt-1 text-muted-foreground">{t("voice.subtitle")}</p>
         </div>
 
@@ -411,30 +413,25 @@ const VoiceLab = () => {
                 }
               }}
             >
-              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <CardContent className="flex items-start justify-between gap-3 p-4 sm:items-center sm:gap-4">
                 <div className="min-w-0 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-semibold text-foreground">
                       {locale === "ar" ? call.titleAr : call.title}
                     </h3>
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-xs ${difficultyClassName(call.difficulty)}`}
-                    >
-                      {t(`difficulty.${call.difficulty}` as const)}
-                    </span>
+                    <DifficultyMeter difficulty={call.difficulty} />
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {locale === "ar" ? call.descriptionAr : call.description}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-end">
-                  <span className="text-xs font-semibold text-primary">
-                    {t("voice.redFlagCount", {
-                      count: formatNumber(call.lines.filter((line) => line.isRedFlag).length),
-                    })}
-                  </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  {/* The card used to print "6 red flags" before the call, which
+                      told the student how many to find and turned a listening
+                      exercise into a counting exercise. The count is in the
+                      debrief, where it belongs. */}
                   <ChevronRight
-                    className="h-4 w-4 text-muted-foreground"
+                    className="h-4 w-4 text-muted-foreground rtl:rotate-180"
                     aria-hidden="true"
                   />
                 </div>

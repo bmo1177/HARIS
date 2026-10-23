@@ -1,34 +1,42 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, Gift, ShieldAlert, MessageSquare, Gamepad2 } from "lucide-react";
+import {
+  Loader2,
+  Search,
+  Gift,
+  ShieldAlert,
+  MessageSquare,
+  Briefcase,
+  Lock,
+} from "lucide-react";
 import { useI18n } from "@/lib/useI18n";
 import type { MessageKey } from "@/locales/en";
 
 const EXAMPLES: ReadonlyArray<{ key: MessageKey; icon: typeof Gift; message: string }> = [
   {
-    key: "example.fakePrize",
+    key: "example.freePass",
     icon: Gift,
     message:
-      "Congratulations! You have been selected to win a FREE PS5 from PlayStation! You are one of 10 lucky winners this week. Click here to claim your prize before it expires in 2 hours: ps5-winners-claim.com/claim",
+      "You've won a free pass to the AI Security Summit 2026! Claim it within 2 hours or it goes to someone else: ai-security-summit-tickets.com/claim",
   },
   {
     key: "example.phishingLink",
     icon: ShieldAlert,
     message:
-      "Your Snapchat account will be deleted in 24 hours due to suspicious activity. Verify your account now to keep it active: snapchat-verify-account.net/login",
+      "IT Helpdesk: your university account will be disabled in 24 hours for a security review. Re-verify your credentials here to keep access: univ-sso-verify.net/login",
   },
   {
     key: "example.safeMessage",
     icon: MessageSquare,
     message:
-      "Hi! Don't forget we have football practice tomorrow at 5pm at the school field. Bring your kit. See you there!",
+      "The seminar has moved to Room 204 on Thursday at 10:00. Bring the reading from last week — we'll start with the case study.",
   },
   {
-    key: "example.gamingScam",
-    icon: Gamepad2,
+    key: "example.fakeRecruiter",
+    icon: Briefcase,
     message:
-      "FREE 10,000 V-Bucks! Limited offer for Fortnite players. Download this mod to get free V-Bucks directly to your account: fortnite-vbucks-free.com — works 100% guaranteed!",
+      "Hi, I found your CV on LinkedIn. We're hiring a remote security analyst at $180/hour. Send your ID and bank details today to secure the role: careers-verify.io/apply",
   },
 ];
 
@@ -77,8 +85,12 @@ const MessageAnalyzer = ({ onAnalyze, isLoading, waitSeconds = 0 }: MessageAnaly
             renders visually reversed as "2,000 / 0". Pin the direction. */}
         <p
           id={`${MESSAGE_ID}-hint`}
+          // "0 / 2,000" is two numbers and a slash, so an unpinned RTL paragraph
+          // renders it as "2,000 / 0". The base direction is pinned, and the
+          // alignment is pulled back to the page's start so the counter still
+          // sits under the field it belongs to.
           dir={overLimit ? undefined : "ltr"}
-          className={`mt-1 text-start text-xs ${overLimit ? "text-destructive" : "text-muted-foreground"}`}
+          className={`mt-1 text-start text-xs ${overLimit ? "text-destructive" : "text-muted-foreground rtl:text-right"}`}
           role={overLimit ? "alert" : undefined}
         >
           {overLimit
@@ -90,6 +102,13 @@ const MessageAnalyzer = ({ onAnalyze, isLoading, waitSeconds = 0 }: MessageAnaly
                 count: formatNumber(message.length),
                 max: formatNumber(MAX_MESSAGE_LENGTH),
               })}
+        </p>
+        {/* The trust contract, at the point of paste. The app asks for a
+            message that may be private and previously said nothing about what
+            happens to it. */}
+        <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
+          <Lock className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
+          <span>{t("analyzer.privacy")}</span>
         </p>
       </div>
 
@@ -134,27 +153,12 @@ const MessageAnalyzer = ({ onAnalyze, isLoading, waitSeconds = 0 }: MessageAnaly
         )}
       </Button>
 
-      {/* The steps carry real sequence information, so the numbering stays. A
-          connector line between them was tried and removed: it is geometrically
-          fragile across a responsive grid and read as a strikethrough across
-          the number badges. */}
-      <ol className="grid grid-cols-3 gap-3 text-center">
-        {([
-          { step: "1", key: "analyzer.step1" },
-          { step: "2", key: "analyzer.step2" },
-          { step: "3", key: "analyzer.step3" },
-        ] as const).map((s) => (
-          <li
-            key={s.step}
-            className="flex min-h-[4.5rem] flex-col items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-3"
-          >
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-              {s.step}
-            </span>
-            <span className="text-xs leading-snug text-muted-foreground">{t(s.key)}</span>
-          </li>
-        ))}
-      </ol>
+      {/* The three-card stepper that used to sit here was removed: it looked
+          like a progress indicator and tracked nothing. What it explained is
+          said in one sentence, and the space now carries the privacy line. */}
+      <p className="text-center text-xs leading-relaxed text-muted-foreground">
+        {t("analyzer.method")}
+      </p>
     </div>
   );
 };

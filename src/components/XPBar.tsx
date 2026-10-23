@@ -34,7 +34,7 @@ const XPBar = ({ state }: XPBarProps) => {
             : t("xp.progress", { level: formatNumber(state.level) })
         }
       />
-      <span className="whitespace-nowrap font-mono text-xs tabular-nums text-muted-foreground">
+      <span className="sr-only whitespace-nowrap font-mono text-xs tabular-nums text-muted-foreground sm:not-sr-only">
         {t("xp.total", { xp: formatNumber(state.xp) })}
       </span>
     </div>

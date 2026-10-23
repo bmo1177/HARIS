@@ -75,3 +75,80 @@ for (const locale of LOCALES) {
     }
   });
 }
+
+/**
+ * The result screen.
+ *
+ * The loop above covers every static route. The result needs a model response,
+ * so it is mocked here — and it is the screen that matters most: the verdict
+ * word, the band scale, the evidence trail and the next steps all live behind
+ * it, in both palettes, with status colours on tinted surfaces.
+ */
+const RESULT = {
+  risk_score: 85,
+  risk_level: "Dangerous",
+  is_threat: true,
+  attack_type: "Phishing",
+  attack_type_ar: "التصيّد",
+  clue_1: "The link points at a lookalike domain.",
+  clue_2: "The deadline is designed to stop you checking.",
+  clue_3: "It asks for credentials on a page the sender controls.",
+  clue_1_ar: "الرابط يؤدي إلى نطاق مشابه.",
+  clue_2_ar: "الموعد النهائي مصمم ليمنعك من التحقق.",
+  clue_3_ar: "يطلب بيانات الدخول في صفحة يسيطر عليها المرسل.",
+  explanation:
+    "This is a credential-phishing message. The urgency and the lookalike domain exist to get your password onto a page the attacker controls.",
+  explanation_ar:
+    "هذه رسالة تصيّد لبيانات الدخول. الاستعجال والنطاق المشابه هدفهما أخذ كلمة مرورك إلى صفحة يسيطر عليها المهاجم.",
+};
+
+for (const locale of LOCALES) {
+  for (const theme of ["light", "dark"] as const) {
+    test(`the analysis result has no serious accessibility violations (${locale}, ${theme})`, async ({
+      page,
+    }) => {
+      await page.addInitScript(
+        ([l, t]) => {
+          window.localStorage.setItem("haris_locale", l as string);
+          window.localStorage.setItem("theme", t as string);
+        },
+        [locale, theme] as const,
+      );
+      await page.route("**/functions/v1/analyze-message", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(RESULT),
+        }),
+      );
+
+      await page.goto("/");
+      await page
+        .getByLabel(/suspicious message|رسالة مشبوهة/i)
+        .fill("IT Helpdesk: verify your account at univ-sso-verify.net/login");
+      await page.getByRole("button", { name: /analyze with haris|حلّل بهاريس/i }).click();
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+      // Open the full trail, so the guess form and the next steps are scanned
+      // rather than hidden behind the reveal button.
+      for (let i = 0; i < 2; i++) {
+        await page
+          .getByRole("button", { name: /reveal clue|اكشف القرينة/i })
+          .first()
+          .click();
+      }
+      await page.waitForTimeout(900);
+
+      const results = await new AxeBuilder({ page }).analyze();
+      const blocking = results.violations.filter(
+        (violation) =>
+          violation.impact === "serious" || violation.impact === "critical",
+      );
+
+      expect(
+        blocking,
+        `accessibility violations on the result (${locale}, ${theme}):\n${describeViolations(blocking)}`,
+      ).toEqual([]);
+    });
+  }
+}

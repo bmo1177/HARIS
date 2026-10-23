@@ -273,6 +273,10 @@ describe("key usage", () => {
     "risk.Safe",
     "risk.Suspicious",
     "risk.Dangerous",
+    // Also reached through `risk.summary.${level}`.
+    "risk.summary.Safe",
+    "risk.summary.Suspicious",
+    "risk.summary.Dangerous",
   ]);
 
   it("has no unused keys", () => {

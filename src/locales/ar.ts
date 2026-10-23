@@ -7,10 +7,10 @@ import type { MessageKey } from "./en";
  * forgotten here fails the build rather than silently rendering English to an
  * Arabic-speaking student.
  *
- * Tone: Modern Standard Arabic, addressed to a teenager — direct and plain, not
- * the formal register of a textbook. Latin digits are kept in the UI (see
- * `formatNumber` in `lib/i18n.tsx`) because they read faster for numbers that
- * carry meaning in a security context.
+ * Tone: Modern Standard Arabic, addressed to a student who already knows the
+ * basics — direct and plain, not the formal register of a textbook. Latin
+ * digits are kept in the UI (see `formatNumber` in `lib/i18n.tsx`) because they
+ * read faster for numbers that carry meaning in a security context.
  */
 export const ar: Record<MessageKey, string> = {
   "nav.home": "الرئيسية",
@@ -24,6 +24,7 @@ export const ar: Record<MessageKey, string> = {
   "nav.switchToLight": "التبديل إلى المظهر الفاتح",
   "nav.switchToArabic": "التبديل إلى العربية",
   "nav.switchToEnglish": "التبديل إلى الإنجليزية",
+  "nav.skip": "تخطَّ إلى المحتوى",
 
   "xp.level": "المستوى {level}",
   "xp.total": "{xp} نقطة",
@@ -40,7 +41,7 @@ export const ar: Record<MessageKey, string> = {
 
   "analyzer.title": "وصلتك رسالة مشبوهة؟",
   "analyzer.subtitle": "الصقها بالأسفل. هاريس يحللها ويشرح لك بالضبط ما هي.",
-  "analyzer.tagline": "درّب حدسك. تفوّق على التهديدات.",
+  "analyzer.tagline": "كل حكم يأتي مع الأدلة التي بُني عليها.",
   "analyzer.label": "الصق رسالة مشبوهة",
   "analyzer.placeholder":
     "الصق أي رسالة مشبوهة هنا — رسالة نصية، واتساب، بريد إلكتروني، أو محادثة خاصة... (بالعربية أو الإنجليزية)",
@@ -59,23 +60,46 @@ export const ar: Record<MessageKey, string> = {
   "analyzer.wait.cancelled": "تم إلغاء التحليل.",
   "analyzer.wait.skeletonVerdict": "ستظهر النتيجة هنا",
   "analyzer.wait.keepOpen": "يمكنك مغادرة هذه الصفحة — وسيتم إلغاء التحليل.",
-  "analyzer.step1": "الصق الرسالة",
-  "analyzer.step2": "هاريس يقيّم التهديد",
-  "analyzer.step3": "اكتشف نوعها عبر القرائن",
-  "example.fakePrize": "جائزة وهمية",
+  "analyzer.method":
+    "يظهر الحكم أولاً، ثم الأدلة قرينة بعد أخرى — وأنت تسمّي نوع الهجوم قبل هاريس.",
+  "analyzer.privacy":
+    "تُرسل الرسالة إلى نموذج ذكاء اصطناعي للتحليل، ولا يحفظها هاريس. لا تلصق كلمات مرور أو أرقام بطاقات حقيقية.",
+  "example.freePass": "تصريح مؤتمر مجاني",
   "example.phishingLink": "رابط تصيّد",
   "example.safeMessage": "رسالة آمنة",
-  "example.gamingScam": "احتيال ألعاب",
+  "example.fakeRecruiter": "محتال توظيف",
 
   "results.whyFlagged": "لماذا رصد هاريس هذه الرسالة",
-  "risk.score": "درجة الخطورة",
-  "risk.scoreOf": "درجة الخطورة {score} من 100",
-  "risk.level": "الحكم: {level}",
-  "risk.scale": "مقياس الخطورة من 0 إلى 100",
+  "results.whySafe": "لماذا تبدو هذه الرسالة آمنة",
+  "results.message": "الرسالة",
+  "results.whatThisIs": "ما هذا",
+  "results.readIn": "اقرأ بـ",
+  "results.clueProgress": "{shown} من {total} قرائن",
+  "results.nextSteps": "ما تفعله الآن",
+  "results.limits":
+    "تقدير من ذكاء اصطناعي، وليس ضماناً. تحقّق من أي أمر مهم عبر التطبيق أو الموقع الرسمي.",
+  "results.next.dangerous.1": "لا تضغط على الروابط ولا تفتح المرفقات ولا تردّ.",
+  "results.next.dangerous.2":
+    "تحقّق عبر التطبيق الرسمي، أو عبر رقم تملكه مسبقاً — لا الرقم الوارد في الرسالة.",
+  "results.next.dangerous.3":
+    "أبلغ عنه ثم احذفه. واحفظ لقطة شاشة إن كان يذكر مؤسستك أو جهة عملك.",
+  "results.next.suspicious.1": "تحقّق من المرسل عبر قناة تثق بها مسبقاً.",
+  "results.next.suspicious.2": "افتح الخدمة مباشرة بدل استخدام الرابط.",
+  "results.next.suspicious.3": "إن ادّعى أنه شخص تعرفه، فاتصل به.",
+  "results.next.safe.1":
+    "لا شيء يتطلب إجراءً. وإن بقي لديك شك، فتحقّق من المرسل عبر قناة أخرى.",
+  "results.next.safe.2": "حافظ على العادة: اقرأ النطاق قبل الضغط، حتى في يوم هادئ.",
+  "risk.verdict": "الحكم",
+  "risk.zones": "مقياس الحكم: آمن، مشبوه، خطير",
+  "risk.summary.Safe":
+    "لا شيء في هذه الرسالة يطلب منك إجراءً أو ضغطاً على رابط أو دفعاً أو إفصاحاً.",
+  "risk.summary.Suspicious":
+    "أجزاء من هذه الرسالة تطابق أنماط هجوم معروفة، لكن ليس بما يكفي للحكم. اعتبرها غير موثّقة.",
+  "risk.summary.Dangerous":
+    "هذه الرسالة تحمل أنماط هجوم. لا تضغط روابطها ولا تفتح مرفقاتها ولا تردّ.",
   "risk.Safe": "آمن",
   "risk.Suspicious": "مشبوه",
   "risk.Dangerous": "خطير",
-  "results.doNotClick": "لا تضغط على أي رابط في هذه الرسالة!",
   "results.english": "English",
   "results.arabic": "العربية",
   "results.revealClue": "اكشف القرينة {n}",
@@ -95,7 +119,7 @@ export const ar: Record<MessageKey, string> = {
     "لا شيء تخمّنه هنا. لم تظهر في الرسالة أي مؤشرات هجوم — ملاحظتها هي المهارة نفسها. جرّب رسالة تشك أنها عدائية وشاهد ما يرصده هاريس.",
 
   "scenarios.title": "محاكي السيناريوهات",
-  "scenarios.subtitle": "عش تجربة هجوم حقيقي. اتخذ القرارات الصحيحة. اكسب النقاط.",
+  "scenarios.subtitle": "تابع هجوماً وهو يتكشف. اتخذ القرار. تعلّم منه.",
   "scenarios.available": "يتوفر {count} سيناريو و{calls} مكالمة صوتية اليوم.",
   "scenarios.upToXp": "حتى {xp} نقطة",
   "scenarios.back": "رجوع",
@@ -121,8 +145,7 @@ export const ar: Record<MessageKey, string> = {
   "scenarios.scoreXp": "+{xp} نقطة",
 
   "voice.title": "مختبر المكالمات",
-  "voice.subtitle": "استمع إلى مكالمة احتيال حقيقية. ضع علامة على المؤشرات فوراً. درّب أذنك.",
-  "voice.redFlagCount": "{count} علامات تحذير",
+  "voice.subtitle": "استمع إلى مكالمة احتيال محاكاة. ضع علامة على المؤشرات فوراً. درّب أذنك.",
   "voice.answer": "ردّ على المكالمة",
   "voice.endCall": "أنهاء المكالمة",
   "voice.flag": "علامة — مشبوهة!",
@@ -212,9 +235,8 @@ export const ar: Record<MessageKey, string> = {
     "مجموعة البيانات: أربعة تحديات حمراء وعشر حالات ثابتة للحزمة؛ علامات وهمية فقط.",
 
   "about.title": "عن هاريس",
-  "about.builtFor": "صُمّم للطلاب",
   "about.body":
-    "هاريس منصة توعية أمنية سيبراني مصممة لطلاب المرحلة الثانوية. في عالم يواجه فيه المراهقون تهديدات عبر الإنترنت يومياً — عبر وسائل التواصل والألعاب وتطبيقات الرسائل والعروض المزيفة — يدرّب هاريس حدسهم الحقيقي من خلال تحليل ذكي وسيناريوهات تفاعلية ومكالمات صوتية.",
+    "هاريس مدرّب توعية أمنية سيبرانية لطلاب الماجستير في الأمن السيبراني. يفترض أنك تعرف ما هو التصيّد، ويدرّب الجزء الذي لا تستطيع المحاضرة تدريبه: قراءة رسالة حقيقية وتقرير ما إذا كانت جديرة بالثقة تحت ضغط الوقت. كل تحليل يُظهر أدلته، وكل سيناريو يطلب قراراً، وكل مكالمة تجعلك تلتقط الصياغة وهي تمرّ.",
   "about.threeWays": "طرق التعلّم",
   "about.analyzerTitle": "محلّل الرسائل",
   "about.analyzerDesc": "الصق أي رسالة مشبوهة واكتشف عبر القرائن نوع الهجوم الذي تخفيه.",
@@ -224,7 +246,7 @@ export const ar: Record<MessageKey, string> = {
   "about.voiceDesc": "استمع لمكالمات تصيّد بالعربية والإنجليزية. ضع العلامات فوراً. درّب أذنك.",
   "about.howItTeaches": "كيف يعلّم هاريس",
   "about.teachesBody1":
-    "بدلاً من أن يلقي هاريس محاضرة عن التهديدات، يجعل الطالب يكتشفها بنفسه. كل تحليل يكشف قرينة واحدة في كل مرة، فيكوّن الطالب فرضيته قبل أن يرى الحكم. أما السيناريوهات والمكالمات ف تضع القرار بيده، ويصله التقييم فوراً بينما التفكير ما زال حاضراً.",
+    "بدلاً من أن يلقي هاريس محاضرة عن التهديدات، يدفع الطالب إلى أن يستخلصها بنفسه. يأتي الحكم أولاً، ثم تصل الأدلة قرينة بعد أخرى، فيعيد الطالب بناء الاستدلال بدل أن يُلقّن إياه. أما السيناريوهات والمكالمات فتضع القرار بيده، ويصله التقييم فوراً بينما التفكير ما زال حاضراً.",
   "about.teachesBody2":
     "الهدف أن تصبح المهارة تلقائية: لا «هاريس قال إن هذه رسالة احتيال» بل «لاحظت الاستعجال وقناة الدفع، فتوقفت».",
   "about.threatTypes": "أنواع التهديدات المدعومة",

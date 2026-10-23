@@ -20,6 +20,7 @@ export const en = {
   "nav.switchToLight": "Switch to light theme",
   "nav.switchToArabic": "Switch to Arabic",
   "nav.switchToEnglish": "Switch to English",
+  "nav.skip": "Skip to content",
 
   // XP
   "xp.level": "Lv {level}",
@@ -40,7 +41,7 @@ export const en = {
   "analyzer.title": "Got a suspicious message?",
   "analyzer.subtitle":
     "Paste it below. HARIS will analyze it and teach you exactly what it is.",
-  "analyzer.tagline": "Train your instinct. Get ahead of the threats.",
+  "analyzer.tagline": "Every verdict comes with the evidence behind it.",
   "analyzer.label": "Paste a suspicious message",
   "analyzer.placeholder":
     "Paste any suspicious message here — SMS, WhatsApp, email, DM... (Arabic or English)",
@@ -63,24 +64,47 @@ export const en = {
   "analyzer.wait.cancelled": "Analysis cancelled.",
   "analyzer.wait.skeletonVerdict": "Your verdict will appear here",
   "analyzer.wait.keepOpen": "You can leave this page - the analysis will be cancelled.",
-  "analyzer.step1": "Paste the message",
-  "analyzer.step2": "HARIS scores the threat",
-  "analyzer.step3": "Discover it through clues",
-  "example.fakePrize": "Fake prize",
+  "analyzer.method":
+    "You get the verdict first, then the evidence one clue at a time — and you name the attack before HARIS does.",
+  "analyzer.privacy":
+    "Sent to an AI model for analysis; HARIS does not save it. Don't paste live passwords or card numbers.",
+  "example.freePass": "Free conference pass",
   "example.phishingLink": "Phishing link",
   "example.safeMessage": "Safe message",
-  "example.gamingScam": "Gaming scam",
+  "example.fakeRecruiter": "Fake recruiter",
 
   // Analysis results
   "results.whyFlagged": "Why HARIS flagged this",
-  "risk.score": "Risk score",
-  "risk.scoreOf": "Risk score {score} out of 100",
-  "risk.level": "Verdict {level}",
-  "risk.scale": "Risk scale from 0 to 100",
+  "results.whySafe": "Why this looks safe",
+  "results.message": "The message",
+  "results.whatThisIs": "What this is",
+  "results.readIn": "Read in",
+  "results.clueProgress": "{shown} of {total} clues",
+  "results.nextSteps": "What to do now",
+  "results.limits":
+    "An AI assessment, not a guarantee. Verify anything that matters through the official app or site.",
+  "results.next.dangerous.1": "Don't click links, open attachments or reply.",
+  "results.next.dangerous.2":
+    "Verify through the official app, or a number you already have — not the one in the message.",
+  "results.next.dangerous.3":
+    "Report it, then delete it. Keep a screenshot if it names your institution or employer.",
+  "results.next.suspicious.1": "Verify the sender through a channel you already trust.",
+  "results.next.suspicious.2": "Open the service directly instead of using the link.",
+  "results.next.suspicious.3": "If it claims to be someone you know, call them.",
+  "results.next.safe.1":
+    "Nothing to act on. If you're still unsure, check the sender through another channel.",
+  "results.next.safe.2": "Keep the habit: read the domain before you click, even on a quiet day.",
+  "risk.verdict": "Verdict",
+  "risk.zones": "Verdict scale: safe, suspicious, dangerous",
+  "risk.summary.Safe":
+    "Nothing in this message asks you to act, click, pay or disclose anything.",
+  "risk.summary.Suspicious":
+    "Parts of this message match known attack patterns, but not enough to call it. Treat it as unverified.",
+  "risk.summary.Dangerous":
+    "This message carries the patterns of an attack. Don't click links, open attachments or reply.",
   "risk.Safe": "Safe",
   "risk.Suspicious": "Suspicious",
   "risk.Dangerous": "Dangerous",
-  "results.doNotClick": "Do not click any links in this message!",
   "results.english": "English",
   "results.arabic": "العربية",
   "results.revealClue": "Reveal clue {n}",
@@ -102,7 +126,7 @@ export const en = {
 
   // Scenarios
   "scenarios.title": "Scenario Simulator",
-  "scenarios.subtitle": "Live through a real attack. Make smart choices. Earn XP.",
+  "scenarios.subtitle": "Work through an attack as it unfolds. Make the call. Learn from it.",
   "scenarios.available": "{count} scenarios and {calls} voice calls available today.",
   "scenarios.upToXp": "up to {xp} XP",
   "scenarios.back": "Back",
@@ -134,8 +158,7 @@ export const en = {
   // Voice lab
   "voice.title": "Voice Lab",
   "voice.subtitle":
-    "Hear a real scam call. Flag the red flags in real time. Train your ear.",
-  "voice.redFlagCount": "{count} red flags",
+    "Hear a simulated scam call. Flag the red flags in real time. Train your ear.",
   "voice.answer": "Answer Call",
   "voice.endCall": "End Call",
   "voice.flag": "FLAG — Suspicious!",
@@ -232,9 +255,8 @@ export const en = {
 
   // About
   "about.title": "About HARIS",
-  "about.builtFor": "Built for students",
   "about.body":
-    "HARIS is a cybersecurity awareness platform designed for high school students (K11–K12). In a world where teenagers face online threats daily — through social media, gaming, messaging apps, and fake offers — HARIS trains real instincts through AI-powered analysis, interactive scenarios, and voice simulations.",
+    "HARIS is a cybersecurity awareness trainer for master's students in security. It assumes you already know what phishing is, and trains the part a lecture cannot: reading a live message and deciding, under time pressure, whether to trust it. Every analysis shows its evidence, every scenario asks for a decision, and every call makes you catch the wording as it goes past.",
   "about.threeWays": "Ways to learn",
   "about.analyzerTitle": "Message Analyzer",
   "about.analyzerDesc":
@@ -247,7 +269,7 @@ export const en = {
     "Hear vishing calls in Arabic and English. Flag red flags in real time. Train your ear.",
   "about.howItTeaches": "How it teaches",
   "about.teachesBody1":
-    "Rather than lecturing students about threats, HARIS makes them work them out. Every analysis reveals one clue at a time, so a student forms their own hypothesis before seeing the verdict. Scenarios and voice calls put the decision in their hands, and feedback arrives immediately afterwards while the reasoning is still fresh.",
+    "Rather than lecturing students about threats, HARIS makes them work the message out. The verdict comes first, then the evidence arrives one clue at a time, so the reasoning is something a student reconstructs rather than something they are told. Scenarios and voice calls put the decision in their hands, and feedback arrives immediately afterwards while the reasoning is still fresh.",
   "about.teachesBody2":
     "The aim is to make the skill automatic: not “HARIS said this was a scam” but “I noticed the urgency and the payment channel, so I stopped.”",
   "about.threatTypes": "Supported threat types",
@@ -267,7 +289,7 @@ export const en = {
   "notFound.title": "This page does not exist",
   "notFound.body":
     "The link may be out of date, or the address may have a typo. Nothing was lost — your XP is stored on this device.",
-  "notFound.home": "Analyse a message",
+  "notFound.home": "Analyze a message",
   "notFound.scenarios": "Browse scenarios",
 
   // Error boundary

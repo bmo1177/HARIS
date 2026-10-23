@@ -62,7 +62,9 @@ test.describe("history", () => {
 
     await page.goBack();
     await expect(page).toHaveURL("/");
-    await expect(page.getByRole("heading", { level: 1, name: /HARIS/ })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Got a suspicious message?" }),
+    ).toBeVisible();
   });
 
   test("browser forward returns to the route that was left", async ({ page }) => {

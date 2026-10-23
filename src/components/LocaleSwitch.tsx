@@ -22,7 +22,7 @@ export const LocaleSwitch = () => {
       aria-label={`${glyph} — ${next === "ar" ? t("nav.switchToArabic") : t("nav.switchToEnglish")}`}
       className="flex h-8 shrink-0 items-center gap-1 rounded-lg px-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <Languages className="h-4 w-4" aria-hidden="true" />
+      <Languages className="hidden h-4 w-4 sm:block" aria-hidden="true" />
       <span aria-hidden="true">{glyph}</span>
     </button>
   );
