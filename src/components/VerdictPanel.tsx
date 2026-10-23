@@ -9,6 +9,8 @@ interface VerdictPanelProps {
   level: RiskLevel;
   /** Focus target: the result replaces the form, so the heading receives focus. */
   headingRef?: RefObject<HTMLHeadingElement>;
+  /** Absent/"model" means the deployed model; "local" means the rule set. */
+  source?: AnalysisResult["analysis_source"];
 }
 
 /**
@@ -38,7 +40,7 @@ const ZONES: ReadonlyArray<{ level: RiskLevel; width: string }> = [
   { level: "Dangerous", width: "35fr" },
 ];
 
-const VerdictPanel = ({ level, headingRef }: VerdictPanelProps) => {
+const VerdictPanel = ({ level, headingRef, source }: VerdictPanelProps) => {
   const { t } = useI18n();
   const config = CONFIG[level] ?? {
     text: "text-muted-foreground",
@@ -103,7 +105,7 @@ const VerdictPanel = ({ level, headingRef }: VerdictPanelProps) => {
       </div>
 
       <p className="border-t border-border px-5 py-3 text-xs leading-relaxed text-muted-foreground sm:px-6">
-        {t("results.limits")}
+        {source === "local" ? t("results.limitsLocal") : t("results.limits")}
       </p>
     </section>
   );

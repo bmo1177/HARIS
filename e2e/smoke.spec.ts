@@ -527,6 +527,49 @@ test("a rate limit says when to come back, and holds the button until then", asy
   await expect(page.getByText(/try again in 20 seconds/i)).toBeVisible();
 });
 
+test("an unreachable backend falls back to the local rules, and says so", async ({ page }) => {
+  // The deployed Supabase project is a separate system and can disappear. The
+  // analyzer used to end at "Could not reach HARIS"; the lesson now continues
+  // against the local rule set, with the result labelled as such.
+  await page.route("**/functions/v1/analyze-message", (route) => route.abort("failed"));
+
+  await page.goto("/");
+  await page.getByLabel(/suspicious message|رسالة مشبوهة/i).fill(
+    "IT Helpdesk: your university account will be disabled in 24 hours. Re-verify your credentials here: univ-sso-verify.net/login",
+  );
+  await page.getByRole("button", { name: /analyze with haris|حلّل بهاريس/i }).click();
+
+  await expect(page.getByRole("heading", { name: "Dangerous" })).toBeVisible();
+  await expect(page.getByText(/local rule set/i)).toBeVisible();
+});
+
+test("the local fallback says so in Arabic too", async ({ page }) => {
+  await page.route("**/functions/v1/analyze-message", (route) => route.abort("failed"));
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Switch to Arabic" }).click();
+  await page.getByLabel(/رسالة مشبوهة/i).fill(
+    "قسم تقنية المعلومات: سيتم تعطيل حسابك خلال 24 ساعة. أعد التحقق من بيانات الدخول هنا: univ-sso-verify.net/login",
+  );
+  await page.getByRole("button", { name: /حلّل بهاريس/ }).click();
+
+  await expect(page.getByRole("heading", { name: "خطير" })).toBeVisible();
+  await expect(page.getByText(/قواعد هاريس المحلية/)).toBeVisible();
+});
+
+test("a debrief that cannot reach the AI is assembled locally and labelled", async ({ page }) => {
+  await page.route("**/functions/v1/voice-debrief", (route) => route.abort("failed"));
+
+  await page.goto("/voice-lab");
+  await page.getByRole("button", { name: /You Won a Free Phone/ }).click();
+  await page.getByRole("button", { name: "Answer Call" }).click();
+  // Hang up immediately: the debrief is what this test is about, and the call
+  // can finish faster than the click in a headless browser with no voices.
+  await page.getByRole("button", { name: "End Call" }).click();
+
+  await expect(page.getByText(/assembled locally/i)).toBeVisible();
+});
+
 test("the waiting state is localised", async ({ page }) => {
   await page.route("**/functions/v1/analyze-message", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 4000));

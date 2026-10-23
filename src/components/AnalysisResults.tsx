@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VerdictPanel from "./VerdictPanel";
 import ClueCards from "./ClueCards";
@@ -104,7 +104,18 @@ const AnalysisResults = ({ result, message, onReset }: AnalysisResultsProps) => 
 
   return (
     <div className="animate-fade-in">
-      <VerdictPanel level={result.risk_level} headingRef={headingRef} />
+      <VerdictPanel
+        level={result.risk_level}
+        headingRef={headingRef}
+        source={result.analysis_source}
+      />
+
+      {result.analysis_source === "local" && (
+        <p className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm leading-relaxed text-muted-foreground">
+          <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          {t("results.localNotice")}
+        </p>
+      )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10">
         <section

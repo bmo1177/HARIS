@@ -78,6 +78,10 @@ export const ar: Record<MessageKey, string> = {
   "results.nextSteps": "ما تفعله الآن",
   "results.limits":
     "تقدير من ذكاء اصطناعي، وليس ضماناً. تحقّق من أي أمر مهم عبر التطبيق أو الموقع الرسمي.",
+  "results.limitsLocal":
+    "تقدير محلي قائم على قواعد، وليس ضماناً. تحقّق من أي أمر مهم عبر التطبيق أو الموقع الرسمي.",
+  "results.localNotice":
+    "خدمة الذكاء الاصطناعي غير متاحة، لذا جاء هذا الحكم من قواعد هاريس المحلية. القواعد متحفظة عمداً، لكنه ليس حكماً من نموذج.",
   "results.next.dangerous.1": "لا تضغط على الروابط ولا تفتح المرفقات ولا تردّ.",
   "results.next.dangerous.2":
     "تحقّق عبر التطبيق الرسمي، أو عبر رقم تملكه مسبقاً — لا الرقم الوارد في الرسالة.",
@@ -157,6 +161,8 @@ export const ar: Record<MessageKey, string> = {
   "voice.debrief": "تقرير المكالمة",
   "voice.caught": "التقطت {caught} من {total} من علامات التحذير.",
   "voice.writingDebrief": "هاريس يكتب تقريرك...",
+  "voice.localDebrief":
+    "تعذّر الحصول على تقرير الذكاء الاصطناعي، لذا جُمع هذا التقرير محلياً من علامات التحذير في المكالمة.",
   "voice.tryAnother": "جرّب مكالمة أخرى",
   "voice.goToScenarios": "إلى السيناريوهات",
   "voice.line": "الجملة {current} من {total}",

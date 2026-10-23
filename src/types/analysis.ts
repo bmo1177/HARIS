@@ -31,6 +31,12 @@ export const analysisResultSchema = z.object({
   clue_3_ar: z.string().optional(),
   explanation: z.string(),
   explanation_ar: z.string(),
+  /**
+   * How the verdict was produced. Absent means the deployed model, which is
+   * the pre-existing contract; "local" is the client-side rule set used when
+   * the functions cannot be reached.
+   */
+  analysis_source: z.enum(["model", "local"]).optional(),
 });
 
 export type AnalysisResult = z.infer<typeof analysisResultSchema>;
@@ -51,6 +57,8 @@ export const voiceDebriefSchema = z.object({
   debrief_ar: z.string(),
   top_tip: z.string(),
   top_tip_ar: z.string(),
+  /** "local" when the AI was unreachable and the client wrote the review. */
+  source: z.enum(["model", "local"]).optional(),
 });
 
 export type VoiceDebrief = z.infer<typeof voiceDebriefSchema>;

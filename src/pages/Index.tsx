@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import AnalysisWait from "@/components/AnalysisWait";
 import MessageAnalyzer from "@/components/MessageAnalyzer";
 import AnalysisResults from "@/components/AnalysisResults";
+import { HarisError } from "@/lib/api";
+import { analyzeLocally, shouldAnalyzeLocally } from "@/lib/localAnalysis";
 import { useErrorMessage } from "@/lib/useErrorMessage";
 import { useI18n } from "@/lib/useI18n";
 import { useHarisMutation } from "@/lib/useHarisMutation";
@@ -46,6 +48,15 @@ const Index = () => {
     } catch (error) {
       if (cancelledRef.current) {
         toast.info(t("analyzer.wait.cancelled"));
+        return;
+      }
+      // The functions are a separate deployment. When they cannot be reached,
+      // the lesson continues against the local rule set rather than ending in
+      // an error; the result is labelled so it is never passed off as a model
+      // judgement. A rate limit is excluded: that is a wait, not an outage.
+      if (error instanceof HarisError && shouldAnalyzeLocally(error.code)) {
+        setResult(analyzeLocally(message));
+        awardXP(REWARDS.analysis);
         return;
       }
       toast.error(errorText(error));

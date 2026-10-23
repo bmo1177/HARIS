@@ -37,7 +37,10 @@ import { join } from "node:path";
  */
 const BUDGET_KB = {
   entry: 120,
-  totalJs: 152,
+  // 152 -> 158: the local analyzer and its bilingual copy ship in the entry so
+  // the exercise survives a dead backend even when a lazy chunk cannot be
+  // fetched. That is the one moment the fallback is needed.
+  totalJs: 158,
   css: 8,
 };
 

@@ -64,7 +64,9 @@ fixed client-safe sentence; the client renders the code in the active language
 instead of echoing the server's English copy, so an Arabic student never gets an
 English error above an Arabic screen. The same applies to the screen-reader
 announcement on the analysis wait screen, which is a separate localized string
-rather than a hardcoded one.
+rather than a hardcoded one. When the backend is unreachable, the local
+fallback says so in the same two languages instead of presenting a rule-based
+verdict as the model's.
 
 XP and five levels track progress, stored locally in the browser.
 
@@ -116,6 +118,21 @@ message can forge a score.
 5. **The student judges it.** The result keeps the message on screen, reveals one
    clue at a time, asks for the attack type, then shows the explanation and next
    steps. XP follows the analysis, the final clue and a correct first guess.
+6. **If the functions themselves cannot be reached, the lesson continues
+   locally.** A paused or deleted Supabase project is not a problem with the
+   message, and it should not end the exercise. On `network_error`, `timeout`,
+   `service_unavailable`, `provider_unauthorized`, `upstream_error`,
+   `internal_error` or `invalid_response`, the browser runs
+   `src/lib/localAnalysis.ts`: a fixed, inspectable rule set covering links,
+   credential requests, pressure, payment, prizes, authority claims, secrecy,
+   attachments, calls to action and job offers, in English and Arabic. It
+   returns the same band contract as the server but carries
+   `analysis_source: "local"`, and the result says so above the verdict and in
+   the footer. The model path is always tried first. A rate limit or a rejected
+   request does **not** fall back — those are answers, not outages, and a local
+   verdict would hide them. The Voice Lab debrief falls back on any failed
+   request: a completed call should not end in an error instead of a review, so
+   the debrief is assembled from the call's own red flags and labelled local.
 
 The model chooses one of four bands. Nothing it returns is a percentage:
 
@@ -389,8 +406,8 @@ Six layers, each guarding a failure mode the others cannot see:
 
 | Layer | Command | What it pins |
 | --- | --- | --- |
-| **Unit** (Vitest) | `npm run test` | XP and level arithmetic, the sandbox engine, the analysis wait timer, and the locale dictionaries. The locale suite also scans JSX for hardcoded English prose — including text that follows a JSX expression, which is how a screen-reader-only string once stayed English. Coverage thresholds run with the suite and fail the build if coverage drops. |
-| **End-to-end** (Playwright) | `npm run e2e` | `smoke.spec.ts` covers routing, theming, RTL, XP persistence and the AI flows with intercepted responses. `router.spec.ts` covers active nav state, browser history and SPA transitions. `console.spec.ts` fails on any console error or warning, including React Router deprecations. `i18n.spec.ts` checks that the exercise content — clues, scenario steps, sandbox copy — is actually Arabic in Arabic mode. |
+| **Unit** (Vitest) | `npm run test` | XP and level arithmetic, the sandbox engine, the analysis wait timer, the local rule set in both languages, and the locale dictionaries. The locale suite also scans JSX for hardcoded English prose — including text that follows a JSX expression, which is how a screen-reader-only string once stayed English. Coverage thresholds run with the suite and fail the build if coverage drops. |
+| **End-to-end** (Playwright) | `npm run e2e` | `smoke.spec.ts` covers routing, theming, RTL, XP persistence, the AI flows with intercepted responses, and the offline fallback when the functions abort. `router.spec.ts` covers active nav state, browser history and SPA transitions. `console.spec.ts` fails on any console error or warning, including React Router deprecations. `i18n.spec.ts` checks that the exercise content — clues, scenario steps, sandbox copy — is actually Arabic in Arabic mode. |
 | **Edge functions** (Deno) | `npm run test:deno` | Request validation, rate limiting, prompt fencing and the analysis reconciliation. |
 | **Evaluation** (Deno) | `npm run eval` | The harness itself: dataset parsing, metric arithmetic and the injection gate. `npm run eval:live` produces real accuracy numbers; see [`eval/README.md`](eval/README.md). |
 | **Accessibility** (axe) | `npm run e2e` | `accessibility.spec.ts` scans every route in both languages, plus the analysis result in both palettes, and fails on serious or critical violations. |
@@ -486,6 +503,14 @@ trustworthy about the parts it claims work.
   audience; two of the five scenarios (a games-console giveaway and a V-Bucks
   download) have not been rewritten yet. The mechanics are sound — the copy is
   the work that remains.
+- **The local fallback is a rule set, not a model.** When the deployment is
+  unreachable, `src/lib/localAnalysis.ts` reads literal terms and link shapes.
+  It cannot understand a novel phrasing the way the model can, and it will
+  produce both false positives and false negatives on messages written to avoid
+  its vocabulary. That is why the model is always tried first and why the result
+  is labelled; the fallback exists to keep the exercise running and to be
+  honest about what produced the verdict, not to replace the model. The Voice
+  Lab's local debrief is assembled from the transcript in the same way.
 - **E2E does not exercise a deployed backend.** Every edge-function call is
   mocked, so the suite proves the UI contract, not the model or the database.
   `npm run preflight:live` and `npm run eval:live` cover that, and need
@@ -563,7 +588,7 @@ Ordered by value per unit of work. These are directions, not commitments.
 | 1 | Rewrite the two remaining school-age scenarios, and add two graduate-level ones | Closes the only content gap this README admits to. A fake conference CFP or a compromised OAuth consent screen teaches this audience more than a V-Bucks code. | S |
 | 2 | Add security headers to `vercel.json` | The app asks students to paste messages. A CSP, `Referrer-Policy`, `Permissions-Policy` and `frame-ancestors` cost one file and make the deployment match the lesson. | S |
 | 3 | Accept a screenshot as input | A screenshot of a DM or an email is what a student actually has. The deployed model is vision-capable; the work is size caps, cost limits and an image slice in the eval set. | M |
-| 4 | A local heuristic fallback | When the provider is unreachable, URL, urgency and sender-mismatch checks keep a class from losing the lesson to a rate limit — clearly labelled as a heuristic, not a model verdict. | M |
+| 4 | Measure and harden the local rule set | The offline analyser ships; what it lacks is an accuracy number of its own. Build a small labelled set of benign and hostile messages, run the same false-positive and false-negative arithmetic as the model eval, and use it to tune weights and thresholds. | M |
 | 5 | Local history and spaced repetition | Keep past analyses on the device only, resurface the clues a student missed, and turn one-off practice into retention. No accounts, so the privacy position is unchanged. | M |
 
 Bigger bets, not scheduled: an instructor debrief mode that works without

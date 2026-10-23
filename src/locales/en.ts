@@ -83,6 +83,10 @@ export const en = {
   "results.nextSteps": "What to do now",
   "results.limits":
     "An AI assessment, not a guarantee. Verify anything that matters through the official app or site.",
+  "results.limitsLocal":
+    "A local rule-based assessment, not a guarantee. Verify anything that matters through the official app or site.",
+  "results.localNotice":
+    "The AI service is unavailable, so this verdict comes from HARIS's local rule set. It is deliberately conservative, but it is not a model judgement.",
   "results.next.dangerous.1": "Don't click links, open attachments or reply.",
   "results.next.dangerous.2":
     "Verify through the official app, or a number you already have — not the one in the message.",
@@ -171,6 +175,8 @@ export const en = {
   "voice.debrief": "Call Debrief",
   "voice.caught": "You caught {caught} of {total} red flags.",
   "voice.writingDebrief": "HARIS is writing your debrief...",
+  "voice.localDebrief":
+    "The AI debrief was unavailable, so this review was assembled locally from the call's red flags.",
   "voice.tryAnother": "Try another call",
   "voice.goToScenarios": "Go to Scenarios",
   "voice.line": "Line {current} of {total}",

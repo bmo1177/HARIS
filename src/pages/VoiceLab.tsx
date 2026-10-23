@@ -1,17 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Phone, PhoneOff, Flag, CheckCircle2, XCircle, ChevronRight, RotateCcw } from "lucide-react";
 import { voiceCalls, type VoiceCall } from "@/data/voiceCalls";
-import { useErrorMessage } from "@/lib/useErrorMessage";
 import { useHarisMutation } from "@/lib/useHarisMutation";
 import { useXP } from "@/lib/useXP";
 import { useI18n } from "@/lib/useI18n";
 import { localizedText } from "@/lib/localized";
 import DifficultyMeter from "@/components/DifficultyMeter";
 import { voiceCallReward } from "@/lib/xp";
+import { buildLocalDebrief } from "@/lib/localDebrief";
 import { voiceDebriefSchema, type VoiceDebrief } from "@/types/analysis";
 
 const VoiceLab = () => {
@@ -39,7 +38,6 @@ const VoiceLab = () => {
   const { awardXP } = useXP();
   const navigate = useNavigate();
   const { t, locale, formatNumber } = useI18n();
-  const errorText = useErrorMessage();
   const debriefRequest = useHarisMutation("voice-debrief", voiceDebriefSchema);
 
   const clearAdvanceTimer = useCallback(() => {
@@ -74,12 +72,15 @@ const VoiceLab = () => {
         });
 
         setDebrief(result);
-      } catch (error) {
-        // Previously swallowed entirely, so a failed debrief was invisible.
-        toast.error(errorText(error));
+      } catch {
+        // A completed call should not end in a spinner because a separate
+        // deployment is down. The transcript already holds the flags and their
+        // reasons, so the review can be written from the exercise itself. The
+        // panel labels it as local.
+        setDebrief(buildLocalDebrief(call, caught, flags));
       }
     },
-    [debriefRequest, errorText],
+    [debriefRequest],
   );
 
   const speakLine = useCallback((call: VoiceCall, lineIndex: number) => {
@@ -261,6 +262,11 @@ const VoiceLab = () => {
               <p className="text-sm font-semibold text-primary">
                 {locale === "ar" && debrief.top_tip_ar ? debrief.top_tip_ar : debrief.top_tip}
               </p>
+              {debrief.source === "local" && (
+                <p className="border-t border-border pt-2 text-xs leading-relaxed text-muted-foreground">
+                  {t("voice.localDebrief")}
+                </p>
+              )}
             </div>
           ) : null}
 
