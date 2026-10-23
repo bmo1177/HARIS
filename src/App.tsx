@@ -14,7 +14,7 @@ import Index from "@/pages/Index.tsx";
  * The three training modules are independent: a student who only ever analyses
  * messages has no reason to download the voice-lab player, the scenario data, or
  * Arabic scenario content. Splitting on navigation moves that cost off the first
- * paint, which is the load that matters on a school connection.
+ * paint, which is the load that matters on a campus connection.
  */
 const Scenarios = lazy(() => import("@/pages/Scenarios.tsx"));
 const VoiceLab = lazy(() => import("@/pages/VoiceLab.tsx"));

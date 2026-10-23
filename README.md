@@ -1,5 +1,8 @@
 # HARIS
 
+[![CI](https://github.com/bmo1177/HARIS/actions/workflows/ci.yml/badge.svg)](https://github.com/bmo1177/HARIS/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **Human-Aware Risk Intelligence Shield** — cybersecurity awareness training for
 master's students in security.
 
@@ -12,6 +15,31 @@ Live: **https://haris-two-xi.vercel.app**
 
 ---
 
+## Contents
+
+- [What it does](#what-it-does)
+- [Screens](#screens)
+- [How a message is judged](#how-a-message-is-judged)
+- [Stack](#stack)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Deployment](#deployment)
+- [Scripts](#scripts)
+- [Design](#design)
+- [Architecture](#architecture)
+- [Project structure](#project-structure)
+- [Testing](#testing)
+- [Performance](#performance)
+- [Security](#security)
+- [Known gaps](#known-gaps)
+- [Pre-flight](#pre-flight)
+- [When the AI features stop working](#when-the-ai-features-stop-working)
+- [Where it goes next](#where-it-goes-next)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
 ## What it does
 
 | Module | Route | What happens |
@@ -19,6 +47,7 @@ Live: **https://haris-two-xi.vercel.app**
 | **Message Analyzer** | `/` | Paste any message (Arabic or English). HARIS returns a band verdict, then reveals the evidence one clue at a time and asks the student to name the attack — with the message they are judging still on screen. |
 | **Scenario Simulator** | `/scenarios` | Five branching social-engineering scenarios. Every choice gets AI feedback explaining what it would have cost in the real world. |
 | **Voice Lab** | `/voice-lab` | Three simulated scam calls in Arabic and English, read aloud via the Web Speech API. Flag the red flags in real time, then get a debrief on what you missed. |
+| **Prompt Injection Sandbox** | `/sandbox` | A sealed simulator in three tabs: Red Team tries to steer a model with live payloads, Blue Team builds defences against them, and the Spec tab shows the dataset and the rules both modes implement. |
 
 **Available in English and Arabic**, with the whole interface flipping to RTL —
 including the explanations, attack names and red-flag reasons the model returns,
@@ -41,11 +70,76 @@ XP and five levels track progress, stored locally in the browser.
 
 ---
 
+## Screens
+
+The analyzer before a verdict, and the result after one. The result screens were
+captured against a **mocked `analyze-message` response** — the deployed Supabase
+project was offline when they were taken — but the UI, copy and layout are the
+shipped ones.
+
+| Analyzer | Result |
+| --- | --- |
+| ![The message analyzer](docs/screens/analyzer.png) | ![The analysis result](docs/screens/result.png) |
+
+The same result in Arabic — interface, evidence and next steps switch language,
+while the quoted message stays verbatim — and on a 390 px phone, where the
+specimen sits above the evidence instead of beside it.
+
+| Arabic | Mobile |
+| --- | --- |
+| ![The analysis result in Arabic](docs/screens/result-arabic.png) | <img src="docs/screens/result-mobile.png" width="300" alt="The analysis result on a phone"> |
+
+---
+
+## How a message is judged
+
+The verdict is not a number the model makes up. It is a categorical judgement
+that the server reconciles, so neither a malformed response nor text inside the
+message can forge a score.
+
+1. **The browser sends one message.** `POST /functions/v1/analyze-message` with
+   `{ message, locale }`, the publishable key, and a 95-second client timeout
+   that leaves room around the server's 90-second budget. Messages are capped at
+   2,000 characters.
+2. **The function checks before it spends anything.** Origin allowlist, JSON body
+   cap, schema validation, then a per-client quota — 10 requests a minute and
+   100 a day by default. A request that fails any of these never reaches the
+   provider.
+3. **The message is fenced, not trusted.** It is wrapped in a per-request nonce,
+   with rules saying that a message arguing about how it should be scored is
+   itself the finding. The model returns a band, an attack type, three clues and
+   an explanation, with Arabic fields alongside.
+4. **The response is re-validated, then reconciled.** The strict schema must hold.
+   An unavailable model, a schema rejection, a timeout or non-JSON output moves
+   to the next model in the list. The accepted band is mapped to a
+   representative score, and the score to a verdict and `is_threat`.
+5. **The student judges it.** The result keeps the message on screen, reveals one
+   clue at a time, asks for the attack type, then shows the explanation and next
+   steps. XP follows the analysis, the final clue and a correct first guess.
+
+The model chooses one of four bands. Nothing it returns is a percentage:
+
+| `risk_band` | Derived score | Verdict | Zone drawn |
+| --- | --- | --- | --- |
+| `none` | 5 | Safe | 0–24 |
+| `low` | 15 | Safe | 0–24 |
+| `medium` | 45 | Suspicious | 25–64 |
+| `high` | 85 | Dangerous | 65–100 |
+
+The score is an implementation detail: it exists so the thresholds live in one
+place. The client never renders it. `low` sits below Suspicious on purpose — the
+prompt describes it as "worth a second look but no clear attack", and mapping it
+above the threshold made ordinary messages suspicious. The result draws the
+three zones at their true widths (25 / 40 / 35) and marks only the current one,
+because a gauge with a needle would claim a precision the system does not have.
+
+---
+
 ## Stack
 
 - **Frontend** — React 18, TypeScript (strict), Vite, Tailwind, shadcn/ui, React Router 7
 - **Backend** — Supabase Edge Functions (Deno) with Postgres for rate limiting
-- **AI** — any OpenAI-compatible provider (OpenRouter by default)
+- **AI** — any OpenAI-compatible provider, with an ordered fallback list (NVIDIA Build in the deployed configuration; OpenRouter is the code default)
 - **Testing** — Vitest, Playwright, Deno test
 
 16 runtime dependencies. The browser talks to the Edge Functions over `fetch`;
@@ -91,6 +185,82 @@ how to point at a different model provider.
 
 ---
 
+## Configuration
+
+Two files, deliberately separate. Vite reads the root `.env` and bundles
+anything prefixed `VITE_`; the edge functions read Supabase secrets and never
+see the root file. The commented template is [`.env.example`](.env.example).
+
+### Browser — root `.env`
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `VITE_SUPABASE_URL` | yes | Project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | yes | Publishable key. Safe in the bundle by design; a secret key here would be a breach. |
+| `VITE_SUPABASE_PROJECT_ID` | recommended | Project ref. `preflight` checks it matches the URL; the app does not read it. |
+
+Missing values produce a setup screen naming the variable, not a blank page.
+
+### Edge functions — `supabase secrets set --env-file supabase/functions/.env.local`
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `LLM_API_KEY` | — (required) | Key for any OpenAI-compatible provider |
+| `LLM_BASE_URL` | `https://openrouter.ai/api/v1` | Provider base URL |
+| `LLM_MODEL` | `google/gemini-3.5-flash` | Primary model. Deployed: `nvidia/nemotron-3.5-super-vl-120b-a12b`. |
+| `LLM_FALLBACK_MODELS` | empty | Models tried in order when the primary fails |
+| `LLM_TIMEOUT_MS` | 20000 | Per attempt, in milliseconds; deployed at 45000 |
+| `LLM_TOTAL_TIMEOUT_MS` | three attempts | Ceiling across every model for one request; deployed at 90000. The browser waits 95 s. |
+| `LLM_MAX_TOKENS` | 1200 | Too low truncates reasoning models mid-JSON; deployed at 4000 |
+| `ALLOWED_ORIGINS` | none | Comma-separated browser origins |
+| `RATE_LIMIT_MAX` | 10 | Requests per client per window |
+| `RATE_LIMIT_WINDOW_SECONDS` | 60 | Window length |
+| `DAILY_RATE_LIMIT_MAX` | 100 | Daily ceiling per client |
+| `SUPABASE_URL` / `SUPABASE_SECRET_KEYS` | injected | Supplied by the runtime. Set them only outside Supabase; a secret key bypasses RLS. |
+
+---
+
+## Deployment
+
+The frontend and the functions deploy separately, and a green frontend build
+does not prove the backend is reachable. Deploy the functions, then probe them.
+
+### Frontend — Vercel
+
+The repository is a Vite SPA. Vercel needs the build command `npm run build`,
+the output directory `dist`, and the `VITE_` variables for the Production
+environment. [`vercel.json`](vercel.json) supplies the SPA rewrite and immutable
+cache headers for hashed assets; `index.html` is always revalidated.
+
+```bash
+vercel --prod
+```
+
+### Backend — Supabase
+
+```bash
+supabase link --project-ref <project-ref>
+supabase db push                       # rate-limit table and function
+supabase secrets set --env-file supabase/functions/.env.local
+supabase functions deploy analyze-message scenario-feedback voice-debrief --no-verify-jwt
+npm run preflight:live                 # proves a deployed function returns a verdict
+```
+
+`--no-verify-jwt` is required because the app has no accounts: the publishable
+key is the only credential and the rate limiter is the cost control. Provider
+selection, measured model rankings and recovery are in
+[`supabase/README.md`](supabase/README.md).
+
+### CI
+
+GitHub Actions runs typecheck, lint, unit tests, build, the bundle budget and
+Playwright on every push and pull request, plus a Deno job for the edge
+functions. A weekly scheduled job runs the live evaluation, because accuracy
+drifts with the model and the provider, not only with the code. The workflow has
+least-privilege `contents: read` permissions and per-job timeouts.
+
+---
+
 ## Scripts
 
 | Command | Purpose |
@@ -129,9 +299,9 @@ The visual system is an **instrument**, not a consumer security app — see
 - **Monospace means data** — measurements, counts, scores, identifiers. Never as
   decoration. That line is the difference between an instrument and a hacker
   aesthetic.
-- **A verdict is a band, not a measurement.** The model answers with one of
-  three outcomes and the server derives a representative score from it, so a
-  percentage gauge would claim a precision the system does not have. The result
+- **A verdict is a band, not a measurement.** The model answers with one of four
+  bands, the server maps it to a representative score and one of three verdicts,
+  so a percentage gauge would claim a precision the system does not have. The result
   states the band in words, draws the three bands at their true widths
   (25 / 40 / 35) and marks only the current one — no count-up, no segment that
   implies a value it cannot produce.
@@ -153,6 +323,8 @@ The visual system is an **instrument**, not a consumer security app — see
   elapsed timer is `aria-hidden` and paired with a localized screen-reader
   announcement; the nav row fits at 320px in both languages. These properties
   are pinned by unit and E2E tests rather than left to review.
+
+---
 
 ## Architecture
 
@@ -185,9 +357,35 @@ Shared edge-function code lives in `supabase/functions/_shared/`:
 
 ---
 
+## Project structure
+
+```
+src/
+  components/   UI, the verdict panel, the result workspace, the header
+  pages/        one file per route; training modules are lazy-loaded
+  lib/          API client, i18n, XP, error copy, rate-limit wait
+  locales/      en.ts and ar.ts, typed as Record<MessageKey, string>
+  data/         scenario and voice-call content, in both languages
+  sandbox/      prompt-injection engine, dataset and both team modes
+supabase/
+  functions/    analyze-message, scenario-feedback, voice-debrief
+    _shared/    prompt fencing, schemas, LLM client, rate limit, reconcile
+  migrations/   rate-limit table and function
+eval/           labelled dataset and the accuracy harness
+e2e/            Playwright specs: smoke, router, console, i18n, accessibility
+docs/screens/   the screenshots above
+scripts/        preflight, provider probe, bundle budget
+```
+
+The analyzer's prompt, schema and reconciliation live in
+`supabase/functions/_shared/analysis.ts` and are imported by both the HTTP
+handler and the eval harness, so what gets measured is what gets served.
+
+---
+
 ## Testing
 
-Four layers, each guarding a failure mode the others cannot see:
+Six layers, each guarding a failure mode the others cannot see:
 
 | Layer | Command | What it pins |
 | --- | --- | --- |
@@ -210,6 +408,28 @@ CHROME_PATH=/run/current-system/sw/bin/google-chrome npm run e2e
 
 ---
 
+## Performance
+
+| What | Measured | Against |
+| --- | --- | --- |
+| Entry chunk | 113.2 kB gzip | 120 kB budget |
+| All JavaScript | 149.0 kB gzip | 152 kB budget |
+| CSS | 7.0 kB gzip | 8 kB budget |
+| Fonts, English visitor | 2 files | Arabic weights load on demand |
+| Analysis, primary model | ~16 s | 90 s server budget, then a typed error |
+| Analysis, fallback model | ~18 s | shares the same budget |
+| Accuracy, 2026-10-22 | 84.4% (4 timeouts) | 0% false positives · 100% hostile recall · 0/4 injections steered |
+| Test suite | 124 unit · 76 E2E · 55 Deno | all green |
+
+The latency figures come from the free NVIDIA endpoint and move with contention;
+the fallback list and the shared budget exist for exactly that. The wait screen
+shows elapsed time, announces progress to screen readers, and can be cancelled.
+The accuracy figures come from [`eval/`](eval/) and are re-measured weekly in CI;
+the false-positive rate is the number that matters, because a trainer that cries
+wolf teaches students to ignore it.
+
+---
+
 ## Security
 
 HARIS is a security tool, so its own posture is documented rather than implied.
@@ -218,9 +438,9 @@ is in [`supabase/README.md`](supabase/README.md). In short:
 
 - **Prompt injection.** The verdict is the product, so a user must not be able to
   dictate it. `risk_level` and `is_threat` are derived server-side from a single
-  score rather than model-authored; untrusted text is fenced with a per-request
-  nonce it cannot forge; and every model response is re-validated before it
-  reaches a user.
+  categorical band rather than model-authored; untrusted text is fenced with a
+  per-request nonce it cannot forge; and every model response is re-validated
+  before it reaches a user.
 - **Cost exhaustion.** The functions are public and billable. Per-client rate
   limits (minute + daily), request body caps, per-field length caps and
   `LLM_MAX_TOKENS` bound what one request can cost.
@@ -331,6 +551,26 @@ LLM_API_KEY=… LLM_BASE_URL=… LLM_MODEL=… npm run probe:provider
 It reads the app's real analysis schema out of the edge function source, so it
 cannot drift from what the app sends, and it refuses to report success when it
 measured nothing.
+
+---
+
+## Where it goes next
+
+Ordered by value per unit of work. These are directions, not commitments.
+
+| # | Direction | Why | Size |
+| --- | --- | --- | --- |
+| 1 | Rewrite the two remaining school-age scenarios, and add two graduate-level ones | Closes the only content gap this README admits to. A fake conference CFP or a compromised OAuth consent screen teaches this audience more than a V-Bucks code. | S |
+| 2 | Add security headers to `vercel.json` | The app asks students to paste messages. A CSP, `Referrer-Policy`, `Permissions-Policy` and `frame-ancestors` cost one file and make the deployment match the lesson. | S |
+| 3 | Accept a screenshot as input | A screenshot of a DM or an email is what a student actually has. The deployed model is vision-capable; the work is size caps, cost limits and an image slice in the eval set. | M |
+| 4 | A local heuristic fallback | When the provider is unreachable, URL, urgency and sender-mismatch checks keep a class from losing the lesson to a rate limit — clearly labelled as a heuristic, not a model verdict. | M |
+| 5 | Local history and spaced repetition | Keep past analyses on the device only, resurface the clues a student missed, and turn one-off practice into retention. No accounts, so the privacy position is unchanged. | M |
+
+Bigger bets, not scheduled: an instructor debrief mode that works without
+accounts, adaptive difficulty driven by the student's own accuracy, and recorded
+voices for the Voice Lab instead of speech synthesis.
+
+---
 
 ## Contributing
 

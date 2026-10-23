@@ -21,7 +21,7 @@ import {
  * entire dependency.
  *
  * This matters most for the target audience: the first thing a student on a
- * school phone or a weak connection downloads was an auth client they will never
+ * campus phone or a weak connection downloads was an auth client they will never
  * authenticate against.
  */
 
@@ -102,7 +102,7 @@ const REQUEST_TIMEOUT_MS = 95_000;
  * `AbortSignal.any([...])` and `AbortSignal.timeout(ms)` are the obvious
  * tools, but `AbortSignal.any` only landed in Safari 17.4 (March 2024) and
  * `AbortSignal.timeout` in Safari 16. On an older browser — which a managed
- * school laptop is quite likely to be — `AbortSignal.any` is simply not a
+ * campus laptop is quite likely to be — `AbortSignal.any` is simply not a
  * function, and the throw happens inside the `try` of every single analysis.
  * The failure would be total: the analyzer never works, on a class of device
  * nobody tests on.

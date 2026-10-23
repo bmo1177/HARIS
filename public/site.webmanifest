@@ -1,7 +1,7 @@
 {
   "name": "HARIS — Human-Aware Risk Intelligence Shield",
   "short_name": "HARIS",
-  "description": "Cybersecurity awareness training for high school students: analyse suspicious messages, practise attack scenarios, and train your ear on scam calls.",
+  "description": "Cybersecurity awareness training for master's students: analyze suspicious messages, work through attack scenarios, and train your ear on scam calls.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -5,7 +5,7 @@ import MissingEnvNotice from "./components/MissingEnvNotice.tsx";
 import { I18nProvider } from "@/lib/i18n";
 import { missingEnv } from "@/lib/env";
 /* Self-hosted via @fontsource: subset woff2 bundled by Vite, no external CDN
-   request. That matters twice over for a school audience — a cold load on a weak
+   request. That matters twice over for a student audience — a cold load on a weak
    connection, and a third party learning which students are reading security
    material.
 

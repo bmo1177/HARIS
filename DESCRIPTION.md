@@ -14,7 +14,7 @@ Live: https://haris-two-xi.vercel.app
 
 ## Modules
 
-- **Message Analyzer** (`/`): paste any message, get a risk score, then reveal the warning signs one clue at a time before naming the attack type.
+- **Message Analyzer** (`/`): paste any message, get a band verdict with its evidence, reveal the warning signs one clue at a time, then name the attack type.
 - **Scenario Simulator** (`/scenarios`): five branching social engineering scenarios, with feedback on what each choice would cost in the real world.
 - **Voice Lab** (`/voice-lab`): three simulated scam calls read aloud via the Web Speech API, red flags flagged live, then a debrief on what was missed.
 - **Prompt Injection Sandbox** (`/sandbox`): Red Team attack runs against a small language model pipeline, Blue Team guardrail building, and the specification and battery behind both.
