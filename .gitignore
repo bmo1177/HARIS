@@ -16,6 +16,8 @@ dist-ssr
 .env
 .env.*
 !.env.example
+# Production config with no secrets: the public standalone backend URL.
+!.env.production
 
 # Supabase edge function secrets
 supabase/functions/.env.local

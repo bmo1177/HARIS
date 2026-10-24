@@ -11,7 +11,8 @@ the outcome: reading a live message under time pressure and deciding whether to
 trust it. HARIS trains that. Paste a message and get a verdict with its evidence
 attached, then make the call yourself in a scenario or on a simulated scam call.
 
-Live: **https://haris-two-xi.vercel.app**
+Live: **https://haris-two-xi.vercel.app** · backend:
+**https://haris.bmo1177.deno.net**
 
 ---
 
@@ -225,7 +226,7 @@ root file. The commented template is [`.env.example`](.env.example).
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `VITE_HARIS_API_URL` | optional, preferred | Base URL of a standalone backend (`server/main.ts`). When set, it wins and the Supabase variables below become optional. Public, not a secret. |
+| `VITE_HARIS_API_URL` | optional, preferred | Base URL of a standalone backend (`server/main.ts`). When set, it wins and the Supabase variables below become optional. Public, not a secret. Production builds also read `.env.production`. |
 | `VITE_SUPABASE_URL` | only without `VITE_HARIS_API_URL` | Project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | only without `VITE_HARIS_API_URL` | Publishable key. Safe in the bundle by design; a secret key here would be a breach. |
 | `VITE_SUPABASE_PROJECT_ID` | recommended | Project ref. `preflight` checks it matches the URL; the app does not read it. |
@@ -233,6 +234,10 @@ root file. The commented template is [`.env.example`](.env.example).
 Missing values produce a setup screen naming the variable, not a blank page. A
 standalone URL replaces the Supabase pair entirely, so a Supabase-free
 deployment does not fail that check.
+
+Production builds also read [`.env.production`](.env.production), which pins the
+public standalone backend URL and contains no secrets. A Vercel environment
+variable of the same name wins over it.
 
 ### Backend secrets
 
@@ -359,10 +364,12 @@ The dashboard equivalent, if you prefer it:
    quota.
 3. Add the variables from the table above as environment variables. Add
    `ALLOWED_ORIGINS` if the frontend origin changes.
-4. Deploy, then check that `https://<app>.deno.dev/health` returns
+4. Deploy, then check that `https://<app>.<org>.deno.net/health` returns
    `{"status":"ok","service":"haris"}`.
-5. Point the frontend at it: set `VITE_HARIS_API_URL=https://<app>.deno.dev` in
-   the Vercel Production environment (or the root `.env` locally) and redeploy.
+5. Point the frontend at it: set `VITE_HARIS_API_URL=https://<app>.<org>.deno.net`
+   in the Vercel Production environment, or commit it to `.env.production`.
+   The repository already pins this deployment's URL there; a Vercel
+   environment variable of the same name takes precedence.
 
 Rate limiting uses Deno KV automatically, so counters survive isolates and cold
 starts. Locally, KV is enabled by the `--unstable-kv` flag in `npm run serve`
