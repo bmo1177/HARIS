@@ -315,20 +315,25 @@ curl -s localhost:8000/health
 Deno Deploy, from the CLI — no dashboard steps:
 
 ```bash
-deno deploy whoami            # opens the browser once, then stores the token
+# One-time: sign in at console.deno.com, create an organization, then create an
+# access token at <https://console.deno.com/account/access-tokens>.
+export DENO_DEPLOY_TOKEN=...
 
-deno deploy create --source local --prod \
+# <org> is the slug in the console URL: console.deno.com/<org>
+deno deploy create --org <org> --app haris --source local --prod \
   --runtime-mode dynamic --entrypoint server/main.ts \
-  --app haris --region eu \
-  --ignore .env --ignore node_modules --ignore dist
+  --region eu --ignore .env --ignore node_modules --ignore dist
 
-deno deploy database provision haris-rate-limit
-deno deploy database assign haris-rate-limit --app haris
+deno deploy database provision haris-rate-limit --org <org> --kind denokv
+deno deploy database assign haris-rate-limit --org <org> --app haris
 
 # Backend variables only: provider key, model, timeouts, quotas, origins.
-deno deploy env load supabase/functions/.env.local --app haris
+deno deploy env load supabase/functions/.env.local \
+  --org <org> --app haris --replace
 ```
 
+The token is required outside an interactive terminal; `deno deploy whoami`
+otherwise opens the browser once and stores the credentials in the keyring.
 `--ignore .env` keeps local secrets out of the uploaded source.
 `supabase/functions/.env.local` is gitignored and is the same file the Supabase
 deployment uses, so the provider key never has to be pasted into a shell or a
