@@ -36,7 +36,12 @@ import { join } from "node:path";
  * number should be raised deliberately in a commit that says why.
  */
 const BUDGET_KB = {
-  entry: 120,
+  // 120 -> 121: gzip output for the *same* file differs by ~0.4 kB between the
+  // zlib builds on GitHub's runner and on NixOS (CI measured 120.04 kB for a
+  // chunk this machine measured at 119.6 kB). A 0.3 kB margin is smaller than
+  // that measurement noise, so the gate was failing on the platform rather than
+  // on the code. The extra kilobyte is headroom, not a licence to grow.
+  entry: 121,
   // 152 -> 158: the local analyzer and its bilingual copy ship in the entry so
   // the exercise survives a dead backend even when a lazy chunk cannot be
   // fetched. That is the one moment the fallback is needed.
@@ -95,9 +100,11 @@ const check = (label, actualKb, budgetKb) => {
   if (actualKb <= budgetKb) {
     pass(`${label}: ${actualKb.toFixed(1)} kB gzip (budget ${budgetKb} kB)`);
   } else {
+    // Two decimals on failure: a chunk can miss by 0.04 kB, and "over by 0.0"
+    // reads like a bug in the checker rather than a real boundary.
     fail(
-      `${label}: ${actualKb.toFixed(1)} kB gzip is over the ${budgetKb} kB budget ` +
-        `by ${(actualKb - budgetKb).toFixed(1)} kB`,
+      `${label}: ${actualKb.toFixed(2)} kB gzip is over the ${budgetKb} kB budget ` +
+        `by ${(actualKb - budgetKb).toFixed(2)} kB`,
     );
   }
 };

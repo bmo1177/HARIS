@@ -510,7 +510,7 @@ CHROME_PATH=/run/current-system/sw/bin/google-chrome npm run e2e
 
 | What | Measured | Against |
 | --- | --- | --- |
-| Entry chunk | 119.7 kB gzip | 120 kB budget |
+| Entry chunk | 119.7 kB gzip | 121 kB budget |
 | All JavaScript | 156.4 kB gzip | 158 kB budget |
 | CSS | 7.1 kB gzip | 8 kB budget |
 | Fonts, English visitor | 2 files | Arabic weights load on demand |
