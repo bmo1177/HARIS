@@ -517,7 +517,7 @@ CHROME_PATH=/run/current-system/sw/bin/google-chrome npm run e2e
 | Analysis, primary model | ~16 s | 90 s server budget, then a typed error |
 | Analysis, fallback model | ~18 s | shares the same budget |
 | Accuracy, 2026-10-22 | 84.4% (4 timeouts) | 0% false positives · 100% hostile recall · 0/4 injections steered |
-| Test suite | 166 unit · 79 E2E · 69 Deno | all green |
+| Test suite | 166 unit · 79 E2E · 70 Deno | all green |
 
 The latency figures come from the free NVIDIA endpoint and move with contention;
 the fallback list and the shared budget exist for exactly that. The wait screen
