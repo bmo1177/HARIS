@@ -64,61 +64,61 @@ How to respond:
 
 ${UNTRUSTED_CONTENT_RULES}`;
 
-Deno.serve(
-  createHandler(async ({ req, requestId, body }) => {
-    await enforceRateLimit(req, "scenario-feedback");
+export const scenarioFeedbackHandler = createHandler(async ({ req, requestId, body }) => {
+  await enforceRateLimit(req, "scenario-feedback");
 
-    const { scenarioTitle, stepNumber, attackerMessage, userChoice } = parseRequest(
-      scenarioFeedbackRequest,
-      body,
+  const { scenarioTitle, stepNumber, attackerMessage, userChoice } = parseRequest(
+    scenarioFeedbackRequest,
+    body,
+  );
+
+  const raw = await generateStructured({
+    system: SYSTEM_PROMPT,
+    user: [
+      `Scenario: ${scenarioTitle}`,
+      `Step: ${stepNumber}`,
+      "",
+      "What the attacker sent:",
+      wrapUntrusted("ATTACKER_MESSAGE", attackerMessage),
+      "",
+      "What the student replied:",
+      wrapUntrusted("STUDENT_REPLY", userChoice),
+    ].join("\n"),
+    schemaName: "suggest_feedback",
+    schema: FEEDBACK_SCHEMA as unknown as Record<string, unknown>,
+    maxTokens: 700,
+  });
+
+  const parsed = MODEL_OUTPUT.safeParse(raw);
+  if (!parsed.success) {
+    console.error(
+      `[${requestId}] model output failed validation:`,
+      parsed.error.issues,
     );
+    throw new UpstreamError(
+      "model output did not match the expected schema",
+      502,
+      false,
+    );
+  }
 
-    const raw = await generateStructured({
-      system: SYSTEM_PROMPT,
-      user: [
-        `Scenario: ${scenarioTitle}`,
-        `Step: ${stepNumber}`,
-        "",
-        "What the attacker sent:",
-        wrapUntrusted("ATTACKER_MESSAGE", attackerMessage),
-        "",
-        "What the student replied:",
-        wrapUntrusted("STUDENT_REPLY", userChoice),
-      ].join("\n"),
-      schemaName: "suggest_feedback",
-      schema: FEEDBACK_SCHEMA as unknown as Record<string, unknown>,
-      maxTokens: 700,
-    });
+  const { safe, feedback, feedback_ar, red_flag, red_flag_ar } = parsed.data;
 
-    const parsed = MODEL_OUTPUT.safeParse(raw);
-    if (!parsed.success) {
-      console.error(
-        `[${requestId}] model output failed validation:`,
-        parsed.error.issues,
-      );
-      throw new UpstreamError(
-        "model output did not match the expected schema",
-        502,
-        false,
-      );
-    }
+  return jsonResponse(req, 200, {
+    safe,
+    feedback: clampText(
+      feedback.trim(),
+      600,
+      "Take another look at who was asking for what.",
+    ),
+    // The Arabic string is optional: an empty value renders as omitted rather
+    // than as an empty bordered box.
+    feedback_ar: clampText(feedback_ar.trim(), 600, ""),
+    red_flag: clampText(red_flag.trim(), 300, ""),
+    // The Arabic flag is optional in the same way: an empty value means the
+    // client falls back to the English one rather than showing a blank.
+    red_flag_ar: clampText(red_flag_ar.trim(), 300, ""),
+  });
+});
 
-    const { safe, feedback, feedback_ar, red_flag, red_flag_ar } = parsed.data;
-
-    return jsonResponse(req, 200, {
-      safe,
-      feedback: clampText(
-        feedback.trim(),
-        600,
-        "Take another look at who was asking for what.",
-      ),
-      // The Arabic string is optional: an empty value renders as omitted rather
-      // than as an empty bordered box.
-      feedback_ar: clampText(feedback_ar.trim(), 600, ""),
-      red_flag: clampText(red_flag.trim(), 300, ""),
-      // The Arabic flag is optional in the same way: an empty value means the
-      // client falls back to the English one rather than showing a blank.
-      red_flag_ar: clampText(red_flag_ar.trim(), 300, ""),
-    });
-  }),
-);
+if (import.meta.main) Deno.serve(scenarioFeedbackHandler);

@@ -125,15 +125,42 @@ const DEFAULT_ORIGINS = [
   "http://localhost:5173",
 ];
 
+/**
+ * CORS origins, without touching the LLM or database credentials.
+ *
+ * `corsHeaders` runs on every response, including the error response for a
+ * deployment whose secrets are not set yet. Building it from `getConfig()`
+ * meant a missing `LLM_API_KEY` threw *while writing the error*, so the caller
+ * got an opaque platform 500 instead of the safe envelope. Origins are the one
+ * part of the config that is safe to resolve on its own.
+ */
+export function getAllowedOrigins(): string[] {
+  const configured = optional("ALLOWED_ORIGINS");
+  if (!configured) return DEFAULT_ORIGINS;
+
+  return configured.split(",").map((origin) => origin.trim()).filter(Boolean);
+}
+
+/**
+ * True when the Supabase rate-limit backend can be used.
+ *
+ * The URL alone is not enough: counting requests needs the privileged key.
+ * This is what lets the same handlers run on a Supabase-free host and fall
+ * back to a different limiter instead of failing on a missing variable.
+ */
+export function hasSupabaseConfig(): boolean {
+  return Boolean(
+    optional("SUPABASE_URL") &&
+      (optional("SUPABASE_SECRET_KEYS") || optional("SUPABASE_SERVICE_ROLE_KEY")),
+  );
+}
+
 let cached: AppConfig | null = null;
 
 export function getConfig(): AppConfig {
   if (cached) return cached;
 
-  const origins = optional("ALLOWED_ORIGINS")
-    ? (optional("ALLOWED_ORIGINS") as string).split(",").map((o) => o.trim())
-      .filter(Boolean)
-    : DEFAULT_ORIGINS;
+  const origins = getAllowedOrigins();
 
   const config = {
     llm: (() => {

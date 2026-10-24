@@ -3,6 +3,7 @@
     "strict": true,
     "lib": [
       "deno.ns",
+      "deno.unstable",
       "dom",
       "dom.iterable",
       "esnext"

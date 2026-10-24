@@ -63,67 +63,67 @@ function renderTranscript(
   return lines.map((line) => `${line.lineNumber}. ${wrapUntrusted("LINE", line.text)}`).join("\n");
 }
 
-Deno.serve(
-  createHandler(async ({ req, requestId, body }) => {
-    await enforceRateLimit(req, "voice-debrief");
+export const voiceDebriefHandler = createHandler(async ({ req, requestId, body }) => {
+  await enforceRateLimit(req, "voice-debrief");
 
-    const { callTitle, totalFlags, caughtFlags, missedFlags, flagDetails } = parseRequest(
-      voiceDebriefRequest,
-      body,
+  const { callTitle, totalFlags, caughtFlags, missedFlags, flagDetails } = parseRequest(
+    voiceDebriefRequest,
+    body,
+  );
+
+  // Only red-flag lines carry signal for the coach. Sending every line would
+  // spend tokens restating the safe parts of the script.
+  const redFlagLines = flagDetails.filter((detail) => detail.isRedFlag);
+  const overFlagged = flagDetails.filter((detail) => !detail.isRedFlag && detail.userFlagged);
+
+  const raw = await generateStructured({
+    system: SYSTEM_PROMPT,
+    user: [
+      `Call: ${callTitle}`,
+      `Red flags present: ${totalFlags}. Caught: ${caughtFlags}. Missed: ${missedFlags}.`,
+      overFlagged.length > 0
+        ? `The student also flagged ${overFlagged.length} line(s) that were actually harmless.`
+        : "The student did not over-flag any harmless lines.",
+      "",
+      "Red-flag lines from the call:",
+      renderTranscript(redFlagLines),
+      "",
+      "Give the debrief.",
+    ].join("\n"),
+    schemaName: "suggest_debrief",
+    schema: DEBRIEF_SCHEMA as unknown as Record<string, unknown>,
+    maxTokens: 800,
+  });
+
+  const parsed = MODEL_OUTPUT.safeParse(raw);
+  if (!parsed.success) {
+    console.error(
+      `[${requestId}] model output failed validation:`,
+      parsed.error.issues,
     );
+    throw new UpstreamError(
+      "model output did not match the expected schema",
+      502,
+      false,
+    );
+  }
 
-    // Only red-flag lines carry signal for the coach. Sending every line would
-    // spend tokens restating the safe parts of the script.
-    const redFlagLines = flagDetails.filter((detail) => detail.isRedFlag);
-    const overFlagged = flagDetails.filter((detail) => !detail.isRedFlag && detail.userFlagged);
+  const { debrief, debrief_ar, top_tip, top_tip_ar } = parsed.data;
 
-    const raw = await generateStructured({
-      system: SYSTEM_PROMPT,
-      user: [
-        `Call: ${callTitle}`,
-        `Red flags present: ${totalFlags}. Caught: ${caughtFlags}. Missed: ${missedFlags}.`,
-        overFlagged.length > 0
-          ? `The student also flagged ${overFlagged.length} line(s) that were actually harmless.`
-          : "The student did not over-flag any harmless lines.",
-        "",
-        "Red-flag lines from the call:",
-        renderTranscript(redFlagLines),
-        "",
-        "Give the debrief.",
-      ].join("\n"),
-      schemaName: "suggest_debrief",
-      schema: DEBRIEF_SCHEMA as unknown as Record<string, unknown>,
-      maxTokens: 800,
-    });
+  return jsonResponse(req, 200, {
+    debrief: clampText(
+      debrief.trim(),
+      900,
+      "Review the transcript and note what you missed.",
+    ),
+    debrief_ar: clampText(debrief_ar.trim(), 900, ""),
+    top_tip: clampText(
+      top_tip.trim(),
+      300,
+      "Hang up and verify independently if in doubt.",
+    ),
+    top_tip_ar: clampText(top_tip_ar.trim(), 300, ""),
+  });
+});
 
-    const parsed = MODEL_OUTPUT.safeParse(raw);
-    if (!parsed.success) {
-      console.error(
-        `[${requestId}] model output failed validation:`,
-        parsed.error.issues,
-      );
-      throw new UpstreamError(
-        "model output did not match the expected schema",
-        502,
-        false,
-      );
-    }
-
-    const { debrief, debrief_ar, top_tip, top_tip_ar } = parsed.data;
-
-    return jsonResponse(req, 200, {
-      debrief: clampText(
-        debrief.trim(),
-        900,
-        "Review the transcript and note what you missed.",
-      ),
-      debrief_ar: clampText(debrief_ar.trim(), 900, ""),
-      top_tip: clampText(
-        top_tip.trim(),
-        300,
-        "Hang up and verify independently if in doubt.",
-      ),
-      top_tip_ar: clampText(top_tip_ar.trim(), 300, ""),
-    });
-  }),
-);
+if (import.meta.main) Deno.serve(voiceDebriefHandler);

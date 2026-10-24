@@ -110,17 +110,19 @@ jobs:
       # silently ignore supabase/functions/deno.json and then look for `npm:zod`
       # in a node_modules folder that the Deno job never installs.
       - name: Typecheck
-        run: deno check --config supabase/functions/deno.json supabase/functions/analyze-message/index.ts supabase/functions/scenario-feedback/index.ts supabase/functions/voice-debrief/index.ts
+        run: deno check --config supabase/functions/deno.json server/main.ts supabase/functions/analyze-message/index.ts supabase/functions/scenario-feedback/index.ts supabase/functions/voice-debrief/index.ts
 
       - name: Lint
-        run: deno lint --config supabase/functions/deno.json supabase/functions
+        run: deno lint --config supabase/functions/deno.json supabase/functions server
 
       - name: Format check
-        run: deno fmt --config supabase/functions/deno.json --check supabase/functions
+        run: deno fmt --config supabase/functions/deno.json --check supabase/functions server
 
-      # Allow-env is required because config.ts reads Deno.env at request time.
+      # Allow-env is required because config.ts reads Deno.env at request time;
+      # --unstable-kv so the Deno KV rate-limit backend is actually exercised
+      # instead of being skipped and falling through to process memory.
       - name: Test
-        run: deno test --config supabase/functions/deno.json --allow-env supabase/functions
+        run: deno test --config supabase/functions/deno.json --allow-env --unstable-kv supabase/functions server
 
       # Harness self-test: verifies the dataset parses, the metrics compute, and
       # the prompt-injection gate fires. Uses deterministic fixtures, so it needs

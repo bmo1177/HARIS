@@ -63,8 +63,17 @@ if (!existsSync(envPath)) {
       }),
   );
 
-  for (const key of ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_KEY"]) {
-    env[key] ? pass(`${key} is set`) : fail(`${key} is not set`);
+  const standaloneBase = env.VITE_HARIS_API_URL ?? "";
+  if (standaloneBase) {
+    pass(`VITE_HARIS_API_URL is set (${standaloneBase})`);
+    for (const key of ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_KEY"]) {
+      if (env[key]) pass(`${key} is also set`);
+      else info(`${key} is not set — not required with VITE_HARIS_API_URL`);
+    }
+  } else {
+    for (const key of ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_KEY"]) {
+      env[key] ? pass(`${key} is set`) : fail(`${key} is not set`);
+    }
   }
 
   // The provider key.
@@ -139,7 +148,7 @@ if (!existsSync(envPath)) {
     }
   }
 
-  const key = env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
+  const key = env.VITE_HARIS_API_URL ? "" : env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
   if (key) {
     if (key.startsWith("sb_publishable_")) {
       pass("publishable key uses the current sb_publishable_ format");
@@ -156,7 +165,7 @@ if (!existsSync(envPath)) {
     }
   }
 
-  const url = env.VITE_SUPABASE_URL ?? "";
+  const url = env.VITE_HARIS_API_URL ? "" : env.VITE_SUPABASE_URL ?? "";
   const ref = /^https:\/\/([a-z]{20})\.supabase\.co$/.exec(url)?.[1];
   if (ref) {
     pass(`project ref: ${ref}`);
@@ -256,10 +265,28 @@ if (!LIVE) {
       : [],
   );
 
+  const standaloneBase = env.VITE_HARIS_API_URL;
   const base = env.VITE_SUPABASE_URL;
   const key = env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-  if (!base || !key) {
+  if (standaloneBase) {
+    try {
+      const res = await fetch(`${standaloneBase.replace(/\/+$/, "")}/health`, {
+        signal: AbortSignal.timeout(15_000),
+      });
+      const body = await res.text();
+      liveProbed = true;
+
+      if (res.ok && body.includes('"status":"ok"')) {
+        pass(`standalone backend live — ${standaloneBase}`);
+      } else {
+        fail(`standalone backend is not healthy: ${res.status} ${body.slice(0, 160)}`);
+        info("fix: check the app's environment variables in Deno Deploy, then redeploy");
+      }
+    } catch (error) {
+      fail(`probe failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  } else if (!base || !key) {
     fail("cannot probe: VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY missing");
   } else {
     try {

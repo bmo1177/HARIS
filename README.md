@@ -118,9 +118,10 @@ message can forge a score.
 5. **The student judges it.** The result keeps the message on screen, reveals one
    clue at a time, asks for the attack type, then shows the explanation and next
    steps. XP follows the analysis, the final clue and a correct first guess.
-6. **If the functions themselves cannot be reached, the lesson continues
-   locally.** A paused or deleted Supabase project is not a problem with the
-   message, and it should not end the exercise. On `network_error`, `timeout`,
+6. **If the backend cannot be reached, the lesson continues
+   locally.** An unreachable backend — a paused Supabase project, a Deno Deploy
+   app that is down — is not a problem with the message, and it should not end
+   the exercise. On `network_error`, `timeout`,
    `service_unavailable`, `provider_unauthorized`, `upstream_error`,
    `internal_error` or `invalid_response`, the browser runs
    `src/lib/localAnalysis.ts`: a fixed, inspectable rule set covering links,
@@ -155,11 +156,11 @@ because a gauge with a needle would claim a precision the system does not have.
 ## Stack
 
 - **Frontend** — React 18, TypeScript (strict), Vite, Tailwind, shadcn/ui, React Router 7
-- **Backend** — Supabase Edge Functions (Deno) with Postgres for rate limiting
+- **Backend** — Deno handlers mounted either as Supabase Edge Functions (Postgres rate limiting) or as a standalone Deno Deploy app (Deno KV rate limiting)
 - **AI** — any OpenAI-compatible provider, with an ordered fallback list (NVIDIA Build in the deployed configuration; OpenRouter is the code default)
 - **Testing** — Vitest, Playwright, Deno test
 
-16 runtime dependencies. The browser talks to the Edge Functions over `fetch`;
+16 runtime dependencies. The browser talks to the backend over `fetch`;
 `@supabase/supabase-js` is deliberately not a dependency, because the app has no
 accounts, database or realtime subscriptions and the client was ~60% of the
 bundle for one `functions.invoke` call. See
@@ -188,6 +189,18 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<publishable key>
 If these are missing the app will tell you exactly which ones and how to fix it,
 rather than rendering a blank page.
 
+**No Supabase?** Run the backend locally instead:
+
+```bash
+npm run serve        # http://localhost:8000
+# then in .env:
+VITE_HARIS_API_URL=http://localhost:8000
+```
+
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are not required in that
+configuration. The same code deploys to Deno Deploy — see
+[Backend — Deno Deploy](#backend--deno-deploy-supabase-free).
+
 The production build needs the same two variables. Vercel does not read `.env`
 (which is gitignored), so set them in the Vercel dashboard under
 *Project → Settings → Environment Variables* for the Production environment,
@@ -204,21 +217,27 @@ how to point at a different model provider.
 
 ## Configuration
 
-Two files, deliberately separate. Vite reads the root `.env` and bundles
-anything prefixed `VITE_`; the edge functions read Supabase secrets and never
-see the root file. The commented template is [`.env.example`](.env.example).
+Two sides, deliberately separate. Vite reads the root `.env` and bundles
+anything prefixed `VITE_`; the backend reads its own secrets and never sees the
+root file. The commented template is [`.env.example`](.env.example).
 
 ### Browser — root `.env`
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `VITE_SUPABASE_URL` | yes | Project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | yes | Publishable key. Safe in the bundle by design; a secret key here would be a breach. |
+| `VITE_HARIS_API_URL` | optional, preferred | Base URL of a standalone backend (`server/main.ts`). When set, it wins and the Supabase variables below become optional. Public, not a secret. |
+| `VITE_SUPABASE_URL` | only without `VITE_HARIS_API_URL` | Project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | only without `VITE_HARIS_API_URL` | Publishable key. Safe in the bundle by design; a secret key here would be a breach. |
 | `VITE_SUPABASE_PROJECT_ID` | recommended | Project ref. `preflight` checks it matches the URL; the app does not read it. |
 
-Missing values produce a setup screen naming the variable, not a blank page.
+Missing values produce a setup screen naming the variable, not a blank page. A
+standalone URL replaces the Supabase pair entirely, so a Supabase-free
+deployment does not fail that check.
 
-### Edge functions — `supabase secrets set --env-file supabase/functions/.env.local`
+### Backend secrets
+
+The same handlers run on two hosts. The provider variables are identical; only
+where they are stored differs.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -233,7 +252,18 @@ Missing values produce a setup screen naming the variable, not a blank page.
 | `RATE_LIMIT_MAX` | 10 | Requests per client per window |
 | `RATE_LIMIT_WINDOW_SECONDS` | 60 | Window length |
 | `DAILY_RATE_LIMIT_MAX` | 100 | Daily ceiling per client |
-| `SUPABASE_URL` / `SUPABASE_SECRET_KEYS` | injected | Supplied by the runtime. Set them only outside Supabase; a secret key bypasses RLS. |
+| `RATE_LIMIT_BACKEND` | auto | `supabase`, `kv` or `memory`. See below. |
+| `SUPABASE_URL` / `SUPABASE_SECRET_KEYS` | injected | Only needed for the Supabase host. A secret key bypasses RLS. |
+
+On Supabase, store them with
+`supabase secrets set --env-file supabase/functions/.env.local`. On Deno Deploy,
+add them as environment variables/secrets in the app settings — never to the
+repository.
+
+`RATE_LIMIT_BACKEND` is chosen automatically when unset: Supabase when its URL
+and secret key are present, Deno KV when running on Deno Deploy, process memory
+otherwise. Memory is per-isolate and resets on restart, so it is for local
+development only — not a real quota on a serverless host.
 
 ---
 
@@ -268,6 +298,50 @@ key is the only credential and the rate limiter is the cost control. Provider
 selection, measured model rankings and recovery are in
 [`supabase/README.md`](supabase/README.md).
 
+### Backend — Deno Deploy (Supabase-free)
+
+The three endpoints are also mounted by [`server/main.ts`](server/main.ts),
+which imports the same handlers the Edge Functions export. The prompts, output
+schemas and prompt fencing are not duplicated, so a fix cannot land on one host
+and not the other.
+
+Local:
+
+```bash
+npm run serve            # http://localhost:8000
+curl -s localhost:8000/health
+```
+
+Deno Deploy:
+
+1. Create an app from this repository at <https://deno.com/deploy> and set the
+   entrypoint to `server/main.ts`.
+2. Provision a **Deno KV** database and assign it to the app (*Databases* →
+   *Provision Database* → *Deno KV*, then *Assign*). The limiter opens it with
+   no configuration. Without it, the app falls back to per-isolate memory, which
+   is best effort rather than a real quota.
+3. Add `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_FALLBACK_MODELS` and the
+   timeout values from the table above as environment variables. Add
+   `ALLOWED_ORIGINS` if the frontend origin changes.
+4. Deploy, then check that `https://<app>.deno.dev/health` returns
+   `{"status":"ok","service":"haris"}`.
+5. Point the frontend at it: set `VITE_HARIS_API_URL=https://<app>.deno.dev` in
+   the Vercel Production environment (or the root `.env` locally) and redeploy.
+
+Rate limiting uses Deno KV automatically, so counters survive isolates and cold
+starts. Locally, KV is enabled by the `--unstable-kv` flag in `npm run serve`
+and the limiter falls back to process memory if KV is unavailable. `/health`
+reads configuration but never calls the provider, so it cannot be used to spend
+tokens.
+
+The KV database holds rate-limit counters only: a key derived from the client
+address and the window, with a TTL. No message, verdict or transcript is
+written to it. Deno KV stores data in the US, which matters if that is a
+constraint for your institution.
+
+If the app is unreachable, the client keeps working: it falls back to the
+labelled local rule set. That fallback is not a model, and says so.
+
 ### CI
 
 GitHub Actions runs typecheck, lint, unit tests, build, the bundle budget and
@@ -283,13 +357,14 @@ least-privilege `contents: read` permissions and per-job timeouts.
 | Command | Purpose |
 | --- | --- |
 | `npm run dev` | Dev server on `:8080` |
+| `npm run serve` | Standalone backend on `:8000`, reading the root `.env` |
 | `npm run build` | Typecheck, then build to `dist/` |
 | `npm run typecheck` | `tsc -b --noEmit` across app, node and e2e projects |
 | `npm run lint` | ESLint over app, config and edge functions |
 | `npm run test` | Vitest unit tests, with coverage thresholds enforced |
 | `npm run e2e` | Playwright end-to-end tests (starts its own dev server) |
-| `npm run check:deno` | Typecheck + lint the Deno edge functions |
-| `npm run test:deno` | Run the edge function tests |
+| `npm run check:deno` | Typecheck + lint the edge functions and the Deno Deploy router |
+| `npm run test:deno` | Run the edge function and router tests |
 | `npm run size` | Bundle size budget against the built `dist/` |
 | `npm run eval` | Evaluation harness, mock provider (no API key needed) |
 | `npm run eval:live` | Real accuracy numbers. Needs `LLM_API_KEY`. See [`eval/README.md`](eval/README.md). |
@@ -348,16 +423,21 @@ The visual system is an **instrument**, not a consumer security app — see
 ```
 Browser (React SPA)
   │
-  │  fetch + `apikey` header — every response validated with zod
+  │  fetch, every response validated with zod
   ▼
-Supabase Edge Functions  ── analyze-message   pasted message   → risk verdict
-  (Deno, TypeScript)      ── scenario-feedback  a reply          → coaching
-                          ── voice-debrief      a finished call  → debrief
+Deno handlers  ────────────  analyze-message   pasted message   → risk verdict
+  (Supabase Edge Functions   scenario-feedback  a reply          → coaching
+   or server/main.ts)        voice-debrief      a finished call  → debrief
   │
   ├── OpenAI-compatible LLM   (LLM_API_KEY / LLM_BASE_URL / LLM_MODEL)
   │                            tried in order, with LLM_FALLBACK_MODELS
-  └── Postgres                rate limit counters  (service role, RLS-locked)
+  └── Rate limit counters     Postgres (Supabase) or Deno KV (Deno Deploy)
 ```
+
+The three handlers, their prompts and their validation are the same code on both
+hosts. `server/main.ts` only maps paths to the exported handlers; it contains no
+analysis logic. Supabase requests also carry an `apikey` header for the gateway;
+the standalone backend has no gateway, so the header is omitted.
 
 Shared edge-function code lives in `supabase/functions/_shared/`:
 
@@ -368,7 +448,7 @@ Shared edge-function code lives in `supabase/functions/_shared/`:
 | `cors.ts` | Origin allowlist. |
 | `llm.ts` | Structured-output client with timeouts, token caps and one retry. |
 | `prompt.ts` | Nonce fencing for untrusted content. |
-| `rateLimit.ts` | Per-client fixed-window quotas, minute and daily. |
+| `rateLimit.ts` | Per-client fixed-window quotas, minute and daily. Supabase Postgres, Deno KV or process memory, chosen by host. |
 | `schemas.ts` | Request schemas with length caps and cross-field validation. |
 | `analysis.ts` | The message analysis itself — prompt, output schema, verification. Imported by both the HTTP handler and the eval harness, so what gets measured is what gets served. |
 
@@ -388,6 +468,7 @@ supabase/
   functions/    analyze-message, scenario-feedback, voice-debrief
     _shared/    prompt fencing, schemas, LLM client, rate limit, reconcile
   migrations/   rate-limit table and function
+server/         Deno Deploy entrypoint mounting the same three handlers
 eval/           labelled dataset and the accuracy harness
 e2e/            Playwright specs: smoke, router, console, i18n, accessibility
 docs/screens/   the screenshots above
@@ -408,7 +489,7 @@ Six layers, each guarding a failure mode the others cannot see:
 | --- | --- | --- |
 | **Unit** (Vitest) | `npm run test` | XP and level arithmetic, the sandbox engine, the analysis wait timer, the local rule set in both languages, and the locale dictionaries. The locale suite also scans JSX for hardcoded English prose — including text that follows a JSX expression, which is how a screen-reader-only string once stayed English. Coverage thresholds run with the suite and fail the build if coverage drops. |
 | **End-to-end** (Playwright) | `npm run e2e` | `smoke.spec.ts` covers routing, theming, RTL, XP persistence, the AI flows with intercepted responses, and the offline fallback when the functions abort. `router.spec.ts` covers active nav state, browser history and SPA transitions. `console.spec.ts` fails on any console error or warning, including React Router deprecations. `i18n.spec.ts` checks that the exercise content — clues, scenario steps, sandbox copy — is actually Arabic in Arabic mode. |
-| **Edge functions** (Deno) | `npm run test:deno` | Request validation, rate limiting, prompt fencing and the analysis reconciliation. |
+| **Edge functions** (Deno) | `npm run test:deno` | Request validation, rate limiting, prompt fencing, the analysis reconciliation, and the standalone router that mounts the same handlers. |
 | **Evaluation** (Deno) | `npm run eval` | The harness itself: dataset parsing, metric arithmetic and the injection gate. `npm run eval:live` produces real accuracy numbers; see [`eval/README.md`](eval/README.md). |
 | **Accessibility** (axe) | `npm run e2e` | `accessibility.spec.ts` scans every route in both languages, plus the analysis result in both palettes, and fails on serious or critical violations. |
 | **Bundle size** | `npm run size` | The gzipped entry chunk, total JavaScript and CSS against a budget. The audience is a master's student on a laptop and a phone, so the payload is a product decision, not an accident. |
@@ -429,14 +510,14 @@ CHROME_PATH=/run/current-system/sw/bin/google-chrome npm run e2e
 
 | What | Measured | Against |
 | --- | --- | --- |
-| Entry chunk | 113.2 kB gzip | 120 kB budget |
-| All JavaScript | 149.0 kB gzip | 152 kB budget |
-| CSS | 7.0 kB gzip | 8 kB budget |
+| Entry chunk | 119.7 kB gzip | 120 kB budget |
+| All JavaScript | 156.4 kB gzip | 158 kB budget |
+| CSS | 7.1 kB gzip | 8 kB budget |
 | Fonts, English visitor | 2 files | Arabic weights load on demand |
 | Analysis, primary model | ~16 s | 90 s server budget, then a typed error |
 | Analysis, fallback model | ~18 s | shares the same budget |
 | Accuracy, 2026-10-22 | 84.4% (4 timeouts) | 0% false positives · 100% hostile recall · 0/4 injections steered |
-| Test suite | 124 unit · 76 E2E · 55 Deno | all green |
+| Test suite | 166 unit · 79 E2E · 69 Deno | all green |
 
 The latency figures come from the free NVIDIA endpoint and move with contention;
 the fallback list and the shared budget exist for exactly that. The wait screen
@@ -511,6 +592,15 @@ trustworthy about the parts it claims work.
   is labelled; the fallback exists to keep the exercise running and to be
   honest about what produced the verdict, not to replace the model. The Voice
   Lab's local debrief is assembled from the transcript in the same way.
+- **The AI features depend on one backend host.** Supabase and Deno Deploy are
+  alternatives, not redundancy: if the chosen host is unreachable, every model
+  call fails and the local rule set takes over. Running both at once would need
+  a second copy of the secrets and a health-based failover in the client, which
+  is not implemented. The labelled fallback is the current answer.
+- **The Deno Deploy limiter is only as strong as KV.** Counters normally live in
+  Deno KV and survive isolates. If KV cannot be opened, the limiter falls back
+  to process memory, which is per-isolate and resets on restart — best effort,
+  not a hard quota. The Supabase deployment keeps its Postgres limiter.
 - **E2E does not exercise a deployed backend.** Every edge-function call is
   mocked, so the suite proves the UI contract, not the model or the database.
   `npm run preflight:live` and `npm run eval:live` cover that, and need
@@ -533,6 +623,11 @@ It verifies `.env` exists and holds a **publishable** key in the current
 `sb_publishable_` format, that no `sb_secret_` string reached the bundle, that
 `vercel.json` carries the SPA rewrite, that migrations exist, and — with
 `--live` — that a deployed function returns a real verdict.
+
+When `VITE_HARIS_API_URL` is set, the Supabase client variables are treated as
+optional and `--live` probes that backend's `/health` endpoint instead of the
+Supabase function. `/health` proves the process can read its configuration; it
+does not spend tokens, so it cannot prove the provider is answering.
 
 The live probe distinguishes its failure modes rather than reporting "fetch
 failed" for all of them: a rejected key, a missing migration (`rate_limited`,
@@ -561,6 +656,13 @@ from the browser, and the browser cannot tell you which one it is.
 | `the AI provider rejected our key (401/403)` | The functions reached the provider and it refused the key — wrong, expired, or for another account. | `supabase secrets list`, then `supabase secrets set LLM_API_KEY=…` |
 | `rate_limited` from the live probe | The rate-limit migration is missing. | `supabase db push` |
 | `401` / `403` from the gateway | The publishable key is not accepted, or `verify_jwt` is on. | Redeploy with `--no-verify-jwt` |
+| `/health` returns `{"status":"misconfigured"}` | The standalone backend cannot read `LLM_API_KEY`. | Add it in the Deno Deploy app settings, then redeploy |
+| `/health` is `ok` but every analysis falls back locally | The frontend is pointed at the wrong URL, or `VITE_HARIS_API_URL` was not present at build time. | Set it and redeploy the frontend |
+| `rate_limited` immediately, with no prior traffic | KV is unavailable and the process-memory fallback is already exhausted, or the quota is genuinely low. | Check the deployment logs; raise `RATE_LIMIT_MAX` only if the traffic is legitimate |
+
+For the Deno Deploy backend, the Supabase-dashboard fixes above become app
+environment settings; `/health` is the quickest way to tell a configuration
+fault from a provider fault.
 
 A **paused** Supabase project stops resolving entirely — the host is removed
 from the edge — so it looks exactly like a network problem. The preflight

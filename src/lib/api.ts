@@ -169,19 +169,25 @@ export async function invokeHarisFunction<TOutput extends z.ZodTypeAny>(
   try {
     let response: Response;
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      // Supabase keys are short strings, not JWTs. They go on `apikey` only:
+      // sending one as `Authorization: Bearer` asks the gateway to verify a
+      // non-JWT as a JWT, which fails. The previous version sent both headers
+      // because the key used to be a legacy `eyJ...` JWT.
+      //
+      // A standalone backend has no Supabase gateway, so the header is omitted
+      // entirely rather than sent empty.
+      if (supabasePublishableKey) headers.apikey = supabasePublishableKey;
+
       response = await fetch(`${functionsBaseUrl}/${name}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Supabase keys are short strings, not JWTs. They go on `apikey` only:
-          // sending one as `Authorization: Bearer` asks the gateway to verify a
-          // non-JWT as a JWT, which fails. The previous version sent both headers
-          // because the key used to be a legacy `eyJ...` JWT.
-          apikey: supabasePublishableKey,
-        },
+        headers,
         body: JSON.stringify(body),
         signal: combined,
-        // Edge Function responses are never cacheable and must reflect deploy state.
+        // Function responses are never cacheable and must reflect deploy state.
         cache: "no-store",
       });
     } catch (error) {

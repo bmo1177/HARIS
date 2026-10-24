@@ -16,7 +16,7 @@
  * provide security they do not provide. They remain subject to rate limiting.
  */
 
-import { getConfig } from "./env.ts";
+import { getAllowedOrigins } from "./env.ts";
 
 const ALLOWED_HEADERS = [
   "authorization",
@@ -45,7 +45,7 @@ const EXPOSED_HEADERS = ["Retry-After", "X-Request-Id"].join(", ");
 export function corsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get("origin");
   const allowed = origin !== null &&
-    getConfig().allowedOrigins.includes(origin);
+    getAllowedOrigins().includes(origin);
 
   const headers: Record<string, string> = {
     "Access-Control-Allow-Headers": ALLOWED_HEADERS,

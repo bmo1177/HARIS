@@ -1,8 +1,10 @@
 # HARIS backend
 
-Three Supabase Edge Functions (Deno) that sit between the browser and an
-LLM. Each one takes a request from the app, asks a model for a structured
-verdict, validates that verdict, and returns it.
+Three Deno handlers that sit between the browser and an LLM. Each one takes a
+request from the app, asks a model for a structured verdict, validates that
+verdict, and returns it. They are deployed as Supabase Edge Functions, and the
+same handlers are mounted by [`server/main.ts`](../server/main.ts) for a
+Supabase-free Deno Deploy app — see the root [`README.md`](../README.md).
 
 | Function | Purpose |
 | --- | --- |
