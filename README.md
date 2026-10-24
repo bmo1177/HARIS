@@ -468,7 +468,7 @@ supabase/
   functions/    analyze-message, scenario-feedback, voice-debrief
     _shared/    prompt fencing, schemas, LLM client, rate limit, reconcile
   migrations/   rate-limit table and function
-server/         Deno Deploy entrypoint mounting the same three handlers
+server/         Deno Deploy entrypoint and router mounting the same three handlers
 eval/           labelled dataset and the accuracy harness
 e2e/            Playwright specs: smoke, router, console, i18n, accessibility
 docs/screens/   the screenshots above

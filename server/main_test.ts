@@ -1,7 +1,7 @@
 import { assertEquals } from "jsr:@std/assert@1";
 import { resetConfigCache } from "../supabase/functions/_shared/env.ts";
 import { resetMemoryBuckets } from "../supabase/functions/_shared/rateLimit.ts";
-import { route } from "./main.ts";
+import { route } from "./router.ts";
 
 /**
  * The router is the only new code between the browser and the handlers that
