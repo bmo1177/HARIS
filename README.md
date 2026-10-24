@@ -316,10 +316,11 @@ Deno Deploy:
 
 1. Create an app from this repository at <https://deno.com/deploy> and set the
    entrypoint to `server/main.ts`.
-2. Provision a **Deno KV** database and assign it to the app (*Databases* →
-   *Provision Database* → *Deno KV*, then *Assign*). The limiter opens it with
-   no configuration. Without it, the app falls back to per-isolate memory, which
-   is best effort rather than a real quota.
+2. Provision a **Deno KV** database and assign it to the app: app settings →
+   *Databases* → *Attach Database* → *Provision Database* → *Deno KV*, then
+   *Provision*. The limiter opens it with no configuration. Without it, the app
+   falls back to per-isolate memory, which is best effort rather than a real
+   quota.
 3. Add `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_FALLBACK_MODELS` and the
    timeout values from the table above as environment variables. Add
    `ALLOWED_ORIGINS` if the frontend origin changes.
