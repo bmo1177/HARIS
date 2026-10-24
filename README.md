@@ -342,6 +342,12 @@ Supabase rate limiter, which is the wrong backend on Deno Deploy.
 
 Later deploys from the same checkout are just `deno deploy --prod`.
 
+The root [`deno.json`](deno.json) sets `nodeModulesDir: "none"`. The backend
+imports `npm:zod`, and the upload excludes `node_modules`; without this setting
+the first Deploy build stops at
+`supabase/functions/_shared/schemas.ts` with “Could not find zod in a
+node_modules folder”. With it, npm imports resolve from Deno's cache.
+
 The dashboard equivalent, if you prefer it:
 
 1. Create an app from this repository at <https://console.deno.com> and set the
@@ -499,6 +505,7 @@ supabase/
     _shared/    prompt fencing, schemas, LLM client, rate limit, reconcile
   migrations/   rate-limit table and function
 server/         Deno Deploy entrypoint and router mounting the same three handlers
+deno.json       backend config: resolve npm imports without node_modules
 eval/           labelled dataset and the accuracy harness
 e2e/            Playwright specs: smoke, router, console, i18n, accessibility
 docs/screens/   the screenshots above
