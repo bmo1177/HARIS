@@ -345,7 +345,10 @@ deployment uses, so the provider key never has to be pasted into a shell or a
 dashboard. It must not contain `SUPABASE_*`: their presence selects the
 Supabase rate limiter, which is the wrong backend on Deno Deploy.
 
-Later deploys from the same checkout are just `deno deploy --prod`.
+Later deploys from the same checkout are `deno deploy --prod`; the `deploy`
+block in `deno.json` records the organization and app. The upload follows
+`.gitignore`, so `.env` and `supabase/functions/.env.local` stay out. A fork
+should change that block, or pass `--org` and `--app` explicitly.
 
 The root [`deno.json`](deno.json) sets `nodeModulesDir: "none"`. The backend
 imports `npm:zod`, and the upload excludes `node_modules`; without this setting

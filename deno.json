@@ -1,4 +1,8 @@
 {
   "nodeModulesDir": "none",
-  "lock": false
+  "lock": false,
+  "deploy": {
+    "org": "bmo1177",
+    "app": "haris"
+  }
 }
