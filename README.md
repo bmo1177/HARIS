@@ -281,8 +281,15 @@ does not prove the backend is reachable. Deploy the functions, then probe them.
 
 The repository is a Vite SPA. Vercel needs the build command `npm run build`,
 the output directory `dist`, and the `VITE_` variables for the Production
-environment. [`vercel.json`](vercel.json) supplies the SPA rewrite and immutable
-cache headers for hashed assets; `index.html` is always revalidated.
+environment. A push to `main` deploys through the GitHub integration; the CLI is
+the manual alternative. [`vercel.json`](vercel.json) supplies the SPA rewrite
+and immutable cache headers for hashed assets; `index.html` is always
+revalidated.
+
+`.env.production` pins the public Deno Deploy API URL, so the Supabase-free
+build needs no dashboard variable. A `VITE_HARIS_API_URL` set in Vercel would
+win over it. A Supabase-hosted build still needs `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_PUBLISHABLE_KEY`.
 
 ```bash
 vercel --prod
