@@ -312,17 +312,41 @@ npm run serve            # http://localhost:8000
 curl -s localhost:8000/health
 ```
 
-Deno Deploy:
+Deno Deploy, from the CLI — no dashboard steps:
 
-1. Create an app from this repository at <https://deno.com/deploy> and set the
+```bash
+deno deploy whoami            # opens the browser once, then stores the token
+
+deno deploy create --source local --prod \
+  --runtime-mode dynamic --entrypoint server/main.ts \
+  --app haris --region eu \
+  --ignore .env --ignore node_modules --ignore dist
+
+deno deploy database provision haris-rate-limit
+deno deploy database assign haris-rate-limit --app haris
+
+# Backend variables only: provider key, model, timeouts, quotas, origins.
+deno deploy env load supabase/functions/.env.local --app haris
+```
+
+`--ignore .env` keeps local secrets out of the uploaded source.
+`supabase/functions/.env.local` is gitignored and is the same file the Supabase
+deployment uses, so the provider key never has to be pasted into a shell or a
+dashboard. It must not contain `SUPABASE_*`: their presence selects the
+Supabase rate limiter, which is the wrong backend on Deno Deploy.
+
+Later deploys from the same checkout are just `deno deploy --prod`.
+
+The dashboard equivalent, if you prefer it:
+
+1. Create an app from this repository at <https://console.deno.com> and set the
    entrypoint to `server/main.ts`.
 2. Provision a **Deno KV** database and assign it to the app: app settings →
    *Databases* → *Attach Database* → *Provision Database* → *Deno KV*, then
    *Provision*. The limiter opens it with no configuration. Without it, the app
    falls back to per-isolate memory, which is best effort rather than a real
    quota.
-3. Add `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_FALLBACK_MODELS` and the
-   timeout values from the table above as environment variables. Add
+3. Add the variables from the table above as environment variables. Add
    `ALLOWED_ORIGINS` if the frontend origin changes.
 4. Deploy, then check that `https://<app>.deno.dev/health` returns
    `{"status":"ok","service":"haris"}`.
