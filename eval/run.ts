@@ -107,7 +107,10 @@ if (
 // ------------------------------------------------------------------- metrics
 
 interface Bucket {
+  /** Cases attempted. */
   total: number;
+  /** Cases that produced a verdict; the rest errored. */
+  measured: number;
   correct: number;
 }
 
@@ -133,7 +136,7 @@ interface ItemResult {
 }
 
 const confusion: Confusion = Object.fromEntries(
-  CLASSES.map((expected) => [expected, { total: 0, correct: 0 }]),
+  CLASSES.map((expected) => [expected, { total: 0, measured: 0, correct: 0 }]),
 ) as Confusion;
 
 let truePositive = 0;
@@ -212,7 +215,23 @@ function mockAnalyse(testCase: EvalCase): AnalysisResult {
   );
 }
 
-const pct = (n: number, d: number) => (d === 0 ? 0 : (n / d) * 100);
+/**
+ * Percentage, or `null` when the denominator is zero.
+ *
+ * Zero-over-zero is not 0%. A partial run that never got a hostile verdict used
+ * to report "recall 100.0%" because `0 / 0` was folded to zero, and then
+ * subtracted from 100 — a perfect score for measuring nothing. The same bug in
+ * reverse made precision 0% when no hostile verdict had been predicted. Both are
+ * undefined, not numbers, and the JSON and text now say so.
+ */
+const rate = (n: number, d: number): number | null =>
+  d === 0 ? null : (n / d) * 100;
+function rounded(v: number | null): number | null {
+  return v === null ? null : Number(v.toFixed(2));
+}
+const shown = (v: number | null) => (v === null ? "n/a" : `${v.toFixed(1)}%`);
+const because = (v: number | null, note: string) =>
+  v === null ? `   (${note})` : "";
 
 /**
  * Apply `--model` before the first call.
@@ -258,6 +277,8 @@ for (const testCase of selected) {
     bucket.total++;
 
     const actualRisk: ObservedRisk = actual?.risk_level ?? "Error";
+    const gotVerdict = !failure && actual !== null;
+    if (gotVerdict) bucket.measured++;
 
     if (!failure && actualRisk === testCase.expected_risk) bucket.correct++;
 
@@ -329,15 +350,21 @@ for (const testCase of selected) {
 
 // ------------------------------------------------------------------ reporting
 
-const fpr = pct(falsePositive, falsePositive + trueNegative);
-const fnr = pct(falseNegative, falseNegative + truePositive);
-const recall = 100 - fnr;
-const precision = pct(truePositive, truePositive + falsePositive);
-const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
-const overall = pct(
+const fpr = rate(falsePositive, falsePositive + trueNegative);
+const fnr = rate(falseNegative, falseNegative + truePositive);
+const recall = fnr === null ? null : 100 - fnr;
+const precision = rate(truePositive, truePositive + falsePositive);
+let f1: number | null = null;
+if (precision !== null && recall !== null) {
+  f1 = precision + recall === 0
+    ? 0
+    : (2 * precision * recall) / (precision + recall);
+}
+const overall = rate(
   CLASSES.reduce((sum, c) => sum + confusion[c].correct, 0),
   items.length,
 );
+const measuredCases = items.length - errors;
 
 if (asJson) {
   console.log(
@@ -351,17 +378,20 @@ if (asJson) {
         // value lost.
         model: provider === "live" ? getConfig().llm.model : "(mock)",
         cases: items.length,
+        measured_cases: measuredCases,
         planned_cases: plannedRuns,
         stopped_early: stoppedEarly,
         max_errors: Number.isFinite(maxErrors) ? maxErrors : null,
         metrics: {
-          overall_accuracy: Number(overall.toFixed(2)),
-          false_positive_rate: Number(fpr.toFixed(2)),
-          false_negative_rate: Number(fnr.toFixed(2)),
-          precision: Number(precision.toFixed(2)),
-          recall: Number(recall.toFixed(2)),
-          f1: Number(f1.toFixed(2)),
-          attack_type_accuracy: typeScored ? Number(pct(typeCorrect, typeScored).toFixed(2)) : null,
+          overall_accuracy: rounded(overall),
+          false_positive_rate: rounded(fpr),
+          false_negative_rate: rounded(fnr),
+          precision: rounded(precision),
+          recall: rounded(recall),
+          f1: rounded(f1),
+          attack_type_accuracy: typeScored
+            ? rounded(rate(typeCorrect, typeScored))
+            : null,
           injection_steered: injectionSteered,
           injection_cases: injectionTotal,
           injection_unmeasured: injectionUnmeasured,
@@ -372,8 +402,9 @@ if (asJson) {
             k,
             {
               total: v.total,
+              measured: v.measured,
               correct: v.correct,
-              accuracy: Number(pct(v.correct, v.total).toFixed(2)),
+              accuracy: rounded(rate(v.correct, v.measured)),
             },
           ]),
         ),
@@ -391,7 +422,9 @@ if (asJson) {
     }`,
   );
   console.log(
-    `cases: ${items.length}${repeats > 1 ? `  (${repeats} runs each)` : ""}`,
+    `cases: ${items.length}${repeats > 1 ? `  (${repeats} runs each)` : ""}${
+      errors ? `  (${measuredCases} measured, ${errors} errored)` : ""
+    }`,
   );
   if (stoppedEarly) {
     console.log(
@@ -400,18 +433,34 @@ if (asJson) {
     );
   }
   console.log(line);
-  console.log(`overall accuracy        ${overall.toFixed(1)}%`);
   console.log(
-    `FALSE POSITIVE RATE     ${fpr.toFixed(1)}%   (benign messages called a threat)`,
+    `overall accuracy        ${shown(overall)}${
+      errors ? "   (errors counted as incorrect)" : ""
+    }`,
   );
-  console.log(`recall on hostile       ${recall.toFixed(1)}%`);
-  console.log(`precision               ${precision.toFixed(1)}%`);
-  console.log(`F1                      ${f1.toFixed(1)}%`);
+  console.log(
+    `FALSE POSITIVE RATE     ${shown(fpr)}   (${
+      fpr === null
+        ? "no benign case produced a verdict"
+        : "benign messages called a threat"
+    })`,
+  );
+  console.log(
+    `recall on hostile       ${shown(recall)}${
+      because(recall, "no hostile case produced a verdict")
+    }`,
+  );
+  console.log(
+    `precision               ${shown(precision)}${
+      because(precision, "no hostile verdict was predicted")
+    }`,
+  );
+  console.log(`F1                      ${shown(f1)}`);
   if (typeScored) {
     console.log(
       `attack-type accuracy    ${
-        pct(typeCorrect, typeScored).toFixed(1)
-      }%  (${typeScored} labelled, advisory)`,
+        shown(rate(typeCorrect, typeScored))
+      }  (${typeScored} labelled, advisory)`,
     );
   }
   if (injectionTotal + injectionUnmeasured > 0) {
@@ -429,10 +478,13 @@ if (asJson) {
   console.log("\nper class:");
   for (const c of CLASSES) {
     const b = confusion[c];
+    const errored = b.total - b.measured;
     console.log(
-      `  ${c.padEnd(11)} ${String(b.correct).padStart(3)}/${String(b.total).padEnd(3)}  ${
-        pct(b.correct, b.total).toFixed(1)
-      }%`,
+      `  ${c.padEnd(11)} ${`${b.correct}/${b.measured}`.padStart(7)}  ${
+        shown(rate(b.correct, b.measured)).padStart(5)
+      }${
+        errored ? `  (${errored} of ${b.total} errored, excluded)` : ""
+      }`,
     );
   }
 

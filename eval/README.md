@@ -33,8 +33,14 @@ means it ran and passed.
 
 `--max-errors=N` stops after N cases have produced no verdict. It still exits
 `1`, because the measurement is incomplete. The JSON keeps `cases` as the number
-attempted, adds `planned_cases`, `stopped_early` and `max_errors`, and the text
-report says the metrics are partial. Without the flag, every case runs.
+attempted, adds `measured_cases`, `planned_cases`, `stopped_early` and
+`max_errors`, and the text report says the metrics are partial. Without the flag,
+every case runs.
+
+A metric whose denominator is empty is `null` in the JSON and `n/a` in the text,
+not a number. A partial run with no hostile verdicts used to print "recall
+100.0%" by treating `0 / 0` as zero, and precision 0% by the same route in
+reverse. Both now say they were not measured.
 
 ## What it measures
 
@@ -141,8 +147,9 @@ NVIDIA Build has no daily cap, so the whole suite runs in one pass — unlike Op
 ### `nvidia/nemotron-3.5-super-vl-120b-a12b` — primary
 
 Measured on 2026-10-22 against the live provider, with the fallback list active. The run
-happened while the free endpoint was also serving a CI run, so four cases ran out of time
-and are reported as errors rather than as wrong answers.
+happened while the free endpoint was also serving a CI run, so four cases ran out of time. They
+are reported as errors rather than as wrong verdicts: overall accuracy counts them as not correct,
+while the hostile/benign rates exclude them.
 
 ```
 overall accuracy        84.4%
