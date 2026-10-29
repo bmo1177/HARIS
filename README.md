@@ -175,44 +175,45 @@ bundle for one `functions.invoke` call. See
 git clone https://github.com/bmo1177/HARIS.git
 cd HARIS
 npm install
-cp .env.example .env      # then fill in the two VITE_ variables
+cp .env.example .env
 npm run dev
 ```
 
-You need a Supabase project. Fill in `.env` with the **publishable** key from
-*Project Settings → API*:
+The frontend needs a backend. Pick one:
+
+**Standalone (no Supabase).** Run the same handlers locally, then point the
+browser at them:
+
+```bash
+npm run serve        # http://localhost:8000
+```
+
+```
+VITE_HARIS_API_URL=http://localhost:8000
+```
+
+The same code deploys to Deno Deploy — see
+[Backend — Deno Deploy](#backend--deno-deploy-supabase-free).
+
+**Supabase Edge Functions.** Create a project and fill `.env` with the
+**publishable** key from *Project Settings → API*:
 
 ```
 VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=<publishable key>
 ```
 
-If these are missing the app will tell you exactly which ones and how to fix it,
-rather than rendering a blank page.
+When neither configuration is complete, the app names the missing variable and
+how to fix it instead of rendering a blank page.
 
-**No Supabase?** Run the backend locally instead:
-
-```bash
-npm run serve        # http://localhost:8000
-# then in .env:
-VITE_HARIS_API_URL=http://localhost:8000
-```
-
-`VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are not required in that
-configuration. The same code deploys to Deno Deploy — see
-[Backend — Deno Deploy](#backend--deno-deploy-supabase-free).
-
-The production build needs the same two variables. Vercel does not read `.env`
-(which is gitignored), so set them in the Vercel dashboard under
-*Project → Settings → Environment Variables* for the Production environment,
-then redeploy. Without them the live site builds fine, deploys fine — and
-renders nothing but the setup screen. That is exactly what happened once;
-the `sb_publishable_` key is designed to ship in the browser bundle, so
-putting it in Vercel env is safe.
+**Production** builds read `.env.production`, which pins this repository's
+public Deno Deploy origin; it contains no secrets. A `VITE_HARIS_API_URL` set in
+Vercel wins over it. A Supabase-hosted build still needs both
+`VITE_SUPABASE_*` variables in the Vercel dashboard.
 
 The AI-backed features also need the backend deployed — see
-[`supabase/README.md`](supabase/README.md) for the full walkthrough, including
-how to point at a different model provider.
+[`supabase/README.md`](supabase/README.md) for provider selection and
+[Backend — Supabase](#backend--supabase) for the deploy commands.
 
 ---
 
@@ -332,9 +333,13 @@ Deno Deploy, from the CLI — no dashboard steps:
 export DENO_DEPLOY_TOKEN=...
 
 # <org> is the slug in the console URL: console.deno.com/<org>
-deno deploy create --org <org> --app haris --source local --prod \
+# `create` deploys the first revision; it does not take `--prod`.
+deno deploy create --org <org> --app haris --source local \
   --runtime-mode dynamic --entrypoint server/main.ts \
-  --region eu --ignore .env --ignore node_modules --ignore dist
+  --region eu --do-not-use-detected-build-config \
+  --ignore .env --ignore .env.local \
+  --ignore supabase/functions/.env.local \
+  --ignore .git --ignore node_modules --ignore dist
 
 deno deploy database provision haris-rate-limit --org <org> --kind denokv
 deno deploy database assign haris-rate-limit --org <org> --app haris
@@ -344,18 +349,20 @@ deno deploy env load supabase/functions/.env.local \
   --org <org> --app haris --replace
 ```
 
-The token is required outside an interactive terminal; `deno deploy whoami`
-otherwise opens the browser once and stores the credentials in the keyring.
-`--ignore .env` keeps local secrets out of the uploaded source.
-`supabase/functions/.env.local` is gitignored and is the same file the Supabase
-deployment uses, so the provider key never has to be pasted into a shell or a
-dashboard. It must not contain `SUPABASE_*`: their presence selects the
-Supabase rate limiter, which is the wrong backend on Deno Deploy.
+The token is for non-interactive use; without it the CLI opens the browser once
+and stores the credential where the OS keychain is available (a headless host
+has none, so use a token there). The upload follows `.gitignore`, so `.env`,
+`.env.local` and `supabase/functions/.env.local` stay out; the explicit
+`--ignore` flags make that visible at the command line.
+
+`supabase/functions/.env.local` is the same file the Supabase deployment uses,
+so the provider key never has to be pasted into a shell or a dashboard. It must
+not contain `SUPABASE_*`: their presence selects the Supabase rate limiter,
+which is the wrong backend on Deno Deploy.
 
 Later deploys from the same checkout are `deno deploy --prod`; the `deploy`
-block in `deno.json` records the organization and app. The upload follows
-`.gitignore`, so `.env` and `supabase/functions/.env.local` stay out. A fork
-should change that block, or pass `--org` and `--app` explicitly.
+block in `deno.json` records the organization and app. A fork should change that
+block, or pass `--org` and `--app` explicitly.
 
 The root [`deno.json`](deno.json) sets `nodeModulesDir: "none"`. The backend
 imports `npm:zod`, and the upload excludes `node_modules`; without this setting
