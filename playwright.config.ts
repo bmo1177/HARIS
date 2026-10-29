@@ -42,5 +42,10 @@ export default defineConfig({
         url: "http://localhost:8080",
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
+        // The suite intercepts the Supabase Edge Function URLs. Keep the dev
+        // server on that path even when `.env` points local development at a
+        // standalone backend, so the tests do not depend on unreleased local
+        // configuration. `env` is merged over `process.env` by Playwright.
+        env: { VITE_HARIS_API_URL: "" },
       },
 });

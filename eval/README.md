@@ -14,18 +14,27 @@ deno run --allow-env --allow-net eval/run.ts --provider=live
 # Machine-readable, for CI or a results file.
 deno run --allow-env --allow-net eval/run.ts --provider=live --json > results.json
 
+# Stop after ten cases with no verdict, instead of waiting out a provider outage.
+deno run --allow-env --allow-net eval/run.ts --provider=live --max-errors=10
+
 # Narrow in on a class while iterating on the prompt.
 deno run --allow-env --allow-net eval/run.ts --provider=live --filter=benign
 ```
 
-`--provider` accepts only `mock` or `live`, and `--repeats` must be a positive
-integer. Invalid values exit `2` before any request is made: a misspelled
-provider used to fall through to the live path and spend API credit, and
-`--repeats=0` used to report 100% recall over an empty set and exit `0`.
+`--provider` accepts only `mock` or `live`, `--repeats` must be a positive
+integer, and `--max-errors` must be a positive integer when present. Invalid
+values exit `2` before any request is made: a misspelled provider used to fall
+through to the live path and spend API credit, and `--repeats=0` used to report
+100% recall over an empty set and exit `0`.
 
 Exit codes are deliberate: `2` is a usage error, `1` means the harness ran and
 found a real failure (an unparseable verdict or a steered injection), and `0`
 means it ran and passed.
+
+`--max-errors=N` stops after N cases have produced no verdict. It still exits
+`1`, because the measurement is incomplete. The JSON keeps `cases` as the number
+attempted, adds `planned_cases`, `stopped_early` and `max_errors`, and the text
+report says the metrics are partial. Without the flag, every case runs.
 
 ## What it measures
 
@@ -81,6 +90,11 @@ live-eval:
   timeout-minutes: 60
   needs: edge-functions
 ```
+
+The live job passes `--max-errors=10`. A provider outage therefore fails in
+minutes instead of spending the 60-minute ceiling, and the artifact records
+`stopped_early`/`planned_cases` so a partial run is not read as a full
+measurement.
 
 **A skipped live job is not a passing one.** When the secret is absent the step
 is skipped silently, and the run is still green — so a repository can go for

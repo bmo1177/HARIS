@@ -407,8 +407,10 @@ labelled local rule set. That fallback is not a model, and says so.
 GitHub Actions runs typecheck, lint, unit tests, build, the bundle budget and
 Playwright on every push and pull request, plus a Deno job for the edge
 functions. A weekly scheduled job runs the live evaluation, because accuracy
-drifts with the model and the provider, not only with the code. The workflow has
-least-privilege `contents: read` permissions and per-job timeouts.
+drifts with the model and the provider, not only with the code. That job stops
+after ten provider errors, so an outage fails in minutes with partial,
+explicitly labelled results instead of spending its one-hour ceiling. The
+workflow has least-privilege `contents: read` permissions and per-job timeouts.
 
 ---
 
@@ -556,7 +558,9 @@ Six layers, each guarding a failure mode the others cannot see:
 | **Bundle size** | `npm run size` | The gzipped entry chunk, total JavaScript and CSS against a budget. The audience is a master's student on a laptop and a phone, so the payload is a product decision, not an accident. |
 
 AI calls made by the suite are intercepted with `page.route`, so it runs
-offline and never spends API credit.
+offline and never spends API credit. The Playwright web server forces
+`VITE_HARIS_API_URL` empty, so those Supabase-shaped intercepts still match when
+a local `.env` points development at a standalone backend.
 
 Playwright's bundled Chromium needs system libraries that some distributions
 (NixOS, for example) do not provide. Point it at an installed browser instead:

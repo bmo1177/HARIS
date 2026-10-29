@@ -70,6 +70,10 @@ const filter = args.get("filter");
 const asJson = args.has("json");
 const rawRepeats = args.get("repeats") ?? "1";
 const repeats = Number.parseInt(rawRepeats, 10);
+const rawMaxErrors = args.get("max-errors");
+const maxErrors = rawMaxErrors === undefined
+  ? Number.POSITIVE_INFINITY
+  : Number.parseInt(rawMaxErrors, 10);
 
 if (provider !== "mock" && provider !== "live") {
   console.error(
@@ -84,6 +88,18 @@ if (!Number.isInteger(repeats) || repeats < 1) {
   console.error(
     `--repeats must be a positive integer, got ${JSON.stringify(rawRepeats)}. ` +
       `A run with zero repeats measures nothing and must not report a score.`,
+  );
+  Deno.exit(2);
+}
+
+if (
+  rawMaxErrors !== undefined &&
+  (!Number.isInteger(maxErrors) || maxErrors < 1)
+) {
+  console.error(
+    `--max-errors must be a positive integer, got ${
+      JSON.stringify(rawMaxErrors)
+    }. Omit it to run every case.`,
   );
   Deno.exit(2);
 }
@@ -130,6 +146,7 @@ let injectionSteered = 0;
 let injectionUnmeasured = 0;
 let injectionTotal = 0;
 let errors = 0;
+let stoppedEarly = false;
 const items: ItemResult[] = [];
 
 const normalise = (v: string) => v.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
@@ -144,6 +161,9 @@ if (selected.length === 0) {
   console.error(`No cases matched --filter=${filter}`);
   Deno.exit(2);
 }
+
+/** Runs requested by the full selection, before any fail-fast stop. */
+const plannedRuns = selected.length * repeats;
 
 /**
  * Deterministic stand-in for the model.
@@ -221,6 +241,7 @@ async function analyseOne(testCase: EvalCase): Promise<AnalysisResult> {
   return await analyzeMessage(testCase.message);
 }
 
+outer:
 for (const testCase of selected) {
   for (let run = 0; run < repeats; run++) {
     let actual: AnalysisResult | null = null;
@@ -294,6 +315,15 @@ for (const testCase of selected) {
       error: failure,
       score: actual?.risk_score ?? -1,
     });
+
+    // A provider outage should fail fast rather than spend the job's whole
+    // ceiling. The partial metrics stay in the report, but they are labelled.
+    // If the threshold is reached on the final planned run, the run was not
+    // cut short, so it is not reported as partial.
+    if (errors >= maxErrors && items.length < plannedRuns) {
+      stoppedEarly = true;
+      break outer;
+    }
   }
 }
 
@@ -321,6 +351,9 @@ if (asJson) {
         // value lost.
         model: provider === "live" ? getConfig().llm.model : "(mock)",
         cases: items.length,
+        planned_cases: plannedRuns,
+        stopped_early: stoppedEarly,
+        max_errors: Number.isFinite(maxErrors) ? maxErrors : null,
         metrics: {
           overall_accuracy: Number(overall.toFixed(2)),
           false_positive_rate: Number(fpr.toFixed(2)),
@@ -360,6 +393,12 @@ if (asJson) {
   console.log(
     `cases: ${items.length}${repeats > 1 ? `  (${repeats} runs each)` : ""}`,
   );
+  if (stoppedEarly) {
+    console.log(
+      `stopped early: ${errors} error(s) reached --max-errors=${maxErrors}; ` +
+        `${items.length} of ${plannedRuns} case run(s) attempted`,
+    );
+  }
   console.log(line);
   console.log(`overall accuracy        ${overall.toFixed(1)}%`);
   console.log(
@@ -425,7 +464,10 @@ if (asJson) {
 // an error means the harness itself is broken, and a steered injection is a
 // correctness failure with a defensible fix rather than a tuning knob.
 if (errors > 0) {
-  console.error(`${errors} case(s) failed to produce a verdict.`);
+  const partial = stoppedEarly
+    ? ` Stopped at --max-errors=${maxErrors} after ${items.length} of ${plannedRuns} case run(s); the metrics above are partial.`
+    : "";
+  console.error(`${errors} case(s) failed to produce a verdict.${partial}`);
   Deno.exit(1);
 }
 if (injectionSteered > 0) {
