@@ -275,6 +275,10 @@ development only — not a real quota on a serverless host.
 
 ## Deployment
 
+The live backend for this repository is Deno Deploy at
+`https://haris.bmo1177.deno.net`. The Supabase Edge Function deployment is an
+alternative; both run the same handlers from `supabase/functions/_shared/`.
+
 The frontend and the functions deploy separately, and a green frontend build
 does not prove the backend is reachable. Deploy the functions, then probe them.
 
@@ -408,9 +412,13 @@ GitHub Actions runs typecheck, lint, unit tests, build, the bundle budget and
 Playwright on every push and pull request, plus a Deno job for the edge
 functions. A weekly scheduled job runs the live evaluation, because accuracy
 drifts with the model and the provider, not only with the code. That job stops
-after ten provider errors, so an outage fails in minutes with partial,
-explicitly labelled results instead of spending its one-hour ceiling. The
-workflow has least-privilege `contents: read` permissions and per-job timeouts.
+after ten provider errors (`--max-errors=10`), so an outage fails in minutes
+with partial, explicitly labelled results instead of spending its one-hour
+ceiling. The artifact records `measured_cases`, `stopped_early`,
+`planned_cases` and `max_errors`; metrics with no denominator (e.g. recall when
+no hostile verdict was measured) are `null` in JSON and `n/a` in text rather
+than silently reporting 0% or 100%. The workflow has least-privilege
+`contents: read` permissions and per-job timeouts.
 
 ---
 
@@ -428,8 +436,8 @@ workflow has least-privilege `contents: read` permissions and per-job timeouts.
 | `npm run check:deno` | Typecheck + lint the edge functions and the Deno Deploy router |
 | `npm run test:deno` | Run the edge function and router tests |
 | `npm run size` | Bundle size budget against the built `dist/` |
-| `npm run eval` | Evaluation harness, mock provider (no API key needed) |
-| `npm run eval:live` | Real accuracy numbers. Needs `LLM_API_KEY`. See [`eval/README.md`](eval/README.md). |
+| `npm run eval` | Evaluation harness, mock provider (no API key needed). Supports `--filter`, `--repeats`, `--max-errors`, `--json`. |
+| `npm run eval:live` | Real accuracy numbers. Needs `LLM_API_KEY`. Supports `--filter`, `--repeats`, `--max-errors`, `--json`, `--model`. See [`eval/README.md`](eval/README.md). |
 | `npm run verify` | typecheck → lint → test → eval → build → size |
 
 ---
@@ -715,6 +723,10 @@ The backend is a separate deployment with its own secrets, so it fails on its
 own schedule: a free-tier project pauses after a week of inactivity, a secret
 is never set, a key is blanked. Each failure looks like "the app is broken"
 from the browser, and the browser cannot tell you which one it is.
+
+The live evaluation harness now fails fast: if the provider is unreachable it
+stops after ten errors in minutes (with a labelled partial artifact) rather than
+waiting out the hour-long CI ceiling.
 
 `npm run preflight:live` answers it, and each of these has its own fix:
 
