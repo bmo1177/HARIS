@@ -676,7 +676,13 @@ npm run preflight:live     # after deploying the functions
 It verifies `.env` exists and holds a **publishable** key in the current
 `sb_publishable_` format, that no `sb_secret_` string reached the bundle, that
 `vercel.json` carries the SPA rewrite, that migrations exist, and — with
-`--live` — that a deployed function returns a real verdict.
+`--live` — that the deployed backend answers `/health`.
+
+Environment values resolve the way a production Vite build resolves them:
+`.env`, `.env.local`, `.env.production`, `.env.production.local`, later files
+winning, then the process environment. `dist/` is a production artifact, so
+`--live` follows `.env.production`; the committed file points it at Deno Deploy
+without exporting anything.
 
 When `VITE_HARIS_API_URL` is set, the Supabase client variables are treated as
 optional and `--live` probes that backend's `/health` endpoint instead of the

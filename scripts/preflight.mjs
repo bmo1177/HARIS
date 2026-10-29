@@ -46,23 +46,54 @@ const info = (m) => console.log(`  ${C.dim("·")}    ${m}`);
 
 // ---------------------------------------------------------------- environment
 
+/**
+ * Vite's env-file order for a production build, with later files winning:
+ *
+ *   .env < .env.local < .env.production < .env.production.local
+ *
+ * `dist/` is a production artifact, so this is the configuration that built
+ * it. Reading only `.env` made `--live` probe the Supabase project long after
+ * production had moved to Deno Deploy, because the standalone URL lives in
+ * `.env.production`. Existing process variables win, matching Vite, which also
+ * makes `VITE_HARIS_API_URL=… npm run preflight:live` work.
+ */
+const ENV_FILES = [
+  ".env",
+  ".env.local",
+  ".env.production",
+  ".env.production.local",
+];
+
+function readEnvFile(path) {
+  if (!existsSync(path)) return {};
+  const entries = {};
+  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const i = trimmed.indexOf("=");
+    if (i === -1) continue;
+    entries[trimmed.slice(0, i).trim()] = trimmed.slice(i + 1).trim();
+  }
+  return entries;
+}
+
+function loadEnv() {
+  const merged = {};
+  for (const file of ENV_FILES) Object.assign(merged, readEnvFile(file));
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value !== undefined) merged[key] = value;
+  }
+  return merged;
+}
+
 console.log(C.bold("\nEnvironment"));
 const envPath = ".env";
+const env = loadEnv();
 
 if (!existsSync(envPath)) {
   fail(`.env is missing — the app renders a blank setup screen without it`);
   info(`fix: cp .env.example .env`);
 } else {
-  const env = Object.fromEntries(
-    readFileSync(envPath, "utf8")
-      .split("\n")
-      .filter((l) => l.trim() && !l.trim().startsWith("#") && l.includes("="))
-      .map((l) => {
-        const i = l.indexOf("=");
-        return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
-      }),
-  );
-
   const standaloneBase = env.VITE_HARIS_API_URL ?? "";
   if (standaloneBase) {
     pass(`VITE_HARIS_API_URL is set (${standaloneBase})`);
@@ -252,18 +283,6 @@ if (!LIVE) {
   info("skipped (pass --live to probe the deployed functions)");
 } else {
   console.log(C.bold("\nLive probe"));
-
-  const env = Object.fromEntries(
-    existsSync(".env")
-      ? readFileSync(".env", "utf8")
-          .split("\n")
-          .filter((l) => l.trim() && !l.startsWith("#") && l.includes("="))
-          .map((l) => {
-            const i = l.indexOf("=");
-            return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
-          })
-      : [],
-  );
 
   const standaloneBase = env.VITE_HARIS_API_URL;
   const base = env.VITE_SUPABASE_URL;
