@@ -15,7 +15,7 @@ const DifficultyMeter = ({ difficulty }: DifficultyMeterProps) => {
   const level = DIFFICULTY_LEVEL[difficulty];
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
       <span className="flex items-end gap-[2px]" aria-hidden="true">
         {[1, 2, 3].map((bar) => (
           <span

@@ -304,7 +304,7 @@ const VoiceLab = () => {
               )}
             </div>
 
-            <div className="space-y-4 rounded-xl border-2 border-border bg-card p-6 text-center">
+            <div className="space-y-4 rounded-2xl border border-border bg-card/90 p-6 text-center shadow-panel sm:p-8">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mx-auto">
                 <Phone className="h-8 w-8 text-primary" aria-hidden="true" />
               </div>
@@ -366,7 +366,7 @@ const VoiceLab = () => {
                     aria-valuenow={currentLine + 1}
                   >
                     <div
-                      className="h-full rounded-full bg-primary transition-[width] duration-500"
+                      className="h-full rounded-full bg-gradient-to-r from-primary/85 to-primary transition-[width] duration-500 ease-out"
                       style={{
                         width: `${((currentLine + 1) / selected.lines.length) * 100}%`,
                       }}
@@ -395,10 +395,10 @@ const VoiceLab = () => {
   }
 
   return (
-    <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{t("voice.title")}</h1>
-          <p className="mt-1 text-muted-foreground">{t("voice.subtitle")}</p>
+    <div className="space-y-6 animate-fade-up motion-reduce:animate-none">
+        <div className="max-w-[64ch]">
+          <h1 className="text-balance text-[clamp(1.75rem,4vw,2.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-foreground">{t("voice.title")}</h1>
+          <p className="mt-2 text-pretty text-muted-foreground">{t("voice.subtitle")}</p>
         </div>
 
         <div className="grid gap-3">
@@ -410,7 +410,7 @@ const VoiceLab = () => {
               // No aria-label: the card's own text is its name, for the same
               // reason as the scenario cards. The description says what the
               // call is about, and it should be part of the name.
-              className="cursor-pointer hover:shadow-md transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              className="group cursor-pointer bg-card/85 shadow-panel transition-all duration-200 hover:-translate-y-px hover:shadow-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => handleStart(call)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {

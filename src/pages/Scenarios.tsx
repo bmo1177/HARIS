@@ -313,10 +313,10 @@ const Scenarios = () => {
   }
 
   return (
-    <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{t("scenarios.title")}</h1>
-          <p className="mt-1 text-muted-foreground">{t("scenarios.subtitle")}</p>
+    <div className="space-y-6 animate-fade-up motion-reduce:animate-none">
+        <div className="max-w-[64ch]">
+          <h1 className="text-balance text-[clamp(1.75rem,4vw,2.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-foreground">{t("scenarios.title")}</h1>
+          <p className="mt-2 text-pretty text-muted-foreground">{t("scenarios.subtitle")}</p>
         </div>
 
         <div className="grid gap-3">
@@ -332,7 +332,7 @@ const Scenarios = () => {
               // scenario is, was visible but not in the name. An author-supplied
               // name that omits visible text also breaks WCAG 2.5.3 (Label in
               // Name), which is what the accessibility gate flags.
-              className="cursor-pointer hover:shadow-md transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              className="group cursor-pointer bg-card/85 shadow-panel transition-all duration-200 hover:-translate-y-px hover:shadow-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => handleStart(s)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {

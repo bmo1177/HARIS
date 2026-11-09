@@ -20,7 +20,7 @@ const XPBar = ({ state }: XPBarProps) => {
     : Math.min(100, Math.max(0, ((state.xp - state.currentLevelXP) / range) * 100));
 
   return (
-    <div className="flex items-center gap-1.5 sm:gap-2">
+    <div className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-2.5 py-1.5 sm:gap-2">
       <Shield className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
       <span className="whitespace-nowrap font-mono text-xs tabular-nums text-foreground">
         {t("xp.level", { level: formatNumber(state.level) })}

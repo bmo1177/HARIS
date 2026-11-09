@@ -63,11 +63,11 @@ const MessageAnalyzer = ({ onAnalyze, isLoading, waitSeconds = 0 }: MessageAnaly
   const canSubmit = message.trim().length > 0 && !overLimit && !isLoading && !rateLimited;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 rounded-2xl border border-border bg-card/70 p-4 shadow-panel backdrop-blur-[2px] sm:p-6 animate-fade-up motion-reduce:animate-none">
       <div>
         {/* The label was a sibling of the textarea with no htmlFor, so screen
             readers announced nothing at all for the app's main input. */}
-        <label htmlFor={MESSAGE_ID} className="block text-sm font-medium text-foreground mb-2">
+        <label htmlFor={MESSAGE_ID} className="mb-2.5 block text-sm font-semibold tracking-[-0.01em] text-foreground">
           {t("analyzer.label")}
         </label>
         <Textarea
@@ -75,7 +75,7 @@ const MessageAnalyzer = ({ onAnalyze, isLoading, waitSeconds = 0 }: MessageAnaly
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder={t("analyzer.placeholder")}
-          className="min-h-[140px] text-base resize-none"
+          className="min-h-[150px] resize-none rounded-xl border-input bg-background/80 text-[15px] leading-relaxed shadow-[inset_0_1px_2px_hsl(222_32%_4%/0.04)] transition-all duration-150 focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10 sm:min-h-[164px]"
           dir="auto"
           maxLength={MAX_MESSAGE_LENGTH * 2}
           aria-describedby={`${MESSAGE_ID}-hint`}
@@ -90,7 +90,7 @@ const MessageAnalyzer = ({ onAnalyze, isLoading, waitSeconds = 0 }: MessageAnaly
           // alignment is pulled back to the page's start so the counter still
           // sits under the field it belongs to.
           dir={overLimit ? undefined : "ltr"}
-          className={`mt-1 text-start text-xs ${overLimit ? "text-destructive" : "text-muted-foreground rtl:text-right"}`}
+          className={`mt-1.5 text-start font-mono text-[11px] tabular-nums ${overLimit ? "text-destructive" : "text-muted-foreground rtl:text-right"}`}
           role={overLimit ? "alert" : undefined}
         >
           {overLimit
@@ -112,8 +112,8 @@ const MessageAnalyzer = ({ onAnalyze, isLoading, waitSeconds = 0 }: MessageAnaly
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <span className="mr-1 self-center text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="me-1 self-center text-xs font-medium text-muted-foreground">
           {t("analyzer.tryExample")}
         </span>
         {EXAMPLES.map((ex) => (
@@ -121,9 +121,9 @@ const MessageAnalyzer = ({ onAnalyze, isLoading, waitSeconds = 0 }: MessageAnaly
             key={ex.key}
             type="button"
             onClick={() => setMessage(ex.message)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border border-border bg-card hover:bg-accent transition-colors text-foreground"
+            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground transition-all duration-150 hover:-translate-y-px hover:border-primary/40 hover:bg-accent hover:shadow-panel active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <ex.icon className="w-3 h-3" aria-hidden="true" />
+            <ex.icon className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
             {t(ex.key)}
           </button>
         ))}
@@ -132,7 +132,7 @@ const MessageAnalyzer = ({ onAnalyze, isLoading, waitSeconds = 0 }: MessageAnaly
       <Button
         onClick={() => onAnalyze(message.slice(0, MAX_MESSAGE_LENGTH))}
         disabled={!canSubmit}
-        className="w-full h-12 text-base font-semibold"
+        className="h-[52px] w-full text-[15px] font-semibold shadow-panel transition-all duration-150 hover:brightness-110 active:scale-[0.99] disabled:shadow-none"
         size="lg"
       >
         {isLoading ? (

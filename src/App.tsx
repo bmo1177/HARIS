@@ -26,8 +26,8 @@ const RouteFallback = () => {
   const { t } = useI18n();
   return (
     <div className="flex min-h-[40vh] items-center justify-center" role="status" aria-live="polite">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <div className="flex items-center gap-2.5 text-sm font-medium text-muted-foreground animate-fade-in motion-reduce:animate-none">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent motion-reduce:animate-none" />
         {t("route.loading")}
       </div>
     </div>

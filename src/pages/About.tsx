@@ -58,10 +58,10 @@ const PILLARS = [
 const About = () => {
   const { t, formatNumber } = useI18n();
   return (
-    <div className="space-y-10">
-      <header className="space-y-3">
-        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">{t("about.title")}</h1>
-        <p className="max-w-[64ch] text-base leading-relaxed text-muted-foreground">
+    <div className="space-y-10 animate-fade-up motion-reduce:animate-none">
+      <header className="max-w-[68ch] space-y-3">
+        <h1 className="text-balance text-[clamp(1.9rem,4.5vw,2.75rem)] font-bold leading-[1.08] tracking-[-0.03em] text-foreground">{t("about.title")}</h1>
+        <p className="text-pretty text-base leading-[1.7] text-muted-foreground">
           {t("about.body")}
         </p>
       </header>
@@ -70,9 +70,9 @@ const About = () => {
         <h2 className="text-lg font-bold text-foreground">{t("about.threeWays")}</h2>
         {/* One chassis with hairline dividers rather than four cards inside a
             page of cards. */}
-        <div className="grid overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2">
+        <div className="grid overflow-hidden rounded-xl border border-border bg-border shadow-panel sm:grid-cols-2">
           {PILLARS.map((item) => (
-            <div key={item.titleKey} className="bg-card p-4">
+            <div key={item.titleKey} className="bg-card/85 p-5 transition-colors duration-150 hover:bg-card">
               <div className="flex items-center gap-2">
                 <item.icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                 <h3 className="text-sm font-medium text-foreground">{t(item.titleKey)}</h3>

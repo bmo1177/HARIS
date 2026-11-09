@@ -85,6 +85,12 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      boxShadow: {
+        /* Depth that carries an offset plus a soft blur, never a zero-offset
+           halo. One value reused everywhere, so elevation stays consistent
+           and the CSS budget holds. */
+        panel: "0 1px 2px hsl(222 32% 4% / 0.06), 0 8px 24px hsl(222 32% 4% / 0.1)",
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -102,12 +108,29 @@ export default {
           "0%": { transform: "scale(0.95)", opacity: "0" },
           "100%": { transform: "scale(1)", opacity: "1" },
         },
+        /* Corporate motion: entrance travels a short distance with opacity,
+           ease-out only. No overshoot on the instrument. Two authored
+           moments stay under the CSS budget: this entrance, and the verdict
+           zone reveal below. Everything else reuses fade-in / scale-in. */
+        "fade-up": {
+          "0%": { opacity: "0", transform: "translateY(14px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        /* Verdict zones fill from the inline start. Width is the content; the
+           stream has no intermediate signal to report, so this is a reveal of
+           the decided band, not a progress bar. */
+        "zone-fill": {
+          "0%": { transform: "scaleX(0)" },
+          "100%": { transform: "scaleX(1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.3s ease-out",
-        "scale-in": "scale-in 0.2s ease-out",
+        "fade-in": "fade-in 0.3s cubic-bezier(0.2,0,0,1)",
+        "scale-in": "scale-in 0.2s cubic-bezier(0.2,0,0,1)",
+        "fade-up": "fade-up 0.45s cubic-bezier(0.2,0,0,1) both",
+        "zone-fill": "zone-fill 0.6s cubic-bezier(0.2,0,0,1) both",
       },
     },
   },

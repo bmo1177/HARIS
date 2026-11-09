@@ -33,7 +33,7 @@ export const ThemeToggle = () => {
             ? t("nav.switchToLight")
             : t("nav.switchToDark")
       }
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-transparent text-muted-foreground transition-all duration-150 hover:border-border hover:bg-accent hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {mounted && isDark ? (
         <Moon className="h-4 w-4" aria-hidden="true" />

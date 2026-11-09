@@ -198,7 +198,26 @@ All colors MUST be HSL.
   dd {
     overflow-wrap: break-word;
   }
+
+  /* Anchored routes (skip link target) sit clear of the sticky header. */
+  #main {
+    scroll-margin-top: 4.5rem;
+  }
 }
+
+/* Ambient backdrop: accent glows + faint grid, zero assets. Cyan only, so
+   status color keeps its meaning. Single rule; dark gets more glow via opacity. */
+.haris-backdrop {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(38rem 22rem at 18% -6%, hsl(var(--primary) / 0.09), transparent 62%),
+    radial-gradient(30rem 18rem at 88% 8%, hsl(var(--primary) / 0.06), transparent 60%),
+    linear-gradient(hsl(var(--border) / 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.35) 1px, transparent 1px);
+  background-size: auto, auto, 3.5rem 3.5rem, 3.5rem 3.5rem;
+  mask-image: linear-gradient(to bottom, black 0%, black 46%, transparent 82%);
+}
+.dark .haris-backdrop { opacity: 1.6; }
 
 /* Respect the OS setting. The count-up on the risk badge and every
    `animate-fade-in` / `animate-scale-in` are decorative. */

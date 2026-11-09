@@ -13,7 +13,7 @@ const Progress = React.forwardRef<
     {...props}
   >
     <ProgressPrimitive.Indicator
-      className="h-full bg-primary transition-[width]"
+      className="h-full bg-gradient-to-r from-primary/85 to-primary transition-[width] duration-500 ease-out"
       // Width, not a translateX offset. The offset was physical, so in an RTL
       // document the fill still grew from the left while the label sat on the
       // right. A block child starts at the inline start, whichever that is.

@@ -46,7 +46,11 @@ const BUDGET_KB = {
   // the exercise survives a dead backend even when a lazy chunk cannot be
   // fetched. That is the one moment the fallback is needed.
   totalJs: 158,
-  css: 8,
+  // 8 -> 9: the Awwwards polish pass adds one depth value, one entrance +
+  // verdict-zone motion pair, and a zero-asset ambient backdrop (accent
+  // glows + grid). No new dependency, font, or asset request. The gzip
+  // moves 7.1 -> 8.3 kB; the first paint budget is unchanged.
+  css: 9,
 };
 
 const ASSETS = "dist/assets";

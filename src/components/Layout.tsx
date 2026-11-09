@@ -27,10 +27,13 @@ const Layout = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      {/* Ambient grid + accent glows. Decorative only; content never depends
+          on it, and reduced-motion keeps a static wash rather than a mask. */}
+      <div className="haris-backdrop" aria-hidden="true" />
       {/* There was no way past the header and its five links. */}
       <a
         href="#main"
-        className="absolute left-4 top-4 z-[60] -translate-y-24 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-transform focus:translate-y-0"
+        className="absolute left-4 top-4 z-[60] -translate-y-24 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-panel transition-transform duration-150 focus:translate-y-0"
       >
         {t("nav.skip")}
       </a>

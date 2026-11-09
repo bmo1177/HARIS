@@ -22,12 +22,12 @@ const Sandbox = () => {
   const { t } = useI18n();
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">{t("sandbox.title")}</h1>
-        <p className="text-muted-foreground">{t("sandbox.subtitle")}</p>
-        <p className="flex items-start gap-2 rounded-lg border border-border bg-card p-3 text-sm text-muted-foreground">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+    <div className="space-y-6 animate-fade-up motion-reduce:animate-none">
+      <div className="max-w-[68ch] space-y-2.5">
+        <h1 className="text-balance text-[clamp(1.75rem,4vw,2.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-foreground">{t("sandbox.title")}</h1>
+        <p className="text-pretty text-muted-foreground">{t("sandbox.subtitle")}</p>
+        <p className="flex items-start gap-2.5 rounded-xl border border-border bg-card/85 p-3.5 text-sm leading-relaxed text-muted-foreground shadow-panel">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
           {t("sandbox.safety")}
         </p>
       </div>

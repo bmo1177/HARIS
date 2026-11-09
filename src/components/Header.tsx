@@ -20,7 +20,7 @@ const Header = () => {
   const { t } = useI18n();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-card/85 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/82 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 shadow-[0_1px_0_hsl(var(--border)/0.6)]">
       {/*
         The nav moves to its own full-width row below `sm`.
 
@@ -32,9 +32,9 @@ const Header = () => {
       <div className="container mx-auto flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-2 sm:py-3">
         <Link
           to="/"
-          className="flex shrink-0 items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="group flex shrink-0 items-center gap-2.5 rounded-lg px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-          <span className="flex w-9 h-9 items-center justify-center rounded-xl bg-primary">
+          <span className="flex w-9 h-9 items-center justify-center rounded-[0.65rem] bg-primary shadow-[0_4px_14px_hsl(var(--primary)/0.28)] transition-transform duration-150 group-hover:scale-[1.04] group-active:scale-[0.98]">
             {/* H lettermark: same geometry as public/favicon.svg. currentColor
                 so it follows primary-foreground across themes, like the Shield
                 it replaces. */}
@@ -53,15 +53,15 @@ const Header = () => {
               five of six pages began their document outline with "HARIS" and
               the actual page title was an <h2>. Each page owns its own <h1>
               now, and this is a link like any other. */}
-          <span className="text-lg font-bold leading-none tracking-tight text-foreground">
-            HARIS{" "}
-            <span dir="rtl" lang="ar" className="hidden text-sm font-normal text-muted-foreground sm:inline">
+          <span className="flex flex-col leading-none">
+            <span className="text-[17px] font-bold tracking-[-0.02em] text-foreground">HARIS</span>
+            <span dir="rtl" lang="ar" className="mt-0.5 hidden text-[11px] font-medium tracking-[0.04em] text-muted-foreground sm:block">
               هاريس
             </span>
           </span>
         </Link>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+        <div className="ms-auto flex shrink-0 items-center gap-1 sm:gap-2">
           <LocaleSwitch />
           <ThemeToggle />
           <XPBar state={state} />
@@ -82,8 +82,8 @@ const Header = () => {
                 <NavLink
                   to={item.to}
                   end={item.to === "/"}
-                  className="flex min-h-[44px] w-full items-center justify-center whitespace-nowrap rounded-lg px-1 text-center text-[12px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0 sm:px-3 sm:py-1.5 sm:text-sm"
-                  activeClassName="bg-accent font-medium text-foreground"
+                  className="flex min-h-[44px] w-full items-center justify-center whitespace-nowrap rounded-full px-1 text-center text-[12px] text-muted-foreground transition-all duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0 sm:px-3 sm:py-1.5 sm:text-sm"
+                  activeClassName="bg-accent font-semibold text-foreground shadow-[inset_0_0_0_1px_hsl(var(--border))] hover:bg-accent"
                 >
                   {t(item.key)}
                 </NavLink>

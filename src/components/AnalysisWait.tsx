@@ -60,7 +60,7 @@ const AnalysisWait = ({ onCancel }: AnalysisWaitProps) => {
       role="status"
       aria-live="polite"
       aria-busy="true"
-      className="space-y-4 rounded-xl border border-border bg-card p-5"
+      className="space-y-4 rounded-2xl border border-border bg-card/85 p-5 shadow-panel animate-fade-in motion-reduce:animate-none"
     >
       <div className="flex items-start gap-3">
         <Loader2

@@ -81,17 +81,17 @@ const Index = () => {
     <div className="flex h-full flex-col">
       <div className="my-auto">
         {!result && (
-          <div className="mx-auto mb-8 max-w-2xl space-y-2 text-center">
-            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+          <div className="mx-auto mb-7 max-w-2xl space-y-3 text-center sm:mb-10 animate-fade-up motion-reduce:animate-none">
+            <h1 className="text-balance text-[clamp(1.9rem,5vw,3rem)] font-bold leading-[1.08] tracking-[-0.03em] text-foreground">
               {t("analyzer.title")}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="mx-auto max-w-[60ch] text-pretty text-[15px] leading-relaxed text-muted-foreground sm:text-base">
               {t("analyzer.subtitle")}
             </p>
             {/* Direction now comes from the active locale on <html>. Hardcoding
                 `dir="rtl"` here made the English string render with its trailing
                 period on the wrong side. */}
-            <p className="text-sm text-muted-foreground">{t("analyzer.tagline")}</p>
+            <p className="text-[13px] font-medium tracking-[-0.01em] text-muted-foreground/90">{t("analyzer.tagline")}</p>
           </div>
         )}
 

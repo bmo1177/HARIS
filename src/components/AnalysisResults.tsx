@@ -111,13 +111,13 @@ const AnalysisResults = ({ result, message, onReset }: AnalysisResultsProps) => 
       />
 
       {result.analysis_source === "local" && (
-        <p className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-4 flex items-start gap-2.5 rounded-xl border border-border bg-muted/50 p-3.5 text-sm leading-relaxed text-muted-foreground animate-fade-in motion-reduce:animate-none">
           <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           {t("results.localNotice")}
         </p>
       )}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10">
+      <div className="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-8 xl:gap-12">
         <section
           aria-labelledby="message-heading"
           className="lg:sticky lg:top-24 lg:self-start"
@@ -133,7 +133,7 @@ const AnalysisResults = ({ result, message, onReset }: AnalysisResultsProps) => 
               original survive. */}
           <blockquote
             dir="auto"
-            className="mt-3 max-h-[55vh] overflow-y-auto whitespace-pre-wrap break-words rounded-lg border border-border bg-card p-4 text-sm leading-relaxed text-foreground"
+            className="mt-3 max-h-[55vh] overflow-y-auto whitespace-pre-wrap break-words rounded-xl border border-border bg-card/85 p-4 text-sm leading-[1.7] text-foreground shadow-panel sm:p-5"
           >
             {message}
           </blockquote>
@@ -145,9 +145,9 @@ const AnalysisResults = ({ result, message, onReset }: AnalysisResultsProps) => 
               <h2 id="evidence-heading" className="text-lg font-semibold text-foreground">
                 {result.is_threat ? t("results.whyFlagged") : t("results.whySafe")}
               </h2>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <span
-                  className="font-mono text-xs tabular-nums text-muted-foreground"
+                  className="rounded-full border border-border bg-card px-2 py-0.5 font-mono text-xs tabular-nums text-foreground"
                   aria-label={t("results.clueProgress", {
                     shown: revealed,
                     total: TOTAL_CLUES,
@@ -158,7 +158,7 @@ const AnalysisResults = ({ result, message, onReset }: AnalysisResultsProps) => 
                 <div
                   role="group"
                   aria-label={t("results.readIn")}
-                  className="flex overflow-hidden rounded-md border border-border"
+                  className="flex overflow-hidden rounded-full border border-border bg-card p-0.5"
                 >
                   {(["en", "ar"] as const).map((code) => (
                     <button
@@ -166,10 +166,10 @@ const AnalysisResults = ({ result, message, onReset }: AnalysisResultsProps) => 
                       type="button"
                       onClick={() => setAnalysisLocale(code)}
                       aria-pressed={analysisLocale === code}
-                      className={`px-2.5 py-1 text-xs transition-colors ${
+                      className={`min-h-[30px] min-w-[52px] rounded-full px-2.5 py-1 text-xs transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                         analysisLocale === code
-                          ? "bg-accent font-medium text-foreground"
-                          : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                          ? "bg-primary font-semibold text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
                       }`}
                     >
                       {code === "en" ? t("results.english") : t("results.arabic")}
@@ -208,7 +208,7 @@ const AnalysisResults = ({ result, message, onReset }: AnalysisResultsProps) => 
             </section>
           )}
 
-          <section aria-labelledby="explanation-heading" className="border-t border-border pt-5">
+          <section aria-labelledby="explanation-heading" className="border-t border-border pt-6">
             <h2
               id="explanation-heading"
               className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground rtl:tracking-normal"
@@ -218,7 +218,7 @@ const AnalysisResults = ({ result, message, onReset }: AnalysisResultsProps) => 
             <p
               dir={analysisLocale === "ar" ? "rtl" : undefined}
               lang={analysisLocale}
-              className="mt-2 text-sm leading-relaxed text-foreground"
+              className="mt-2.5 max-w-[68ch] text-pretty text-[15px] leading-[1.75] text-foreground"
             >
               {analysisLocale === "ar" ? result.explanation_ar : result.explanation}
             </p>
@@ -226,24 +226,24 @@ const AnalysisResults = ({ result, message, onReset }: AnalysisResultsProps) => 
 
           <section
             aria-labelledby="next-heading"
-            className="rounded-lg border border-border bg-card p-4 sm:p-5"
+            className="rounded-xl border border-border bg-card/85 p-4 shadow-panel sm:p-5"
           >
-            <h2 id="next-heading" className="text-sm font-semibold text-foreground">
+            <h2 id="next-heading" className="text-sm font-semibold tracking-[-0.01em] text-foreground">
               {t("results.nextSteps")}
             </h2>
-            <ol className="mt-3 space-y-2.5">
+            <ol className="mt-3.5 space-y-3">
               {NEXT_STEPS[result.risk_level].map((key, i) => (
                 <li key={key} className="flex gap-3 text-sm leading-relaxed">
-                  <span className="mt-0.5 shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-background font-mono text-[11px] tabular-nums text-muted-foreground">
                     {i + 1}
                   </span>
-                  <span className="text-foreground">{t(key)}</span>
+                  <span className="pt-0.5 text-foreground">{t(key)}</span>
                 </li>
               ))}
             </ol>
           </section>
 
-          <Button variant="outline" onClick={onReset} className="w-full gap-2 sm:w-auto">
+          <Button variant="outline" onClick={onReset} className="w-full gap-2 shadow-panel transition-all duration-150 hover:-translate-y-px sm:w-auto">
             <RotateCcw className="h-4 w-4" aria-hidden="true" />
             {t("results.analyzeAnother")}
           </Button>

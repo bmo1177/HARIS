@@ -44,9 +44,9 @@ const GuessAttack = ({ attackType, attackTypeLocalized, onCorrectGuess }: GuessA
 
   if (status === "correct") {
     return (
-      <div className={`rounded-xl border-2 border-success/30 bg-success/10 p-5 animate-fade-in transition-colors duration-300 ${flashCorrect ? "ring-4 ring-green-400/50" : ""}`}>
+      <div className={`rounded-xl border border-success/30 bg-success/10 p-5 shadow-panel animate-scale-in motion-reduce:animate-none transition-colors duration-300 ${flashCorrect ? "ring-4 ring-success/30" : ""}`}>
         <div className="flex items-start gap-3">
-          <CheckCircle2 className="w-6 h-6 text-success mt-0.5 shrink-0 animate-scale-in" aria-hidden="true" />
+          <CheckCircle2 className="w-6 h-6 text-success mt-0.5 shrink-0 animate-scale-in motion-reduce:animate-none" aria-hidden="true" />
           {/* The full explanation is not repeated here: it is rendered in the
               English/Arabic tabs directly below, and it used to appear twice. */}
           <p className="font-semibold text-success">
@@ -60,7 +60,7 @@ const GuessAttack = ({ attackType, attackTypeLocalized, onCorrectGuess }: GuessA
 
   if (status === "revealed") {
     return (
-      <div className="rounded-xl border-2 border-warning/30 bg-warning/10 p-5 animate-fade-in">
+      <div className="rounded-xl border border-warning/30 bg-warning/10 p-5 shadow-panel animate-scale-in motion-reduce:animate-none">
         <div className="flex items-start gap-3">
           <HelpCircle className="w-6 h-6 text-warning mt-0.5 shrink-0" aria-hidden="true" />
           <div>
@@ -75,8 +75,8 @@ const GuessAttack = ({ attackType, attackTypeLocalized, onCorrectGuess }: GuessA
   }
 
   return (
-    <div className="space-y-3 animate-fade-in">
-      <h3 className="text-lg font-semibold text-foreground">{t("guess.title")}</h3>
+    <div className="space-y-3 animate-fade-in motion-reduce:animate-none">
+      <h3 className="text-lg font-semibold tracking-[-0.01em] text-foreground">{t("guess.title")}</h3>
       {attempts > 0 && status === "guessing" && (
         <div className="flex items-center gap-2 text-sm text-warning" role="status">
           <XCircle className="w-4 h-4" aria-hidden="true" />
