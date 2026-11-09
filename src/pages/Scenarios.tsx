@@ -149,28 +149,28 @@ const Scenarios = () => {
     else message = t("scenarios.fooled");
 
     return (
-      <div className="space-y-6 animate-fade-in">
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-            <Target className="w-8 h-8 text-primary" aria-hidden="true" />
+      <div className="space-y-6 animate-fade-up motion-reduce:animate-none">
+        <div className="space-y-2.5 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 shadow-panel animate-scale-in motion-reduce:animate-none">
+            <Target className="h-8 w-8 text-primary" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">
+          <h1 className="text-balance text-2xl font-bold tracking-[-0.02em] text-foreground">
             {t("scenarios.scoreTitle", {
               safe: formatNumber(safeCount),
               total: formatNumber(total),
             })}
           </h1>
-          <p className="text-muted-foreground">{message}</p>
-          <p className="text-sm font-semibold text-primary">
+          <p className="text-pretty text-muted-foreground">{message}</p>
+          <p className="font-mono text-sm font-semibold tabular-nums text-primary">
             {t("scenarios.scoreXp", { xp: formatNumber(scenarioReward(safeCount, total)) })}
           </p>
         </div>
 
         {redFlags.length > 0 && (
           <div className="space-y-2">
-            <h3 className="font-semibold text-foreground">{t("scenarios.redFlags")}</h3>
+            <h3 className="text-sm font-semibold tracking-[-0.01em] text-foreground">{t("scenarios.redFlags")}</h3>
             {redFlags.map((flag, i) => (
-              <div key={i} className="flex items-start gap-2 p-3 rounded-lg border border-destructive/20 bg-destructive/5">
+              <div key={i} className="flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 p-3.5">
                 <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
                 <p className="text-sm text-foreground">
                   {localizedText(flag.en, flag.ar, locale)}
@@ -197,12 +197,12 @@ const Scenarios = () => {
   if (selected && !isComplete) {
     const step = selected.steps[stepIndex];
     return (
-      <div className="space-y-4">
-          <div className="flex items-center justify-between">
+      <div className="space-y-4 animate-fade-in motion-reduce:animate-none">
+          <div className="flex items-center justify-between gap-2">
             <Button variant="ghost" size="sm" onClick={resetToList}>
               {t("scenarios.back")}
             </Button>
-            <span className="text-sm font-medium text-muted-foreground">
+            <span className="rounded-full border border-border bg-card/70 px-2.5 py-0.5 font-mono text-xs tabular-nums text-muted-foreground">
               {t("scenarios.step", {
                 current: formatNumber(stepIndex + 1),
                 total: formatNumber(selected.steps.length),
@@ -210,31 +210,31 @@ const Scenarios = () => {
             </span>
           </div>
 
-          <h1 className="text-2xl font-bold text-foreground">{locale === "ar" ? selected.titleAr : selected.title}</h1>
+          <h1 className="text-balance text-2xl font-bold tracking-[-0.02em] text-foreground">{locale === "ar" ? selected.titleAr : selected.title}</h1>
 
           <div className="space-y-3">
             {chatHistory.map((msg, i) => (
               <div key={i}>
                 {msg.role === "attacker" ? (
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                      <AlertTriangle className="w-4 h-4 text-muted-foreground" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-muted">
+                      <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    <div className="rounded-lg border border-border bg-card p-3 max-w-[85%]">
-                      <p className="text-xs text-muted-foreground mb-1">{selected.steps[Math.floor(i / 2)]?.attackerRole}</p>
-                      <p className="text-sm text-foreground">{msg.text}</p>
+                    <div className="max-w-[85%] rounded-xl border border-border bg-card/85 p-3.5 shadow-panel">
+                      <p className="mb-1 text-xs text-muted-foreground">{selected.steps[Math.floor(i / 2)]?.attackerRole}</p>
+                      <p className="text-sm leading-relaxed text-foreground">{msg.text}</p>
                     </div>
                   </div>
                 ) : (
                   <div className="flex justify-end">
-                    <div className="space-y-2 max-w-[85%]">
-                      <div className="rounded-lg bg-primary text-primary-foreground p-3">
-                        <p className="text-sm">{msg.text}</p>
+                    <div className="max-w-[85%] space-y-2">
+                      <div className="rounded-xl bg-primary p-3.5 text-primary-foreground shadow-panel">
+                        <p className="text-sm leading-relaxed">{msg.text}</p>
                       </div>
                       {msg.feedbackData && (
                         <div
                           dir={locale === "ar" ? "rtl" : "ltr"}
-                          className={`rounded-lg border p-3 text-sm ${
+                          className={`rounded-xl border p-3.5 text-sm leading-relaxed shadow-panel ${
                             msg.feedbackData.safe
                               ? "border-success/30 bg-success/10 text-success"
                               : "border-destructive/20 bg-destructive/5 text-destructive"
@@ -254,15 +254,15 @@ const Scenarios = () => {
             ))}
 
             {!feedback && (
-              <div className="flex gap-3 animate-fade-in">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  <AlertTriangle className="w-4 h-4 text-muted-foreground" />
+              <div className="flex gap-3 animate-fade-in motion-reduce:animate-none">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-muted">
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <div className="rounded-lg border border-border bg-card p-3 max-w-[85%]">
-                  <p className="text-xs text-muted-foreground mb-1">
+                <div className="max-w-[85%] rounded-xl border border-border bg-card/85 p-3.5 shadow-panel">
+                  <p className="mb-1 text-xs text-muted-foreground">
                     {locale === "ar" ? step.attackerRoleAr : step.attackerRole}
                   </p>
-                  <p className="text-sm text-foreground">
+                  <p className="text-sm leading-relaxed text-foreground">
                     {locale === "ar" ? step.attackerAr : step.attacker}
                   </p>
                 </div>
@@ -287,15 +287,15 @@ const Scenarios = () => {
               </Button>
             </div>
           ) : (
-            <div className="space-y-2 animate-fade-in">
+            <div className="space-y-2 animate-fade-in motion-reduce:animate-none">
               {step.choices.map((choice, i) => (
                 <Button
                   key={i}
                   variant="outline"
-                  className="w-full text-left justify-start h-auto py-3 px-4"
+                  className="h-auto w-full justify-start rounded-xl px-4 py-3.5 text-left shadow-panel transition-all duration-150 hover:-translate-y-px"
                   onClick={() => handleChoice(i)}
                 >
-                  <span className="text-sm">
+                  <span className="text-sm leading-relaxed">
                     {locale === "ar" ? choice.labelAr : choice.label}
                   </span>
                 </Button>

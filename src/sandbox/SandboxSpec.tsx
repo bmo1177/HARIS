@@ -12,18 +12,18 @@ const SandboxSpec = () => {
   const code = (children: string) => (
     <pre
       dir="ltr"
-      className="overflow-x-auto whitespace-pre rounded bg-muted p-3 font-mono text-[11px] leading-relaxed text-foreground"
+      className="overflow-x-auto whitespace-pre rounded-xl border border-border bg-muted/60 p-3.5 font-mono text-[11px] leading-relaxed text-foreground shadow-panel"
     >
       {children}
     </pre>
   );
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-foreground">{t("sandbox.spec.title")}</h2>
+    <div className="space-y-6 animate-fade-in motion-reduce:animate-none">
+      <h2 className="text-balance text-xl font-bold tracking-[-0.015em] text-foreground">{t("sandbox.spec.title")}</h2>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold text-foreground">{t("sandbox.spec.schemas")}</h3>
+        <h3 className="text-sm font-semibold tracking-[-0.01em] text-foreground">{t("sandbox.spec.schemas")}</h3>
         {code(`interface RedChallenge {
   id: "credential-leakage" | "unauthorized-transfer"
     | "rag-exfiltration" | "service-disruption";
@@ -70,7 +70,7 @@ interface BatteryReport {
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold text-foreground">{t("sandbox.spec.engine")}</h3>
+        <h3 className="text-sm font-semibold tracking-[-0.01em] text-foreground">{t("sandbox.spec.engine")}</h3>
         {code(`RED: evaluate(challenge, input, failures, locked)
   1. locked? -> locked notice, no run
   2. normalize(input); match challenge.triggers
@@ -90,7 +90,7 @@ BLUE: evaluate(case, config)
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold text-foreground">{t("sandbox.spec.architecture")}</h3>
+        <h3 className="text-sm font-semibold tracking-[-0.01em] text-foreground">{t("sandbox.spec.architecture")}</h3>
         <ul className="list-disc space-y-1 ps-5 text-sm text-muted-foreground">
           <li dir="auto">{t("sandbox.arch.tabs")}</li>
           <li dir="auto">{t("sandbox.arch.red")}</li>
@@ -101,11 +101,11 @@ BLUE: evaluate(case, config)
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">{t("sandbox.spec.dataset")}</h3>
+        <h3 className="text-sm font-semibold tracking-[-0.01em] text-foreground">{t("sandbox.spec.dataset")}</h3>
         <h4 className="text-sm font-medium text-foreground">{t("sandbox.spec.redLevels")}</h4>
         <ul className="space-y-2">
           {redChallenges.map((c) => (
-            <li key={c.id} className="rounded-lg border border-border bg-card p-3 text-sm">
+            <li key={c.id} className="rounded-xl border border-border bg-card/85 p-3.5 text-sm shadow-panel">
               <p className="font-semibold text-foreground">
                 {t("sandbox.red.level", { level: c.level })} · {locale === "ar" ? c.titleAr : c.title}
               </p>
@@ -123,7 +123,7 @@ BLUE: evaluate(case, config)
           {blueBattery
             .filter((c) => c.vector !== "benign")
             .map((c) => (
-              <li key={c.id} className="rounded-lg border border-border bg-card p-3 text-sm">
+              <li key={c.id} className="rounded-xl border border-border bg-card/85 p-3.5 text-sm shadow-panel">
                 <p dir="ltr" className="font-mono text-xs text-muted-foreground">
                   {c.id}
                 </p>
@@ -141,7 +141,7 @@ BLUE: evaluate(case, config)
           {blueBattery
             .filter((c) => c.vector === "benign")
             .map((c) => (
-              <li key={c.id} className="rounded-lg border border-border bg-card p-3 text-sm">
+              <li key={c.id} className="rounded-xl border border-border bg-card/85 p-3.5 text-sm shadow-panel">
                 <p dir="auto" className="break-words text-foreground">
                   {c.payload}
                 </p>

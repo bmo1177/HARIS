@@ -43,23 +43,23 @@ const BlueWorkshop = () => {
     key: "stripControlChars" | "removeFenceTags" | "neutralizeOverrides" | "requireClosedBoundary" | "denyOutputMarkers",
     labelKey: Parameters<typeof t>[0],
   ) => (
-    <label className="flex cursor-pointer items-start gap-2 text-sm text-foreground">
+    <label className="flex cursor-pointer items-start gap-2.5 rounded-lg px-1 py-1 text-sm text-foreground transition-colors duration-150 hover:bg-accent/50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring">
       <input
         type="checkbox"
         checked={config[key]}
         onChange={(e) => update(key, e.target.checked)}
-        className="mt-1 h-4 w-4 accent-current"
+        className="mt-1 h-4 w-4 shrink-0 accent-primary focus-visible:outline-none"
       />
       <span>{t(labelKey)}</span>
     </label>
   );
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold text-foreground">{t("sandbox.blue.title")}</h2>
+    <div className="space-y-4 animate-fade-in motion-reduce:animate-none">
+      <h2 className="text-balance text-xl font-bold tracking-[-0.015em] text-foreground">{t("sandbox.blue.title")}</h2>
 
-      <Card>
-        <CardContent className="space-y-3 p-4">
+      <Card className="bg-card/85 shadow-panel">
+        <CardContent className="space-y-3 p-4 sm:p-5">
           <label htmlFor="blue-system-prompt" className="text-sm font-medium text-foreground">
             {t("sandbox.blue.systemPrompt")}
           </label>
@@ -139,11 +139,11 @@ const BlueWorkshop = () => {
       </Card>
 
       {!report ? (
-        <p className="text-sm text-muted-foreground">{t("sandbox.blue.noRun")}</p>
+        <p className="rounded-xl border border-dashed border-border bg-card/50 p-4 text-sm text-muted-foreground">{t("sandbox.blue.noRun")}</p>
       ) : (
-        <div className="space-y-3">
-          <Card>
-            <CardContent className="space-y-3 p-4">
+        <div className="space-y-3 animate-fade-in motion-reduce:animate-none">
+          <Card className="bg-card/85 shadow-panel">
+            <CardContent className="space-y-3 p-4 sm:p-5">
               <div>
                 <div className="flex items-baseline justify-between gap-2 text-sm">
                   <span className="font-medium text-foreground">{t("sandbox.blue.defense")}</span>
@@ -178,7 +178,7 @@ const BlueWorkshop = () => {
             {report.log.map((run) => {
               const batteryCase = blueBattery.find((c) => c.id === run.caseId)!;
               return (
-                <li key={run.caseId} className="rounded-lg border border-border bg-card p-3 text-sm">
+                <li key={run.caseId} className="rounded-xl border border-border bg-card/85 p-3.5 text-sm shadow-panel">
                   <div className="flex items-center justify-between gap-2">
                     <span dir="ltr" className="font-mono text-xs text-muted-foreground">
                       {run.caseId}

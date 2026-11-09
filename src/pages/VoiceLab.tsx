@@ -188,9 +188,9 @@ const VoiceLab = () => {
     const caught = selected.lines.filter((l, i) => l.isRedFlag && userFlags.has(i)).length;
 
     return (
-      <div className="space-y-6">
-          <h1 className="text-xl font-bold text-foreground">{t("voice.debrief")}</h1>
-          <p className="text-muted-foreground">
+      <div className="space-y-6 animate-fade-up motion-reduce:animate-none">
+          <h1 className="text-balance text-xl font-bold tracking-[-0.015em] text-foreground">{t("voice.debrief")}</h1>
+          <p className="text-pretty text-muted-foreground">
             {t("voice.caught", {
               caught: formatNumber(caught),
               total: formatNumber(totalFlags),
@@ -203,14 +203,14 @@ const VoiceLab = () => {
               return (
                 <div
                   key={i}
-                  className={`p-3 rounded-lg border text-sm ${
+                  className={`rounded-xl border p-3.5 text-sm shadow-panel ${
                     line.isRedFlag
                       ? flagged
                         ? "border-success/30 bg-success/10"
                         : "border-destructive/20 bg-destructive/5"
                       : flagged
                         ? "border-warning/30 bg-warning/10"
-                        : "border-border bg-card"
+                        : "border-border bg-card/85"
                   }`}
                   dir={line.lang.startsWith("ar") ? "rtl" : "ltr"}
                 >
@@ -245,8 +245,8 @@ const VoiceLab = () => {
           </div>
 
           {debriefRequest.isPending ? (
-            <div className="rounded-lg border border-border bg-card p-4 flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center gap-2.5 rounded-xl border border-border bg-card/85 p-4 text-sm text-muted-foreground shadow-panel">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent motion-reduce:animate-none" />
               {t("voice.writingDebrief")}
             </div>
           ) : debrief ? (
@@ -254,9 +254,9 @@ const VoiceLab = () => {
                call and never rendered. */
             <div
               dir={locale === "ar" ? "rtl" : "ltr"}
-              className="space-y-2 rounded-lg border border-border bg-card p-4"
+              className="space-y-2 rounded-xl border border-border bg-card/85 p-4 shadow-panel sm:p-5"
             >
-              <p className="text-sm text-foreground">
+              <p className="text-[15px] leading-[1.7] text-foreground">
                 {locale === "ar" && debrief.debrief_ar ? debrief.debrief_ar : debrief.debrief}
               </p>
               <p className="text-sm font-semibold text-primary">

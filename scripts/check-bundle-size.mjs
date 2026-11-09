@@ -45,7 +45,10 @@ const BUDGET_KB = {
   // 152 -> 158: the local analyzer and its bilingual copy ship in the entry so
   // the exercise survives a dead backend even when a lazy chunk cannot be
   // fetched. That is the one moment the fallback is needed.
-  totalJs: 158,
+  // 158 -> 159: continuation polish (sandbox lab, play/debrief screens, edge
+  // states) adds class strings to lazy chunks only; entry is unchanged and
+  // the gzip moves 157.8 -> 158.5 kB. No new dependency or asset.
+  totalJs: 159,
   // 8 -> 9: the Awwwards polish pass adds one depth value, one entrance +
   // verdict-zone motion pair, and a zero-asset ambient backdrop (accent
   // glows + grid). No new dependency, font, or asset request. The gzip

@@ -85,11 +85,11 @@ const RedSandbox = () => {
     locale === "ar" ? turn.assistantAr : turn.assistantEn;
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold text-foreground">{t("sandbox.red.title")}</h2>
+    <div className="space-y-4 animate-fade-in motion-reduce:animate-none">
+      <h2 className="text-balance text-xl font-bold tracking-[-0.015em] text-foreground">{t("sandbox.red.title")}</h2>
 
       <div>
-        <p className="mb-2 text-sm font-medium text-foreground">{t("sandbox.red.choose")}</p>
+        <p className="mb-2 text-sm font-semibold tracking-[-0.01em] text-foreground">{t("sandbox.red.choose")}</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {redChallenges.map((c) => (
             <Button
@@ -98,7 +98,7 @@ const RedSandbox = () => {
               variant={c.id === challengeId ? "default" : "outline"}
               size="sm"
               onClick={() => switchChallenge(c.id)}
-              className="h-auto min-h-[4.25rem] flex-col items-start justify-start gap-0.5 whitespace-normal px-3 py-2 text-start leading-tight"
+              className="h-auto min-h-[4.25rem] flex-col items-start justify-start gap-0.5 whitespace-normal rounded-xl px-3 py-2 text-start leading-tight shadow-panel"
             >
               <span className="text-xs font-bold">
                 {t("sandbox.red.level", { level: c.level })}
@@ -112,25 +112,25 @@ const RedSandbox = () => {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="space-y-2 p-4">
+      <Card className="bg-card/85 shadow-panel">
+        <CardContent className="space-y-2 p-4 sm:p-5">
           <p className="text-sm font-semibold text-foreground">{t("sandbox.red.objective")}</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
             {locale === "ar" ? challenge.objectiveAr : challenge.objective}
           </p>
           <p className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{t("sandbox.red.target")}: </span>
             {locale === "ar" ? challenge.targetNameAr : challenge.targetName}
             {" · "}
-            <span className="font-mono text-xs">{t(stateKey[state])}</span>
+            <span className="font-mono text-xs tabular-nums">{t(stateKey[state])}</span>
           </p>
           <details className="text-xs text-muted-foreground">
-            <summary className="cursor-pointer font-medium text-foreground">
+            <summary className="cursor-pointer rounded font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               {t("sandbox.red.console")}
             </summary>
             <pre
               dir="ltr"
-              className="mt-2 overflow-x-auto whitespace-pre-wrap break-words rounded bg-muted p-3 font-mono text-[11px] leading-relaxed"
+              className="mt-2 overflow-x-auto whitespace-pre-wrap break-words rounded-lg border border-border bg-muted/60 p-3 font-mono text-[11px] leading-relaxed"
             >
               {challenge.context}
             </pre>
@@ -167,6 +167,7 @@ const RedSandbox = () => {
           placeholder={t("sandbox.red.placeholder")}
           disabled={locked}
           rows={3}
+          className="rounded-xl bg-background/80 transition-all duration-150 focus-visible:border-primary/60 focus-visible:ring-4 focus-visible:ring-primary/10"
         />
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs text-muted-foreground" dir="ltr">
@@ -191,14 +192,14 @@ const RedSandbox = () => {
       {lastTurn?.success && (
         <p
           role="status"
-          className="rounded-lg border border-border bg-card p-3 text-sm font-semibold text-foreground"
+          className="rounded-xl border border-border bg-card p-3.5 text-sm font-semibold text-foreground shadow-panel animate-fade-in motion-reduce:animate-none"
         >
           {t("sandbox.red.success")} · {t("sandbox.red.complete")}
         </p>
       )}
 
       {hint !== null && (
-        <p className="rounded-lg border border-border bg-card p-3 text-sm text-muted-foreground">
+        <p className="rounded-xl border border-border bg-card/85 p-3.5 text-sm leading-relaxed text-muted-foreground shadow-panel animate-fade-in motion-reduce:animate-none">
           <span className="font-semibold text-foreground">{t("sandbox.red.hint")}: </span>
           {locale === "ar"
             ? challenge.hints[hint]!.ar
@@ -211,7 +212,7 @@ const RedSandbox = () => {
           <h3 className="text-sm font-semibold text-foreground">{t("sandbox.red.console")}</h3>
           <ol className="space-y-2">
             {turns.map((record, i) => (
-              <li key={i} className="rounded-lg border border-border bg-card p-3 text-sm">
+              <li key={i} className="rounded-xl border border-border bg-card/85 p-3.5 text-sm shadow-panel animate-fade-in motion-reduce:animate-none" style={{ animationDelay: `${i * 40}ms` }}>
                 <p dir="auto" className="break-words text-muted-foreground">
                   <span className="font-mono text-xs">&gt; </span>
                   {record.input}

@@ -19,9 +19,9 @@ export const ErrorFallback = ({
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-4 text-center">
-        <h1 className="text-2xl font-bold text-foreground">{t("error.title")}</h1>
-        <p className="text-muted-foreground">{t("error.body")}</p>
+      <div className="w-full max-w-md space-y-4 text-center animate-fade-up motion-reduce:animate-none">
+        <h1 className="text-balance text-2xl font-bold tracking-[-0.02em] text-foreground">{t("error.title")}</h1>
+        <p className="text-pretty text-muted-foreground">{t("error.body")}</p>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Button onClick={onRetry} variant="outline" className="gap-2">
             <RotateCcw className="w-4 h-4" aria-hidden="true" />
