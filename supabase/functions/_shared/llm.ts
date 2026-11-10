@@ -26,7 +26,10 @@ export interface StructuredCall {
 }
 
 interface ChatCompletionResponse {
-  choices?: Array<{ message?: { content?: string | null } }>;
+  choices?: Array<{
+    finish_reason?: string | null;
+    message?: { content?: string | null };
+  }>;
   error?: { message?: string };
 }
 
@@ -183,8 +186,27 @@ async function callOneModel(
     );
   }
 
-  const content = payload.choices?.[0]?.message?.content;
+  const choice = payload.choices?.[0];
+  const content = choice?.message?.content;
   if (typeof content !== "string" || content.trim() === "") {
+    // Reasoning models spend hundreds of tokens in a pre-answer channel before
+    // `content` receives anything. A token ceiling that cuts the reasoning off
+    // before the answer begins leaves `content` empty with `finish_reason:
+    // length`, and without this check the failure reads as "the model said
+    // nothing" when the budget said nothing — the CI eval misreported exactly
+    // that for days while the deployment, on the same model at
+    // `LLM_MAX_TOKENS=4000`, kept answering. Retrying the same model at the
+    // same ceiling reproduces it token for token, so the message points at
+    // the budget and not at the model.
+    if (choice?.finish_reason === "length") {
+      throw new UpstreamError(
+        `llm hit the max_tokens ceiling (${maxTokens}) before emitting content ` +
+          `for ${model}; raise LLM_MAX_TOKENS`,
+        502,
+        false,
+      );
+    }
+
     // A model that answers with nothing is not usable, and the failure is the
     // model's rather than the student's.
     throw new UpstreamError(`llm returned no content for ${model}`, 502, false);

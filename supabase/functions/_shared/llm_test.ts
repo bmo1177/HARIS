@@ -215,3 +215,65 @@ Deno.test("no fallback is tried when none is configured", async () => {
     stub.restore();
   }
 });
+
+Deno.test("a model truncated by the token ceiling is skipped like any other failure", async () => {
+  // Reasoning models spend hundreds of tokens in a pre-answer channel before
+  // `content` receives anything, so a budget-aware deployment fails over here
+  // rather than waiting for a second, identically truncated attempt.
+  const stub = stubFetch((model) => {
+    if (model === "model/a") {
+      return json({
+        choices: [{
+          finish_reason: "length",
+          message: { content: null, reasoning_content: "first I reason about it..." },
+        }],
+      });
+    }
+    return json({ choices: [{ message: { content: '{"answer":"ok"}' } }] });
+  });
+
+  try {
+    await withEnv(
+      { LLM_API_KEY: "sk-test", LLM_MODEL: "model/a", LLM_FALLBACK_MODELS: "model/b" },
+      async () => {
+        assertEquals(await generateStructured(CALL), { answer: "ok" });
+      },
+    );
+    assertEquals(stub.seen, ["model/a", "model/b"]);
+  } finally {
+    stub.restore();
+  }
+});
+
+Deno.test("a truncation error names the budget, not the model's silence", async () => {
+  // "Returned no content" sent the first debugging session to the model list;
+  // the second must land on the one variable that fixes it.
+  const stub = stubFetch(() =>
+    json({ choices: [{ finish_reason: "length", message: { content: null } }] })
+  );
+
+  try {
+    await withEnv(
+      {
+        LLM_API_KEY: "sk-test",
+        LLM_MODEL: "model/a",
+        LLM_FALLBACK_MODELS: undefined,
+        LLM_MAX_TOKENS: "1200",
+      },
+      async () => {
+        const error = await assertRejects(() => generateStructured(CALL));
+        assertEquals(
+          (error as Error).message,
+          "llm hit the max_tokens ceiling (1200) before emitting content " +
+            "for model/a; raise LLM_MAX_TOKENS",
+        );
+      },
+    );
+    // A truncation is not a transport error, so the single-attempt rule holds
+    // even though this is the last model in the list: the same ceiling would
+    // reproduce it token for token.
+    assertEquals(stub.seen, ["model/a"]);
+  } finally {
+    stub.restore();
+  }
+});

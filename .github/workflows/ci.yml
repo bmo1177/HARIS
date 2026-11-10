@@ -171,6 +171,16 @@ jobs:
           # The same list the deployment uses, so this measures the configuration
           # that actually serves students rather than one lucky model.
           LLM_FALLBACK_MODELS: ${{ vars.LLM_FALLBACK_MODELS }}
+          # The deployment's request budget, as set in .env.example. At the
+          # defaults (1200 tokens, 20 s) the Nemotron reasoning models spend the
+          # whole ceiling on the pre-answer channel and are cut off before
+          # `content` receives anything: every case returned "llm returned no
+          # content" and the job spent twenty minutes failing rather than
+          # measuring. Probed directly against the endpoint, one benign message
+          # needs ~1700 completion tokens and ~17 s before the verdict appears.
+          LLM_TIMEOUT_MS: 45000
+          LLM_TOTAL_TIMEOUT_MS: 90000
+          LLM_MAX_TOKENS: 4000
         run: deno run --config supabase/functions/deno.json --allow-env --allow-net eval/run.ts --provider=live --max-errors=10 --json > eval-results.json
 
       - uses: actions/upload-artifact@v7

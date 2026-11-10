@@ -102,6 +102,19 @@ minutes instead of spending the 60-minute ceiling, and the artifact records
 `stopped_early`/`planned_cases` so a partial run is not read as a full
 measurement.
 
+It also pins the deployment's request budget (`LLM_MAX_TOKENS=4000`,
+`LLM_TIMEOUT_MS=45000`, `LLM_TOTAL_TIMEOUT_MS=90000`, as in the root
+`.env.example`) — the same rule the `--model` list follows: the job should
+measure the configuration that actually serves students. It did not always. At
+the 1200-token default the Nemotron reasoning models spend the entire ceiling
+on the pre-answer channel and are cut off with `finish_reason: length` before
+`content` receives anything, so every case errored as "llm returned no
+content" and the job spent twenty minutes failing instead of measuring.
+Probed directly against the endpoint, one benign message needs ~1700
+completion tokens and ~17 s before the verdict appears — the deployed numbers.
+When the harness reports a truncated model, the error names the budget:
+`llm hit the max_tokens ceiling (1200) …; raise LLM_MAX_TOKENS`.
+
 **A skipped live job is not a passing one.** When the secret is absent the step
 is skipped silently, and the run is still green — so a repository can go for
 months reporting "CI passed" while nothing has ever measured the real model.
@@ -124,8 +137,9 @@ gh variable set LLM_FALLBACK_MODELS --body nvidia/nemotron-3-ultra-550b-a55b
 The model matters as much as the key: the schema is strict, so a model that
 answers with prose instead of JSON fails every case. `npm run probe:provider`
 checks one model against the app's real schema before it is wired into CI, and
-the live job uses the same fallback list the deployment does, so it measures
-the configuration that actually serves students.
+the live job uses the same fallback list and the same request budget the
+deployment does, so it measures the configuration that actually serves
+students.
 
 ## Why it does not gate on accuracy
 
