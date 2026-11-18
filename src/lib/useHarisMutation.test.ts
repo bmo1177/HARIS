@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useHarisMutation } from "@/lib/useHarisMutation";
 import { invokeHarisFunction } from "@/lib/api";
-import { z } from "zod";
+import { z } from "zod/v4-mini";
 
 vi.mock("@/lib/api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/api")>("@/lib/api");

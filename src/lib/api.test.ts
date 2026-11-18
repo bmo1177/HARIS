@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { z } from "zod";
+import { z } from "zod/v4-mini";
 import { HarisError, invokeHarisFunction } from "@/lib/api";
 
 /**

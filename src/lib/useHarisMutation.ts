@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { z } from "zod";
+import type { z } from "zod/v4-mini";
 import { HarisError, errorMessage, invokeHarisFunction } from "@/lib/api";
 
 const MAX_ATTEMPTS = 3;
@@ -7,7 +7,7 @@ const BASE_BACKOFF_MS = 600;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export interface HarisMutation<TOutput extends z.ZodTypeAny> {
+export interface HarisMutation<TOutput extends z.ZodMiniType> {
   isPending: boolean;
   error: HarisError | null;
   /** Resolves with the validated response, or throws a `HarisError`. */
@@ -41,7 +41,7 @@ export interface HarisMutation<TOutput extends z.ZodTypeAny> {
  *   - **One place** where pending state and error shape are decided, instead of
  *     three copies that drifted apart.
  */
-export function useHarisMutation<TOutput extends z.ZodTypeAny>(
+export function useHarisMutation<TOutput extends z.ZodMiniType>(
   name: string,
   schema: TOutput,
 ): HarisMutation<TOutput> {

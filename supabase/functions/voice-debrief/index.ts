@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.25.76";
+import { z } from "npm:zod@4.6.7";
 import { UpstreamError } from "../_shared/env.ts";
 import { generateStructured } from "../_shared/llm.ts";
 import { createHandler, jsonResponse } from "../_shared/http.ts";

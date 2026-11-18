@@ -11,7 +11,7 @@
  * what one call to an open endpoint can cost.
  */
 
-import { z } from "npm:zod@3.25.76";
+import { z } from "npm:zod@4.6.7";
 import { RequestError } from "./http.ts";
 
 /** Parses with `zod`, converting any failure into a safe 400. */

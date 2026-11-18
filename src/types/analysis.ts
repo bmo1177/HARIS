@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4-mini";
 
 /**
  * The shape every HARIS analysis must have.
@@ -26,9 +26,9 @@ export const analysisResultSchema = z.object({
    * so a client that arrives before the functions would otherwise reject every
    * response. The UI falls back to the English clue when they are missing.
    */
-  clue_1_ar: z.string().optional(),
-  clue_2_ar: z.string().optional(),
-  clue_3_ar: z.string().optional(),
+  clue_1_ar: z.optional(z.string()),
+  clue_2_ar: z.optional(z.string()),
+  clue_3_ar: z.optional(z.string()),
   explanation: z.string(),
   explanation_ar: z.string(),
   /**
@@ -36,7 +36,7 @@ export const analysisResultSchema = z.object({
    * the pre-existing contract; "local" is the client-side rule set used when
    * the functions cannot be reached.
    */
-  analysis_source: z.enum(["model", "local"]).optional(),
+  analysis_source: z.optional(z.enum(["model", "local"])),
 });
 
 export type AnalysisResult = z.infer<typeof analysisResultSchema>;
@@ -47,7 +47,7 @@ export const scenarioFeedbackSchema = z.object({
   feedback_ar: z.string(),
   red_flag: z.string(),
   /** Optional for the same deployment-ordering reason as the Arabic clues. */
-  red_flag_ar: z.string().optional(),
+  red_flag_ar: z.optional(z.string()),
 });
 
 export type ScenarioFeedback = z.infer<typeof scenarioFeedbackSchema>;
@@ -58,7 +58,7 @@ export const voiceDebriefSchema = z.object({
   top_tip: z.string(),
   top_tip_ar: z.string(),
   /** "local" when the AI was unreachable and the client wrote the review. */
-  source: z.enum(["model", "local"]).optional(),
+  source: z.optional(z.enum(["model", "local"])),
 });
 
 export type VoiceDebrief = z.infer<typeof voiceDebriefSchema>;

@@ -39,7 +39,7 @@
     "react-router-dom": "7.18.4",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
-    "zod": "^3.25.76"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
@@ -84,5 +84,8 @@
     "scam",
     "supabase"
   ],
-  "packageManager": "npm@11.6.2"
+  "packageManager": "npm@11.6.2",
+  "overrides": {
+    "tinypool": "^2.2.0"
+  }
 }

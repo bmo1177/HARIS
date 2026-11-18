@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.25.76";
+import { z } from "npm:zod@4.6.7";
 import { generateStructured } from "./llm.ts";
 import { clampText, UNTRUSTED_CONTENT_RULES, wrapUntrusted } from "./prompt.ts";
 

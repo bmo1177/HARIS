@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4-mini";
 
 /**
  * Shared contracts for the Prompt Injection Sandbox.
@@ -46,8 +46,8 @@ export const guardrailRuleIdSchema = z.enum([
 export type GuardrailRuleId = z.infer<typeof guardrailRuleIdSchema>;
 
 const localizedTextSchema = z.object({
-  en: z.string().min(1).max(800),
-  ar: z.string().min(1).max(800),
+  en: z.string().check(z.minLength(1), z.maxLength(800)),
+  ar: z.string().check(z.minLength(1), z.maxLength(800)),
 });
 export type LocalizedText = z.infer<typeof localizedTextSchema>;
 
@@ -55,50 +55,56 @@ export const redChallengeSchema = z
   .object({
     id: redChallengeIdSchema,
     level: redLevelSchema,
-    title: z.string().min(1).max(80),
-    titleAr: z.string().min(1).max(80),
-    objective: z.string().min(1).max(500),
-    objectiveAr: z.string().min(1).max(500),
-    targetName: z.string().min(1).max(80),
-    targetNameAr: z.string().min(1).max(80),
+    title: z.string().check(z.minLength(1), z.maxLength(80)),
+    titleAr: z.string().check(z.minLength(1), z.maxLength(80)),
+    objective: z.string().check(z.minLength(1), z.maxLength(500)),
+    objectiveAr: z.string().check(z.minLength(1), z.maxLength(500)),
+    targetName: z.string().check(z.minLength(1), z.maxLength(80)),
+    targetNameAr: z.string().check(z.minLength(1), z.maxLength(80)),
     /** Simulated system context. Data, not prose: kept in English like real config. */
-    context: z.string().min(1).max(2000),
+    context: z.string().check(z.minLength(1), z.maxLength(2000)),
     /** Lowercase fragments the vulnerable simulator reacts to. */
-    triggers: z.array(z.string().min(1).max(80)).min(1).max(24),
-    flags: z.array(z.string().min(1).max(80)).min(1).max(4),
-    requiredMatches: z.number().int().min(1).max(4),
+    triggers: z
+      .array(z.string().check(z.minLength(1), z.maxLength(80)))
+      .check(z.minLength(1), z.maxLength(24)),
+    flags: z
+      .array(z.string().check(z.minLength(1), z.maxLength(80)))
+      .check(z.minLength(1), z.maxLength(4)),
+    requiredMatches: z.int().check(z.minimum(1), z.maximum(4)),
     /** Prefilled starter attack for students facing a blank box. Must trigger. */
-    exampleAttack: z.string().min(1).max(500),
+    exampleAttack: z.string().check(z.minLength(1), z.maxLength(500)),
     refusal: localizedTextSchema,
     /** Must contain `{flags}`, replaced with the matched markers. */
     successTemplate: localizedTextSchema,
     lockedNotice: localizedTextSchema,
-    hints: z.array(localizedTextSchema).min(1).max(4),
-    maxAttempts: z.number().int().min(1).max(20),
+    hints: z.array(localizedTextSchema).check(z.minLength(1), z.maxLength(4)),
+    maxAttempts: z.int().check(z.minimum(1), z.maximum(20)),
   })
-  .superRefine((challenge, ctx) => {
-    if (challenge.requiredMatches > challenge.flags.length) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "requiredMatches cannot exceed the number of flags",
-      });
-    }
-    for (const key of ["successTemplate"] as const) {
-      for (const locale of ["en", "ar"] as const) {
-        if (!challenge[key][locale].includes("{flags}")) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `${key}.${locale} must contain {flags}`,
-          });
+  .check(
+    z.superRefine((challenge, ctx) => {
+      if (challenge.requiredMatches > challenge.flags.length) {
+        ctx.addIssue({
+          code: "custom",
+          message: "requiredMatches cannot exceed the number of flags",
+        });
+      }
+      for (const key of ["successTemplate"] as const) {
+        for (const locale of ["en", "ar"] as const) {
+          if (!challenge[key][locale].includes("{flags}")) {
+            ctx.addIssue({
+              code: "custom",
+              message: `${key}.${locale} must contain {flags}`,
+            });
+          }
         }
       }
-    }
-  });
+    }),
+  );
 export type RedChallenge = z.infer<typeof redChallengeSchema>;
 
 export const redAttemptInputSchema = z.object({
   challengeId: redChallengeIdSchema,
-  input: z.string().min(1).max(SANDBOX_MAX_INPUT_LENGTH),
+  input: z.string().check(z.minLength(1), z.maxLength(SANDBOX_MAX_INPUT_LENGTH)),
 });
 export type RedAttemptInput = z.infer<typeof redAttemptInputSchema>;
 
@@ -114,27 +120,27 @@ export interface RedTurn {
 }
 
 export const guardrailConfigSchema = z.object({
-  systemPrompt: z.string().max(SANDBOX_MAX_SYSTEM_PROMPT_LENGTH),
+  systemPrompt: z.string().check(z.maxLength(SANDBOX_MAX_SYSTEM_PROMPT_LENGTH)),
   stripControlChars: z.boolean(),
   removeFenceTags: z.boolean(),
   neutralizeOverrides: z.boolean(),
-  boundaryOpen: z.string().min(1).max(24),
-  boundaryClose: z.string().min(1).max(24),
+  boundaryOpen: z.string().check(z.minLength(1), z.maxLength(24)),
+  boundaryClose: z.string().check(z.minLength(1), z.maxLength(24)),
   requireClosedBoundary: z.boolean(),
   denyOutputMarkers: z.boolean(),
-  maxOutputLength: z.number().int().min(200).max(2000),
+  maxOutputLength: z.int().check(z.minimum(200), z.maximum(2000)),
 });
 export type GuardrailConfig = z.infer<typeof guardrailConfigSchema>;
 
 export const batteryCaseSchema = z.object({
-  id: z.string().min(1).max(64),
+  id: z.string().check(z.minLength(1), z.maxLength(64)),
   vector: z.union([sandboxAttackVectorSchema, z.literal("benign")]),
-  payload: z.string().min(1).max(SANDBOX_MAX_INPUT_LENGTH),
+  payload: z.string().check(z.minLength(1), z.maxLength(SANDBOX_MAX_INPUT_LENGTH)),
   expectBlocked: z.boolean(),
   /** Which authored defenses stop this case. Empty for benign cases. */
-  mitigatedBy: z.array(guardrailRuleIdSchema).max(5),
-  rationale: z.string().min(1).max(500),
-  rationaleAr: z.string().min(1).max(500),
+  mitigatedBy: z.array(guardrailRuleIdSchema).check(z.maxLength(5)),
+  rationale: z.string().check(z.minLength(1), z.maxLength(500)),
+  rationaleAr: z.string().check(z.minLength(1), z.maxLength(500)),
 });
 export type BatteryCase = z.infer<typeof batteryCaseSchema>;
 

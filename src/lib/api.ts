@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4-mini";
 import {
   functionsBaseUrl,
   isConfigured,
@@ -67,8 +67,8 @@ export class HarisError extends Error {
 /** Mirrors the error envelope in `supabase/functions/_shared/http.ts`. */
 const errorEnvelope = z.object({
   error: z.string(),
-  code: z.string().optional(),
-  requestId: z.string().optional(),
+  code: z.optional(z.string()),
+  requestId: z.optional(z.string()),
 });
 
 const FALLBACK_MESSAGES: Record<HarisErrorCode, string> = {
@@ -149,7 +149,7 @@ function requestSignal(timeoutMs: number, caller?: AbortSignal): RequestSignal {
 const asCode = (value: string | undefined): HarisErrorCode =>
   value !== undefined && value in FALLBACK_MESSAGES ? (value as HarisErrorCode) : "internal_error";
 
-export async function invokeHarisFunction<TOutput extends z.ZodTypeAny>(
+export async function invokeHarisFunction<TOutput extends z.ZodMiniType>(
   name: string,
   body: Record<string, unknown>,
   schema: TOutput,
