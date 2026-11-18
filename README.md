@@ -583,14 +583,14 @@ CHROME_PATH=/run/current-system/sw/bin/google-chrome npm run e2e
 
 | What | Measured | Against |
 | --- | --- | --- |
-| Entry chunk | 119.7 kB gzip | 121 kB budget |
-| All JavaScript | 156.4 kB gzip | 158 kB budget |
-| CSS | 7.1 kB gzip | 8 kB budget |
+| Entry chunk | 115.7 kB gzip | 121 kB budget |
+| All JavaScript | 156.7 kB gzip | 159 kB budget |
+| CSS | 8.4 kB gzip | 9 kB budget |
 | Fonts, English visitor | 2 files | Arabic weights load on demand |
 | Analysis, primary model | ~16 s | 90 s server budget, then a typed error |
 | Analysis, fallback model | ~18 s | shares the same budget |
 | Accuracy, 2026-10-22 | 84.4% (4 timeouts) | 0% false positives · 100% hostile recall · 0/4 injections steered |
-| Test suite | 166 unit · 79 E2E · 70 Deno | all green |
+| Test suite | 166 unit · 79 E2E · 72 Deno | all green |
 
 The latency figures come from the free NVIDIA endpoint and move with contention;
 the fallback list and the shared budget exist for exactly that. The wait screen
@@ -635,6 +635,17 @@ is in [`supabase/README.md`](supabase/README.md). In short:
   reporting false-positive rate on benign messages, recall on hostile ones, and
   robustness to prompt injection. The false-positive number is the one that
   matters: a tool that flags ordinary messages teaches students to ignore it.
+- **Dependencies.** Nothing with a known advisory ships to a student:
+  `npm audit --omit=dev` reports zero vulnerabilities. The runtime validator is
+  zod v4 — the edge functions on the full build, the client on the smaller
+  `zod/v4-mini` entrypoint, which is also what keeps the entry chunk under
+  budget. What `npm audit` still reports lives entirely in the build and test
+  toolchain: advisories that either have no upstream fix (picomatch is
+  unpatched at every version, and much of the lint and test chain sits on top
+  of it) or need a major migration (Vite, Vitest 5, Tailwind 4). The one
+  critical that was fixable in place — tinypool, Vitest's worker pool — is
+  pinned past its vulnerable range by `overrides.tinypool` in
+  [`package.json`](package.json), with the full suite run against it.
 
 ---
 
